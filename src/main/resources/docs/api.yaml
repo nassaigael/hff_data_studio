@@ -1,0 +1,1529 @@
+openapi: 3.0.3
+info:
+  title: CATalyst API
+  description: >
+    API REST de la plateforme CATalyst — HFF Data Intelligence Platform.
+    Permet l'import, l'exploration, le nettoyage, l'analyse et l'export
+    de jeux de données pour le service Data Analyst de Henri Fraise Fils & Cie (HFF).
+  version: "1.0.0"
+  contact:
+    name: Service Data Analyst — HFF
+    email: data-analyst@hff.re
+  license:
+    name: Usage interne HFF — Diffusion restreinte
+
+servers:
+  - url: https://catalyst.hff.intranet/api/v1
+    description: Environnement de production (intranet HFF)
+  - url: https://catalyst-preprod.hff.intranet/api/v1
+    description: Environnement de préproduction
+
+tags:
+  - name: Authentification
+    description: Connexion, rafraîchissement de jeton, déconnexion
+  - name: Utilisateurs
+    description: Gestion des comptes utilisateurs (back-office)
+  - name: Categories
+    description: Catégories d'utilisateurs et matrice de permissions
+  - name: Projets
+    description: Espaces de travail regroupant fichiers, datasets et analyses
+  - name: Fichiers
+    description: Import et gestion des fichiers sources (CSV, Excel, SQL)
+  - name: Datasets
+    description: Jeux de données extraits des fichiers sources
+  - name: Exploration
+    description: Rapport de qualité des données
+  - name: Nettoyage
+    description: Règles de nettoyage, conversion de types, historique
+  - name: Analyses
+    description: Catalogue d'analyses prédéfinies et exécutions
+  - name: Exports
+    description: Export des résultats (CSV, Excel, images, ZIP)
+  - name: Audit
+    description: Journal de traçabilité des actions sensibles
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ===================== AUTHENTIFICATION =====================
+  /auth/login:
+    post:
+      tags: [Authentification]
+      summary: Authentifier un utilisateur
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, motDePasse]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: analyste@hff.re
+                motDePasse:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Authentification réussie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/refresh:
+    post:
+      tags: [Authentification]
+      summary: Rafraîchir un jeton d'accès expiré
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        "200":
+          description: Nouveau jeton d'accès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/logout:
+    post:
+      tags: [Authentification]
+      summary: Déconnecter l'utilisateur courant (invalidation du jeton)
+      responses:
+        "204":
+          description: Déconnexion effectuée
+
+  # ===================== UTILISATEURS =====================
+  /admin/utilisateurs:
+    get:
+      tags: [Utilisateurs]
+      summary: Lister les utilisateurs
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Liste paginée des utilisateurs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageUtilisateur"
+    post:
+      tags: [Utilisateurs]
+      summary: Créer un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UtilisateurCreation"
+      responses:
+        "201":
+          description: Utilisateur créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Utilisateur"
+        "409":
+          description: Email déjà utilisé
+
+  /admin/utilisateurs/{idUtilisateur}:
+    parameters:
+      - $ref: "#/components/parameters/IdUtilisateur"
+    get:
+      tags: [Utilisateurs]
+      summary: Consulter un utilisateur
+      responses:
+        "200":
+          description: Détail de l'utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Utilisateur"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Utilisateurs]
+      summary: Modifier un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UtilisateurMiseAJour"
+      responses:
+        "200":
+          description: Utilisateur mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Utilisateur"
+    delete:
+      tags: [Utilisateurs]
+      summary: Désactiver un utilisateur (soft delete)
+      responses:
+        "204":
+          description: Utilisateur désactivé
+
+  # ===================== CATEGORIES / PERMISSIONS =====================
+  /admin/categories:
+    get:
+      tags: [Categories]
+      summary: Lister les catégories d'utilisateurs
+      responses:
+        "200":
+          description: Liste des catégories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategorieUtilisateur"
+    post:
+      tags: [Categories]
+      summary: Créer une catégorie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategorieUtilisateur"
+      responses:
+        "201":
+          description: Catégorie créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategorieUtilisateur"
+
+  /admin/permissions:
+    get:
+      tags: [Categories]
+      summary: Lister les permissions disponibles
+      responses:
+        "200":
+          description: Liste des permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Permission"
+
+  /admin/categories/{idCategorie}/permissions:
+    parameters:
+      - name: idCategorie
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags: [Categories]
+      summary: Consulter la matrice des permissions d'une catégorie
+      responses:
+        "200":
+          description: Permissions accordées à la catégorie
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Permission"
+    put:
+      tags: [Categories]
+      summary: Mettre à jour la matrice des permissions d'une catégorie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idsPermissions:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+      responses:
+        "200":
+          description: Matrice mise à jour
+
+  # ===================== PROJETS =====================
+  /projets:
+    get:
+      tags: [Projets]
+      summary: Lister les projets accessibles à l'utilisateur courant
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: statut
+          in: query
+          schema:
+            $ref: "#/components/schemas/StatutProjet"
+      responses:
+        "200":
+          description: Liste paginée des projets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageProjet"
+    post:
+      tags: [Projets]
+      summary: Créer un projet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjetCreation"
+      responses:
+        "201":
+          description: Projet créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Projet"
+
+  /projets/{idProjet}:
+    parameters:
+      - $ref: "#/components/parameters/IdProjet"
+    get:
+      tags: [Projets]
+      summary: Consulter un projet
+      responses:
+        "200":
+          description: Détail du projet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Projet"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Projets]
+      summary: Modifier un projet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjetCreation"
+      responses:
+        "200":
+          description: Projet mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Projet"
+    delete:
+      tags: [Projets]
+      summary: Archiver un projet
+      responses:
+        "204":
+          description: Projet archivé
+
+  # ===================== FICHIERS =====================
+  /fichiers/upload:
+    post:
+      tags: [Fichiers]
+      summary: Déposer un fichier source (CSV, Excel ou export SQL)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [fichier, idProjet]
+              properties:
+                fichier:
+                  type: string
+                  format: binary
+                idProjet:
+                  type: integer
+                  format: int64
+                typeFichier:
+                  $ref: "#/components/schemas/TypeFichier"
+      responses:
+        "201":
+          description: Fichier reçu et mis en file d'attente de traitement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FichierSource"
+        "400":
+          description: Format ou taille de fichier invalide
+        "413":
+          description: Fichier trop volumineux (> 200 Mo par défaut)
+
+  /fichiers/{idFichier}:
+    parameters:
+      - $ref: "#/components/parameters/IdFichier"
+    get:
+      tags: [Fichiers]
+      summary: Consulter les métadonnées d'un fichier source
+      responses:
+        "200":
+          description: Détail du fichier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FichierSource"
+    delete:
+      tags: [Fichiers]
+      summary: Supprimer un fichier source et ses datasets associés
+      responses:
+        "204":
+          description: Fichier supprimé
+
+  /fichiers/{idFichier}/datasets:
+    parameters:
+      - $ref: "#/components/parameters/IdFichier"
+    get:
+      tags: [Fichiers]
+      summary: Lister les datasets extraits d'un fichier (feuilles Excel / tables SQL)
+      responses:
+        "200":
+          description: Liste des datasets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Dataset"
+
+  # ===================== DATASETS =====================
+  /datasets/{idDataset}:
+    parameters:
+      - $ref: "#/components/parameters/IdDataset"
+    get:
+      tags: [Datasets]
+      summary: Consulter un dataset
+      responses:
+        "200":
+          description: Détail du dataset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+
+  /datasets/{idDataset}/donnees:
+    parameters:
+      - $ref: "#/components/parameters/IdDataset"
+    get:
+      tags: [Datasets]
+      summary: Consulter les données du dataset (data viewer paginé/filtrable)
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: tri
+          in: query
+          schema:
+            type: string
+          description: Colonne de tri (ex. "prix,desc")
+        - name: filtre
+          in: query
+          schema:
+            type: string
+          description: Filtre multi-colonnes (ex. "statut:eq:ACTIF")
+        - name: version
+          in: query
+          schema:
+            type: string
+            enum: [BRUT, NETTOYE]
+            default: NETTOYE
+          description: Version des données à afficher (avant/après nettoyage)
+      responses:
+        "200":
+          description: Page de données du dataset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  colonnes:
+                    type: array
+                    items:
+                      type: string
+                  lignes:
+                    type: array
+                    items:
+                      type: object
+                  page:
+                    type: integer
+                  totalElements:
+                    type: integer
+
+  /datasets/{idDataset}/colonnes:
+    parameters:
+      - $ref: "#/components/parameters/IdDataset"
+    get:
+      tags: [Datasets]
+      summary: Lister les colonnes d'un dataset avec leurs métadonnées
+      responses:
+        "200":
+          description: Liste des colonnes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ColonneDataset"
+
+  /datasets/{idDataset}/colonnes/{idColonne}:
+    parameters:
+      - $ref: "#/components/parameters/IdDataset"
+      - name: idColonne
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    put:
+      tags: [Datasets]
+      summary: Renommer une colonne / ajuster son type cible
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nomNormalise:
+                  type: string
+                typeCible:
+                  $ref: "#/components/schemas/TypeColonne"
+      responses:
+        "200":
+          description: Colonne mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ColonneDataset"
+
+  # ===================== EXPLORATION =====================
+  /datasets/{idDataset}/rapport-exploration:
+    parameters:
+      - $ref: "#/components/parameters/IdDataset"
+    get:
+      tags: [Exploration]
+      summary: Consulter le rapport d'exploration existant
+      responses:
+        "200":
+          description: Rapport d'exploration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RapportExploration"
+        "404":
+          description: Aucun rapport généré pour ce dataset
+    post:
+      tags: [Exploration]
+      summary: Générer (ou régénérer) le rapport d'exploration du dataset
+      responses:
+        "201":
+          description: Rapport généré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RapportExploration"
+
+  /datasets/{idDataset}/rapport-exploration/export:
+    parameters:
+      - $ref: "#/components/parameters/IdDataset"
+    get:
+      tags: [Exploration]
+      summary: Exporter le rapport d'exploration au format PDF ou HTML
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [PDF, HTML]
+            default: PDF
+      responses:
+        "200":
+          description: Fichier du rapport
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            text/html:
+              schema:
+                type: string
+
+  # ===================== NETTOYAGE =====================
+  /colonnes/{idColonne}/regles:
+    parameters:
+      - name: idColonne
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags: [Nettoyage]
+      summary: Lister les règles de nettoyage d'une colonne
+      responses:
+        "200":
+          description: Liste des règles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RegleNettoyage"
+    post:
+      tags: [Nettoyage]
+      summary: Ajouter une règle de nettoyage/conversion sur une colonne
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegleNettoyageCreation"
+      responses:
+        "201":
+          description: Règle créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegleNettoyage"
+
+  /regles/{idRegle}:
+    parameters:
+      - name: idRegle
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    put:
+      tags: [Nettoyage]
+      summary: Modifier une règle de nettoyage (paramètres, ordre, statut actif)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegleNettoyageCreation"
+      responses:
+        "200":
+          description: Règle mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegleNettoyage"
+    delete:
+      tags: [Nettoyage]
+      summary: Supprimer une règle de nettoyage
+      responses:
+        "204":
+          description: Règle supprimée
+
+  /datasets/{idDataset}/nettoyage/executer:
+    parameters:
+      - $ref: "#/components/parameters/IdDataset"
+    post:
+      tags: [Nettoyage]
+      summary: Exécuter le pipeline de nettoyage (toutes les règles actives, dans l'ordre)
+      responses:
+        "202":
+          description: Pipeline de nettoyage lancé (traitement asynchrone)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  idTraitement:
+                    type: string
+                  statut:
+                    type: string
+                    example: EN_COURS
+
+  /datasets/{idDataset}/historique-nettoyage:
+    parameters:
+      - $ref: "#/components/parameters/IdDataset"
+    get:
+      tags: [Nettoyage]
+      summary: Consulter l'historique des opérations de nettoyage appliquées
+      responses:
+        "200":
+          description: Historique de nettoyage
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoriqueNettoyage"
+
+  # ===================== ANALYSES =====================
+  /analyses:
+    get:
+      tags: [Analyses]
+      summary: Lister le catalogue d'analyses prédéfinies
+      parameters:
+        - name: categorie
+          in: query
+          schema:
+            $ref: "#/components/schemas/CategorieAnalyse"
+      responses:
+        "200":
+          description: Catalogue d'analyses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnalysePredefinie"
+    post:
+      tags: [Analyses]
+      summary: Ajouter un modèle d'analyse prédéfinie au catalogue (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalysePredefinie"
+      responses:
+        "201":
+          description: Modèle d'analyse créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysePredefinie"
+
+  /executions:
+    post:
+      tags: [Analyses]
+      summary: Lancer une exécution d'analyse (prédéfinie ou libre) sur un dataset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecutionAnalyseCreation"
+      responses:
+        "202":
+          description: Exécution lancée (traitement asynchrone)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutionAnalyse"
+    get:
+      tags: [Analyses]
+      summary: Lister les exécutions d'analyses
+      parameters:
+        - name: idDataset
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Liste paginée des exécutions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageExecutionAnalyse"
+
+  /executions/{idExecution}:
+    parameters:
+      - name: idExecution
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags: [Analyses]
+      summary: Consulter le statut et les paramètres d'une exécution
+      responses:
+        "200":
+          description: Détail de l'exécution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutionAnalyse"
+
+  /executions/{idExecution}/resultats:
+    parameters:
+      - name: idExecution
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags: [Analyses]
+      summary: Récupérer les résultats produits par une exécution (tableaux, graphiques, KPI)
+      responses:
+        "200":
+          description: Liste des résultats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResultatAnalyse"
+
+  /analyses/modeles:
+    post:
+      tags: [Analyses]
+      summary: Enregistrer une configuration d'analyse paramétrée comme modèle réutilisable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                idAnalyse:
+                  type: integer
+                  format: int64
+                parametres:
+                  type: object
+      responses:
+        "201":
+          description: Modèle enregistré
+
+  # ===================== EXPORTS =====================
+  /exports:
+    post:
+      tags: [Exports]
+      summary: Exporter un ou plusieurs résultats (CSV, Excel, image, ou pack ZIP)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportCreation"
+      responses:
+        "201":
+          description: Export généré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Export"
+    get:
+      tags: [Exports]
+      summary: Lister l'historique des exports
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Historique paginé des exports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageExport"
+
+  /exports/{idExport}/telechargement:
+    parameters:
+      - name: idExport
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags: [Exports]
+      summary: Télécharger le fichier exporté
+      responses:
+        "200":
+          description: Contenu du fichier exporté
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  # ===================== AUDIT =====================
+  /admin/audit:
+    get:
+      tags: [Audit]
+      summary: Consulter le journal d'audit global (Admin)
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: idUtilisateur
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: dateDebut
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: dateFin
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Journal d'audit paginé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contenu:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/JournalAudit"
+                  totalElements:
+                    type: integer
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+    IdUtilisateur:
+      name: idUtilisateur
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    IdProjet:
+      name: idProjet
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    IdFichier:
+      name: idFichier
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    IdDataset:
+      name: idDataset
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  responses:
+    Unauthorized:
+      description: Authentification requise ou invalide
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+    NotFound:
+      description: Ressource non trouvée
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+    Forbidden:
+      description: Permission insuffisante pour cette action
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+
+  schemas:
+    Erreur:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        horodatage:
+          type: string
+          format: date-time
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          description: Durée de validité du jeton d'accès (secondes)
+
+    # ---------- Utilisateurs ----------
+    CategorieUtilisateur:
+      type: object
+      properties:
+        idCategorie:
+          type: integer
+          format: int64
+        libelle:
+          type: string
+          example: ADMIN
+        description:
+          type: string
+        niveauAcces:
+          type: integer
+          minimum: 1
+          maximum: 5
+
+    Permission:
+      type: object
+      properties:
+        idPermission:
+          type: integer
+          format: int64
+        code:
+          type: string
+          example: FILE_UPLOAD
+        libelle:
+          type: string
+        module:
+          type: string
+          enum: [Import, Nettoyage, Analyse, Export, Admin]
+
+    Utilisateur:
+      type: object
+      properties:
+        idUtilisateur:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        prenom:
+          type: string
+        email:
+          type: string
+          format: email
+        actif:
+          type: boolean
+        dateCreation:
+          type: string
+          format: date-time
+        derniereConnexion:
+          type: string
+          format: date-time
+          nullable: true
+        categorie:
+          $ref: "#/components/schemas/CategorieUtilisateur"
+
+    UtilisateurCreation:
+      type: object
+      required: [nom, prenom, email, motDePasse, idCategorie]
+      properties:
+        nom:
+          type: string
+        prenom:
+          type: string
+        email:
+          type: string
+          format: email
+        motDePasse:
+          type: string
+          format: password
+        idCategorie:
+          type: integer
+          format: int64
+
+    UtilisateurMiseAJour:
+      type: object
+      properties:
+        nom:
+          type: string
+        prenom:
+          type: string
+        actif:
+          type: boolean
+        idCategorie:
+          type: integer
+          format: int64
+
+    PageUtilisateur:
+      type: object
+      properties:
+        contenu:
+          type: array
+          items:
+            $ref: "#/components/schemas/Utilisateur"
+        page:
+          type: integer
+        totalElements:
+          type: integer
+
+    # ---------- Projets ----------
+    StatutProjet:
+      type: string
+      enum: [EN_COURS, TERMINE, ARCHIVE]
+
+    Projet:
+      type: object
+      properties:
+        idProjet:
+          type: integer
+          format: int64
+        nomProjet:
+          type: string
+        description:
+          type: string
+        dateCreation:
+          type: string
+          format: date-time
+        statut:
+          $ref: "#/components/schemas/StatutProjet"
+        idUtilisateurCreateur:
+          type: integer
+          format: int64
+
+    ProjetCreation:
+      type: object
+      required: [nomProjet]
+      properties:
+        nomProjet:
+          type: string
+        description:
+          type: string
+
+    PageProjet:
+      type: object
+      properties:
+        contenu:
+          type: array
+          items:
+            $ref: "#/components/schemas/Projet"
+        page:
+          type: integer
+        totalElements:
+          type: integer
+
+    # ---------- Fichiers / Datasets ----------
+    TypeFichier:
+      type: string
+      enum: [CSV, EXCEL, SQL]
+
+    StatutTraitementFichier:
+      type: string
+      enum: [RECU, EN_ANALYSE, EXPLORE, NETTOYE, ERREUR]
+
+    FichierSource:
+      type: object
+      properties:
+        idFichier:
+          type: integer
+          format: int64
+        nomFichier:
+          type: string
+        typeFichier:
+          $ref: "#/components/schemas/TypeFichier"
+        tailleOctets:
+          type: integer
+          format: int64
+        dateUpload:
+          type: string
+          format: date-time
+        statutTraitement:
+          $ref: "#/components/schemas/StatutTraitementFichier"
+        idProjet:
+          type: integer
+          format: int64
+        idUtilisateur:
+          type: integer
+          format: int64
+
+    Dataset:
+      type: object
+      properties:
+        idDataset:
+          type: integer
+          format: int64
+        nomDataset:
+          type: string
+        nbLignes:
+          type: integer
+        nbColonnes:
+          type: integer
+        dateCreation:
+          type: string
+          format: date-time
+        estNettoye:
+          type: boolean
+        idFichier:
+          type: integer
+          format: int64
+
+    TypeColonne:
+      type: string
+      enum: [STRING, INTEGER, FLOAT, DATE, BOOLEAN]
+
+    ColonneDataset:
+      type: object
+      properties:
+        idColonne:
+          type: integer
+          format: int64
+        nomOriginal:
+          type: string
+        nomNormalise:
+          type: string
+          nullable: true
+        typeDetecte:
+          $ref: "#/components/schemas/TypeColonne"
+        typeCible:
+          $ref: "#/components/schemas/TypeColonne"
+        position:
+          type: integer
+        nbValeursNulles:
+          type: integer
+        nbValeursUniques:
+          type: integer
+        idDataset:
+          type: integer
+          format: int64
+
+    # ---------- Exploration ----------
+    RapportExploration:
+      type: object
+      properties:
+        idRapport:
+          type: integer
+          format: int64
+        dateGeneration:
+          type: string
+          format: date-time
+        nbLignesTotal:
+          type: integer
+        nbDoublons:
+          type: integer
+        nbValeursManquantes:
+          type: integer
+        scoreQualite:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        cheminRapportPdf:
+          type: string
+          nullable: true
+        idDataset:
+          type: integer
+          format: int64
+
+    # ---------- Nettoyage ----------
+    TypeRegle:
+      type: string
+      enum:
+        - CONVERSION_TYPE
+        - SUPPRESSION_DOUBLON
+        - IMPUTATION_NULL
+        - REGEX_NETTOYAGE
+        - TRIM
+        - CONTRAINTE_VALEUR
+
+    RegleNettoyage:
+      type: object
+      properties:
+        idRegle:
+          type: integer
+          format: int64
+        typeRegle:
+          $ref: "#/components/schemas/TypeRegle"
+        parametresJson:
+          type: object
+        ordreExecution:
+          type: integer
+        actif:
+          type: boolean
+        idColonne:
+          type: integer
+          format: int64
+
+    RegleNettoyageCreation:
+      type: object
+      required: [typeRegle]
+      properties:
+        typeRegle:
+          $ref: "#/components/schemas/TypeRegle"
+        parametresJson:
+          type: object
+        ordreExecution:
+          type: integer
+        actif:
+          type: boolean
+          default: true
+
+    StatutHistorique:
+      type: string
+      enum: [SUCCES, ECHEC]
+
+    HistoriqueNettoyage:
+      type: object
+      properties:
+        idHistorique:
+          type: integer
+          format: int64
+        dateExecution:
+          type: string
+          format: date-time
+        statut:
+          $ref: "#/components/schemas/StatutHistorique"
+        details:
+          type: string
+          nullable: true
+        idDataset:
+          type: integer
+          format: int64
+        idRegle:
+          type: integer
+          format: int64
+        idUtilisateur:
+          type: integer
+          format: int64
+
+    # ---------- Analyses ----------
+    CategorieAnalyse:
+      type: string
+      enum: [STATISTIQUE, CORRELATION, TEMPOREL, SEGMENTATION, FINANCIER]
+
+    AnalysePredefinie:
+      type: object
+      properties:
+        idAnalyse:
+          type: integer
+          format: int64
+        nomAnalyse:
+          type: string
+        description:
+          type: string
+        categorie:
+          $ref: "#/components/schemas/CategorieAnalyse"
+        referenceScript:
+          type: string
+        parametresRequisJson:
+          type: object
+
+    StatutExecution:
+      type: string
+      enum: [EN_COURS, TERMINE, ERREUR]
+
+    ExecutionAnalyseCreation:
+      type: object
+      required: [idDataset]
+      properties:
+        idDataset:
+          type: integer
+          format: int64
+        idAnalyse:
+          type: integer
+          format: int64
+          nullable: true
+          description: NULL si analyse libre
+        parametres:
+          type: object
+
+    ExecutionAnalyse:
+      type: object
+      properties:
+        idExecution:
+          type: integer
+          format: int64
+        dateExecution:
+          type: string
+          format: date-time
+        statut:
+          $ref: "#/components/schemas/StatutExecution"
+        dureeMs:
+          type: integer
+          nullable: true
+        parametresUtilisesJson:
+          type: object
+        idDataset:
+          type: integer
+          format: int64
+        idAnalyse:
+          type: integer
+          format: int64
+          nullable: true
+        idUtilisateur:
+          type: integer
+          format: int64
+
+    PageExecutionAnalyse:
+      type: object
+      properties:
+        contenu:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutionAnalyse"
+        page:
+          type: integer
+        totalElements:
+          type: integer
+
+    TypeResultat:
+      type: string
+      enum: [TABLE, GRAPHIQUE, KPI]
+
+    ResultatAnalyse:
+      type: object
+      properties:
+        idResultat:
+          type: integer
+          format: int64
+        typeResultat:
+          $ref: "#/components/schemas/TypeResultat"
+        titre:
+          type: string
+        cheminFichier:
+          type: string
+        formatFichier:
+          type: string
+          enum: [CSV, XLSX, PNG, SVG]
+        ordreAffichage:
+          type: integer
+        idExecution:
+          type: integer
+          format: int64
+        graphique:
+          $ref: "#/components/schemas/Graphique"
+          nullable: true
+
+    TypeGraphique:
+      type: string
+      enum: [BARRE, LIGNE, CAMEMBERT, NUAGE_POINTS, AIRE]
+
+    Graphique:
+      type: object
+      properties:
+        idGraphique:
+          type: integer
+          format: int64
+        typeGraphique:
+          $ref: "#/components/schemas/TypeGraphique"
+        configJson:
+          type: object
+          description: >
+            Configuration visuelle (couleurs, axes, légendes) alignée sur la
+            charte graphique HFF (ex. couleurs #0B2545, #FFCD11).
+        idResultat:
+          type: integer
+          format: int64
+
+    # ---------- Exports ----------
+    FormatExport:
+      type: string
+      enum: [CSV, XLSX, PNG, ZIP]
+
+    ExportCreation:
+      type: object
+      required: [idExecution, formatExport]
+      properties:
+        idExecution:
+          type: integer
+          format: int64
+        formatExport:
+          $ref: "#/components/schemas/FormatExport"
+        idsResultats:
+          type: array
+          items:
+            type: integer
+            format: int64
+
+    Export:
+      type: object
+      properties:
+        idExport:
+          type: integer
+          format: int64
+        formatExport:
+          $ref: "#/components/schemas/FormatExport"
+        dateExport:
+          type: string
+          format: date-time
+        cheminFichier:
+          type: string
+        idExecution:
+          type: integer
+          format: int64
+        idUtilisateur:
+          type: integer
+          format: int64
+
+    PageExport:
+      type: object
+      properties:
+        contenu:
+          type: array
+          items:
+            $ref: "#/components/schemas/Export"
+        page:
+          type: integer
+        totalElements:
+          type: integer
+
+    # ---------- Audit ----------
+    JournalAudit:
+      type: object
+      properties:
+        idJournal:
+          type: integer
+          format: int64
+        action:
+          type: string
+        entiteConcernee:
+          type: string
+          nullable: true
+        idEntite:
+          type: integer
+          format: int64
+          nullable: true
+        dateAction:
+          type: string
+          format: date-time
+        adresseIp:
+          type: string
+          nullable: true
+        idUtilisateur:
+          type: integer
+          format: int64
