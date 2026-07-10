@@ -1,0 +1,104 @@
+commitMessagePrompt: |
+  You will analyze file changes presented in unified diff format to generate a comprehensive Git commit message.
+  
+  Your objective is to create a message that clearly captures the essence of modifications by addressing:
+  1. WHAT: Which functionality or component was modified?
+  2. WHY: What was the business or technical intent?
+  3. HOW: What approach was taken (if significant)?
+  
+  Deep Analysis Requirements:
+  - Examine each modified file and its project context
+  - Identify dependencies between changes
+  - Detect patterns: refactoring, bug fix, feature, optimization
+  - Assess user or system impact
+  - Consider edge cases and potential side effects
+  
+  Output Format:
+  <type>(<scope>): <concise subject>
+  
+  [Empty line if body needed]
+  <detailed body>
+  
+  [Empty line if footer needed]
+  <footer with references>
+  
+  JIRA Ticket Extraction:
+  - Analyze branch: {{branch}}
+  - Look for patterns: /[A-Z]+-\d+/i (e.g., PROJ-123, fix/PROJ-456-feature)
+  - If found, add to footer: Closes: PROJ-123 or References: PROJ-123
+  
+  Commit Types (Extended):
+  - feat     : New user-facing functionality
+  - fix      : Bug correction (specify if critical/security)
+  - perf     : Performance improvement
+  - refactor : Code restructuring without functional change
+  - style    : Formatting, whitespace, visual style
+  - test     : Unit/integration tests
+  - docs     : Technical or user documentation
+  - build    : Build system, dependencies
+  - ci       : CI/CD pipeline changes
+  - chore    : Maintenance, technical tasks
+  - revert   : Revert previous commit
+  - security : Security-related changes
+  
+  Scopes (Context-Aware):
+  api, ui, core, auth, db, config, docs, tests, deps, security, i18n, types, utils, hooks, middleware
+  
+  Body Structure (When Applicable):
+  ### Context
+  Explain the problem or opportunity that motivated the change
+  
+  ### Solution
+  Describe the technical approach and implementation details
+  
+  ### Changes Made
+  - Key files modified and their purpose
+  - Architectural decisions and alternatives considered
+  - Dependencies added/removed
+  
+  ### Impact & Considerations
+  - Performance implications
+  - Security considerations
+  - Backward compatibility
+  - Migration requirements
+  - Testing coverage
+  
+  Writing Rules:
+  - Subject: Imperative mood, max 50 characters
+  - Body: Complete sentences, professional tone
+  - Line limit: 72 characters per line
+  - No trailing punctuation in subject
+  - Capitalization: Only proper nouns in subject
+  - Use bullet points for lists in body
+  - Avoid technical jargon without explanation
+  
+  Quality Example:
+  fix(auth): correct JWT token expiration time
+  
+  Tokens were expiring after 1 hour instead of 24 hours following the migration
+  to the new authentication library.
+  
+  ### Changes Made
+  - Updated token configuration in auth-config.js
+  - Fixed expiration calculation in token-service.js
+  - Added unit tests for expiration scenarios
+  
+  ### Impact & Considerations
+  - User sessions now correctly last 24 hours
+  - Compatible with existing tokens
+  - No migration required for current users
+  
+  Closes: AUTH-789
+  
+  Provided Context:
+  Author: {{author}}
+  Branch: {{branch}}
+  Files changed: {{fileCount}} ({{fileTypes}})
+  Diff stats: +{{linesAdded}}/-{{linesRemoved}}
+  Modified areas: {{changedFolders}}
+  Date: {{date}}
+  
+  Changes to Analyze:
+  {{changes}}
+  
+  Generate ONLY the final commit message, with no additional commentary or formatting notes.
