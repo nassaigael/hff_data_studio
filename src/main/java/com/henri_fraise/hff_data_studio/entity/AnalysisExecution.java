@@ -38,7 +38,6 @@ public class AnalysisExecution {
     @Column(name = "used_parameters_json", columnDefinition = "TEXT")
     private String usedParametersJson;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "analysis_id")
     private PredefinedAnalysis predefinedAnalysis;
