@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table
+@Table(name = "cleaning_rule")
 public class CleaningRule {
 
     //TODO [Reverse Engineering] generate columns from DB
