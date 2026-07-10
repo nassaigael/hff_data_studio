@@ -1,15 +1,30 @@
 package com.henri_fraise.hff_data_studio.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
 @Table
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Permission {
 
-    //TODO [Reverse Engineering] generate columns from DB
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "permission_id")
+    private UUID id;
+
+    @Column(name = "code", nullable = false, unique = true)
+    private String code;
+
+    @Column(name = "label", nullable = false)
+    private String label;
+
+    @Column(name = "module", nullable = false)
+    private String module;
 }
