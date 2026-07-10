@@ -11,7 +11,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table
+@Table(name = "dataset")
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
@@ -42,18 +42,18 @@ public class Dataset {
     private Boolean isCleaned = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_file_id", nullable = false)
+    @JoinColumn(name = "file_id", nullable = false)
     private SourceFile sourceFile;
 
-    @OneToMany(mappedBy = "dataset")
+    @OneToMany(mappedBy = "dataset", cascade = CascadeType.ALL)
     private List<DatasetColumn> columns;
 
     @OneToOne(mappedBy = "dataset", cascade = CascadeType.ALL, orphanRemoval = true)
     private ExplorationReport explorationReport;
 
-    @OneToMany(mappedBy = "dataset")
+    @OneToMany(mappedBy = "dataset", cascade = CascadeType.ALL)
     private List<CleaningHistory> cleaningHistories;
 
-    @OneToOne(mappedBy = "dataset")
-    private AnalysisExecution analysisExecution;
+    @OneToMany(mappedBy = "dataset", cascade = CascadeType.ALL)
+    private List<AnalysisExecution> analysisExecutions;
 }
