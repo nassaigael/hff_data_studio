@@ -1,8 +1,7 @@
 package com.henri_fraise.hff_data_studio.entity;
 
-import com.henri_fraise.hff_data_studio.enums.Status;
+import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
 import jakarta.persistence.*;
-import jakarta.websocket.OnError;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -37,7 +36,7 @@ public class Project {
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private Status status = Status.IN_PROGRESS;
+    private ProjectStatus status = ProjectStatus.IN_PROGRESS;
 
 
 

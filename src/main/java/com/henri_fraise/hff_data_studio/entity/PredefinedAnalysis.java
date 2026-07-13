@@ -1,6 +1,6 @@
 package com.henri_fraise.hff_data_studio.entity;
 
-import com.henri_fraise.hff_data_studio.enums.PredefinedAnalysisCategory;
+import com.henri_fraise.hff_data_studio.enums.AnalysisCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,7 +29,7 @@ public class PredefinedAnalysis {
 
     @Column(name = "category", nullable = false)
     @Enumerated(EnumType.STRING)
-    private PredefinedAnalysisCategory category;
+    private AnalysisCategory category;
 
     @Column(name = "reference_script", nullable = false)
     private String referenceScript;
