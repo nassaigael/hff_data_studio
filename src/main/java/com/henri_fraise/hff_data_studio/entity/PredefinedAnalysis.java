@@ -38,5 +38,5 @@ public class PredefinedAnalysis {
     private String requiredParametersJson;
 
     @OneToMany(mappedBy = "predefinedAnalysis")
-    private List<AnalysisExecution> executions;
+    private List<AnalysisExecution> analysisExecutions;
 }
