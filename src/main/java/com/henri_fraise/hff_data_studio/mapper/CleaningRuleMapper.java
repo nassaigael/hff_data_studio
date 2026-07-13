@@ -45,7 +45,16 @@ public class CleaningRuleMapper {
 	}
 
 	public CleaningRule toEntity(CleaningRuleRequest request, DatasetColumn column) {
-
+		if (request == null || column == null) return null;
+		return CleaningRule.builder()
+				.ruleType(request.getRuleType())
+				.parametersJson(objectMapper.writeValueAsString(request.getParametersJson()))
+				.executionOrder(
+						request.getExecutionOrder() != null ? request.getExecutionOrder() : 0
+				)
+				.isActive(request.getIsActive() != null ? request.getIsActive() : true)
+				.column(column)
+				.build();
 	}
 
 	private Map<String, Object> parseParametersJson(String parametersJson) {
