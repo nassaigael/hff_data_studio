@@ -17,7 +17,7 @@ public class ProjectResponse {
     private String description;
     private LocalDateTime createdAt;
     private ProjectStatus status;
-    private UUID creatorId;
+    private UUID creatorUserId;
     private String creatorFullName;
     private Long fileCount;
     private Long datasetCount;
