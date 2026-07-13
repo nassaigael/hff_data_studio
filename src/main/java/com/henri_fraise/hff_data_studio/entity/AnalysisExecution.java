@@ -1,6 +1,6 @@
 package com.henri_fraise.hff_data_studio.entity;
 
-import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
+import com.henri_fraise.hff_data_studio.enums.ExecutionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -30,7 +30,7 @@ public class AnalysisExecution {
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private AnalysisExecutionStatus status = AnalysisExecutionStatus.IN_PROGRESS;
+    private ExecutionStatus status = ExecutionStatus.IN_PROGRESS;
 
     @Column(name = "duration_ms")
     private Integer durationMs;
