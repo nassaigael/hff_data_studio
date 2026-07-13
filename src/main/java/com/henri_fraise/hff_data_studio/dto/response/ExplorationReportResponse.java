@@ -20,5 +20,6 @@ public class ExplorationReportResponse {
     private BigDecimal qualityScore;
     private String reportPdfPath;
     private UUID datasetId;
+    private String datasetName;
     private Object columnStatistics;
 }
