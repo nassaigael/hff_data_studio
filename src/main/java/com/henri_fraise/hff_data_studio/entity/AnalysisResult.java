@@ -1,15 +1,45 @@
 package com.henri_fraise.hff_data_studio.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import com.henri_fraise.hff_data_studio.enums.FileFormat;
+import com.henri_fraise.hff_data_studio.enums.ResultType;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
-@Table
+@Table(name = "analysis_result")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class AnalysisResult {
 
-    //TODO [Reverse Engineering] generate columns from DB
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "result_id")
+    private UUID id;
+
+    @Column(name = "result_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ResultType resultType;
+
+    @Column(name = "title", nullable = false)
+    private String title;
+
+    @Column(name = "file_format", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private FileFormat fileFormat;
+
+    @Column(name = "display_order", nullable = false)
+    @Builder.Default
+    private Integer displayOrder = 0;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "execution_id", nullable = false)
+    private AnalysisExecution execution;
+
+    @OneToOne(mappedBy = "result", cascade = CascadeType.ALL)
+    private Chart chart;
 }
