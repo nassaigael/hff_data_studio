@@ -6,9 +6,21 @@ import com.henri_fraise.hff_data_studio.entity.Dataset;
 import com.henri_fraise.hff_data_studio.entity.DatasetColumn;
 import com.henri_fraise.hff_data_studio.enums.RuleType;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+
+import java.util.Collections;
+import java.util.Map;
 
 @Component
 public class CleaningRuleMapper {
+
+	private final ObjectMapper objectMapper;
+
+	public CleaningRuleMapper(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
 
 	public CleaningRuleResponse toResponse(CleaningRule rule) {
 		if (rule == null) return null;
@@ -17,7 +29,31 @@ public class CleaningRuleMapper {
 		DatasetColumn column = rule.getColumn();
 		Dataset dataset = getDataset(column);
 
-		return CleaningRuleResponse.builder().ruleId(rule.getId()).ruleType(ruleType).ruleTypeLabel(getRuleTypeLabel(ruleType)).parametersJson(rule.getParametersJson()).executionOrder(rule.getExecutionOrder()).isActive(rule.getIsActive()).columnId(column != null ? column.getId() : null).columnName(column != null ? column.getOriginalName() : null).datasetId(dataset != null ? dataset.getId() : null).datasetName(dataset != null ? dataset.getDatasetName() : null).build();
+		return CleaningRuleResponse.builder()
+				.ruleId(rule.getId())
+				.ruleType(ruleType)
+				.ruleTypeLabel(getRuleTypeLabel(ruleType))
+				.parametersJson(parseParametersJson(rule.getParametersJson()))
+				.executionOrder(rule.getExecutionOrder())
+				.isActive(rule.getIsActive())
+				.columnId(column != null ? column.getId() : null)
+				.columnName(column != null ? column.getOriginalName() : null)
+				.datasetId(dataset != null ? dataset.getId() : null)
+				.datasetName(dataset != null ? dataset.getDatasetName() : null)
+				.build();
+	}
+
+	private Map<String, Object> parseParametersJson(String parametersJson) {
+		if (parametersJson == null || parametersJson.isBlank()) {
+			return Collections.emptyMap();
+		}
+
+		try {
+			return objectMapper.readValue(parametersJson, new TypeReference<Map<String, Object>>() {
+			});
+		} catch (Exception e) {
+			return Collections.emptyMap();
+		}
 	}
 
 	private Dataset getDataset(DatasetColumn column) {
