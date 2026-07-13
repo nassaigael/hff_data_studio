@@ -1,6 +1,11 @@
 package com.henri_fraise.hff_data_studio.dto.response;
 
+import com.henri_fraise.hff_data_studio.enums.ExecutionStatus;
+import com.henri_fraise.hff_data_studio.enums.ExportFormat;
 import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -8,4 +13,16 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ExportResponse {
+	private UUID exportId;
+	private ExportFormat exportFormat;
+	private String formatLabel;
+	private LocalDateTime exportedAt;
+	private String filePath;
+	private String fileName;
+	private String fileSizeFormatted;
+	private UUID executionId;
+	private ExecutionStatus executionStatus;
+	private UUID userId;
+	private String userFullName;
+	private String downloadUrl;
 }
