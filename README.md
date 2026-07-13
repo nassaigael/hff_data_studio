@@ -2711,74 +2711,173 @@ public class ErrorResponse {
 ```
 
 ---
+## Résumé des DTOs créés
 
-## 3. Mappers (pour la conversion Entity ↔ DTO)
+### Request DTOs (13)
+1. `LoginRequest` - Connexion
+2. `RefreshTokenRequest` - Rafraîchissement token
+3. `UserCreationRequest` - Création utilisateur
+4. `UserUpdateRequest` - Mise à jour utilisateur
+5. `CategoryCreationRequest` - Création catégorie
+6. `ProjectCreationRequest` - Création projet
+7. `ProjectUpdateRequest` - Mise à jour projet
+8. `FileUploadRequest` - Upload fichier
+9. `DatasetColumnUpdateRequest` - Mise à jour colonne
+10. `CleaningRuleRequest` - Création règle nettoyage
+11. `AnalysisExecutionRequest` - Lancement analyse
+12. `ExportRequest` - Export résultats
+13. `PermissionUpdateRequest` - Mise à jour permissions
 
-### UserMapper.java
+### Response DTOs (19)
+1. `TokenResponse` - Réponse authentification
+2. `UserResponse` - Utilisateur
+3. `UserCategoryResponse` - Catégorie utilisateur
+4. `PermissionResponse` - Permission
+5. `ProjectResponse` - Projet
+6. `SourceFileResponse` - Fichier source
+7. `DatasetResponse` - Dataset
+8. `DatasetColumnResponse` - Colonne dataset
+9. `ExplorationReportResponse` - Rapport exploration
+10. `CleaningRuleResponse` - Règle nettoyage
+11. `CleaningHistoryResponse` - Historique nettoyage
+12. `PredefinedAnalysisResponse` - Analyse prédéfinie
+13. `AnalysisExecutionResponse` - Exécution analyse
+14. `AnalysisResultResponse` - Résultat analyse
+15. `ChartResponse` - Graphique
+16. `ExportResponse` - Export
+17. `AuditLogResponse` - Journal audit
+18. `PageResponse<T>` - Pagination générique
+19. `ErrorResponse` - Erreur
+
+Voici tous les mappers pour convertir les entités en DTOs de réponse, et inversement pour les requêtes.
+
+---
+
+## Structure des packages
+
+```
+com.henri_fraise.hff_data_studio.mapper
+├── UserMapper.java
+├── UserCategoryMapper.java
+├── PermissionMapper.java
+├── ProjectMapper.java
+├── SourceFileMapper.java
+├── DatasetMapper.java
+├── DatasetColumnMapper.java
+├── ExplorationReportMapper.java
+├── CleaningRuleMapper.java
+├── CleaningHistoryMapper.java
+├── PredefinedAnalysisMapper.java
+├── AnalysisExecutionMapper.java
+├── AnalysisResultMapper.java
+├── ChartMapper.java
+├── ExportMapper.java
+├── AuditLogMapper.java
+└── PageMapper.java
+```
+
+---
+
+## 1. UserMapper.java
 
 ```java
 package com.henri_fraise.hff_data_studio.mapper;
 
+import com.henri_fraise.hff_data_studio.dto.request.UserCreationRequest;
+import com.henri_fraise.hff_data_studio.dto.request.UserUpdateRequest;
 import com.henri_fraise.hff_data_studio.dto.response.UserResponse;
-import com.henri_fraise.hff_data_studio.dto.response.UserCategoryResponse;
 import com.henri_fraise.hff_data_studio.entity.User;
+import com.henri_fraise.hff_data_studio.entity.UserCategory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class UserMapper {
 
-    private final UserCategoryMapper categoryMapper;
+	private final UserCategoryMapper categoryMapper;
+	private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserMapper(UserCategoryMapper categoryMapper) {
-        this.categoryMapper = categoryMapper;
-    }
+	public UserResponse toResponse(User user) {
+		if (user == null) {
+			return null;
+		}
 
-    public UserResponse toResponse(User user) {
-        if (user == null) {
-            return null;
-        }
+		return UserResponse.builder()
+				.userId(user.getId())
+				.lastName(user.getLastName())
+				.firstName(user.getFirstName())
+				.email(user.getEmail())
+				.isActive(user.getIsActive())
+				.createdAt(user.getCreatedAt())
+				.lastLogin(user.getLastLogin())
+				.category(categoryMapper.toResponse(user.getCategory()))
+				.build();
+	}
 
-        UserCategoryResponse categoryResponse = null;
-        if (user.getCategory() != null) {
-            categoryResponse = categoryMapper.toResponse(user.getCategory());
-        }
+	public User toEntity(UserCreationRequest request, UserCategory category) {
+		if (request == null) {
+			return null;
+		}
 
-        return UserResponse.builder()
-            .userId(user.getId())
-            .lastName(user.getLastName())
-            .firstName(user.getFirstName())
-            .email(user.getEmail())
-            .isActive(user.getIsActive())
-            .createdAt(user.getCreatedAt())
-            .lastLogin(user.getLastLogin())
-            .category(categoryResponse)
-            .build();
-    }
+		return User.builder()
+				.lastName(request.getLastName())
+				.firstName(request.getFirstName())
+				.email(request.getEmail())
+				.passwordHash(passwordEncoder.encode(request.getNewPassword()))
+				.isActive(true)
+				.category(category)
+				.build();
+	}
+
+	public void updateEntity(User user, UserUpdateRequest request, UserCategory category) {
+		if (request == null || user == null) {
+			return;
+		}
+
+		if (request.getLastName() != null) {
+			user.setLastName(request.getLastName());
+		}
+		if (request.getFirstName() != null) {
+			user.setFirstName(request.getFirstName());
+		}
+		if (request.getEmail() != null) {
+			user.setEmail(request.getEmail());
+		}
+		if (request.getIsActive() != null) {
+			user.setIsActive(request.getIsActive());
+		}
+		if (category != null) {
+			user.setCategory(category);
+		}
+		if (request.getNewPassword() != null && !request.getNewPassword().isEmpty()) {
+			user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+		}
+	}
 }
 ```
 
 ---
 
-### UserCategoryMapper.java
+## 2. UserCategoryMapper.java
 
 ```java
 package com.henri_fraise.hff_data_studio.mapper;
 
+import com.henri_fraise.hff_data_studio.dto.request.CategoryCreationRequest;
 import com.henri_fraise.hff_data_studio.dto.response.UserCategoryResponse;
-import com.henri_fraise.hff_data_studio.dto.response.PermissionResponse;
 import com.henri_fraise.hff_data_studio.entity.UserCategory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class UserCategoryMapper {
 
     private final PermissionMapper permissionMapper;
-
-    public UserCategoryMapper(PermissionMapper permissionMapper) {
-        this.permissionMapper = permissionMapper;
-    }
 
     public UserCategoryResponse toResponse(UserCategory category) {
         if (category == null) {
@@ -2799,12 +2898,24 @@ public class UserCategoryMapper {
             )
             .build();
     }
+
+    public UserCategory toEntity(CategoryCreationRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        return UserCategory.builder()
+            .label(request.getLabel())
+            .description(request.getDescription())
+            .accessLevel(request.getAccessLevel())
+            .build();
+    }
 }
 ```
 
 ---
 
-### PermissionMapper.java
+## 3. PermissionMapper.java
 
 ```java
 package com.henri_fraise.hff_data_studio.mapper;
@@ -2833,13 +2944,17 @@ public class PermissionMapper {
 
 ---
 
-### ProjectMapper.java
+## 4. ProjectMapper.java
 
 ```java
 package com.henri_fraise.hff_data_studio.mapper;
 
+import com.henri_fraise.hff_data_studio.dto.request.ProjectCreationRequest;
+import com.henri_fraise.hff_data_studio.dto.request.ProjectUpdateRequest;
 import com.henri_fraise.hff_data_studio.dto.response.ProjectResponse;
 import com.henri_fraise.hff_data_studio.entity.Project;
+import com.henri_fraise.hff_data_studio.entity.User;
+import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -2874,12 +2989,99 @@ public class ProjectMapper {
             )
             .build();
     }
+
+    public Project toEntity(ProjectCreationRequest request, User creator) {
+        if (request == null) {
+            return null;
+        }
+
+        return Project.builder()
+            .projectName(request.getProjectName())
+            .description(request.getDescription())
+            .status(ProjectStatus.IN_PROGRESS)
+            .creator(creator)
+            .build();
+    }
+
+    public void updateEntity(Project project, ProjectUpdateRequest request) {
+        if (project == null || request == null) {
+            return;
+        }
+
+        if (request.getProjectName() != null) {
+            project.setProjectName(request.getProjectName());
+        }
+        if (request.getDescription() != null) {
+            project.setDescription(request.getDescription());
+        }
+        if (request.getStatus() != null) {
+            project.setStatus(request.getStatus());
+        }
+    }
 }
 ```
 
 ---
 
-### DatasetMapper.java
+## 5. SourceFileMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.SourceFileResponse;
+import com.henri_fraise.hff_data_studio.entity.SourceFile;
+import org.springframework.stereotype.Component;
+
+@Component
+public class SourceFileMapper {
+
+    public SourceFileResponse toResponse(SourceFile file) {
+        if (file == null) {
+            return null;
+        }
+
+        return SourceFileResponse.builder()
+            .fileId(file.getId())
+            .fileName(file.getFileName())
+            .fileType(file.getFileType())
+            .storagePath(file.getStoragePath())
+            .sizeBytes(file.getSizeBytes())
+            .sizeFormatted(formatFileSize(file.getSizeBytes()))
+            .uploadedAt(file.getUploadedAt())
+            .processingStatus(file.getProcessingStatus())
+            .projectId(file.getProject() != null ? file.getProject().getId() : null)
+            .projectName(file.getProject() != null ? file.getProject().getProjectName() : null)
+            .userId(file.getUser() != null ? file.getUser().getId() : null)
+            .userFullName(
+                file.getUser() != null
+                    ? file.getUser().getFirstName() + " " + file.getUser().getLastName()
+                    : null
+            )
+            .datasetCount(file.getDatasets() != null ? file.getDatasets().size() : 0)
+            .build();
+    }
+
+    private String formatFileSize(Long bytes) {
+        if (bytes == null) {
+            return "0 B";
+        }
+        if (bytes < 1024) {
+            return bytes + " B";
+        }
+        if (bytes < 1024 * 1024) {
+            return String.format("%.2f KB", bytes / 1024.0);
+        }
+        if (bytes < 1024 * 1024 * 1024) {
+            return String.format("%.2f MB", bytes / (1024.0 * 1024));
+        }
+        return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
+    }
+}
+```
+
+---
+
+## 6. DatasetMapper.java
 
 ```java
 package com.henri_fraise.hff_data_studio.mapper;
@@ -2932,7 +3134,817 @@ public class DatasetMapper {
 
 ---
 
-## 4. Exemple de Controller utilisant les DTOs
+## 7. DatasetColumnMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.request.DatasetColumnUpdateRequest;
+import com.henri_fraise.hff_data_studio.dto.response.DatasetColumnResponse;
+import com.henri_fraise.hff_data_studio.entity.DatasetColumn;
+import org.springframework.stereotype.Component;
+
+import java.text.DecimalFormat;
+
+@Component
+public class DatasetColumnMapper {
+
+    private static final DecimalFormat df = new DecimalFormat("0.00");
+
+    public DatasetColumnResponse toResponse(DatasetColumn column) {
+        if (column == null) {
+            return null;
+        }
+
+        int rowCount = column.getDataset() != null ? column.getDataset().getRowCount() : 0;
+        double nullPercentage = rowCount > 0 ? (column.getNullCount() * 100.0) / rowCount : 0;
+        double uniquePercentage = rowCount > 0 ? (column.getUniqueCount() * 100.0) / rowCount : 0;
+
+        return DatasetColumnResponse.builder()
+            .columnId(column.getId())
+            .originalName(column.getOriginalName())
+            .normalizedName(column.getNormalizedName())
+            .detectedType(column.getDetectedType())
+            .targetType(column.getTargetType())
+            .position(column.getPosition())
+            .nullCount(column.getNullCount())
+            .nullPercentage(Double.valueOf(df.format(nullPercentage)))
+            .uniqueCount(column.getUniqueCount())
+            .uniquePercentage(Double.valueOf(df.format(uniquePercentage)))
+            .cleaningRuleCount(column.getCleaningRules() != null ? column.getCleaningRules().size() : 0)
+            .datasetId(column.getDataset() != null ? column.getDataset().getId() : null)
+            .build();
+    }
+
+    public void updateEntity(DatasetColumn column, DatasetColumnUpdateRequest request) {
+        if (column == null || request == null) {
+            return;
+        }
+
+        if (request.getNormalizedName() != null) {
+            column.setNormalizedName(request.getNormalizedName());
+        }
+        if (request.getTargetType() != null) {
+            column.setTargetType(request.getTargetType());
+        }
+    }
+}
+```
+
+---
+
+## 8. ExplorationReportMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.ExplorationReportResponse;
+import com.henri_fraise.hff_data_studio.entity.ExplorationReport;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ExplorationReportMapper {
+
+    public ExplorationReportResponse toResponse(ExplorationReport report) {
+        if (report == null) {
+            return null;
+        }
+
+        return ExplorationReportResponse.builder()
+            .reportId(report.getId())
+            .generatedAt(report.getGeneratedAt())
+            .totalRows(report.getTotalRows())
+            .duplicateCount(report.getDuplicateCount())
+            .missingValuesCount(report.getMissingValuesCount())
+            .qualityScore(report.getQualityScore())
+            .reportPdfPath(report.getReportPdfPath())
+            .datasetId(report.getDataset() != null ? report.getDataset().getId() : null)
+            .datasetName(report.getDataset() != null ? report.getDataset().getDatasetName() : null)
+            .build();
+    }
+}
+```
+
+---
+
+## 9. CleaningRuleMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.request.CleaningRuleRequest;
+import com.henri_fraise.hff_data_studio.dto.response.CleaningRuleResponse;
+import com.henri_fraise.hff_data_studio.entity.CleaningRule;
+import com.henri_fraise.hff_data_studio.entity.DatasetColumn;
+import com.henri_fraise.hff_data_studio.enums.RuleType;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CleaningRuleMapper {
+
+    public CleaningRuleResponse toResponse(CleaningRule rule) {
+        if (rule == null) {
+            return null;
+        }
+
+        return CleaningRuleResponse.builder()
+            .ruleId(rule.getId())
+            .ruleType(rule.getRuleType())
+            .ruleTypeLabel(getRuleTypeLabel(rule.getRuleType()))
+            .parametersJson(rule.getParametersJson())
+            .executionOrder(rule.getExecutionOrder())
+            .isActive(rule.getIsActive())
+            .columnId(rule.getColumn() != null ? rule.getColumn().getId() : null)
+            .columnName(rule.getColumn() != null ? rule.getColumn().getOriginalName() : null)
+            .datasetId(
+                rule.getColumn() != null && rule.getColumn().getDataset() != null
+                    ? rule.getColumn().getDataset().getId()
+                    : null
+            )
+            .datasetName(
+                rule.getColumn() != null && rule.getColumn().getDataset() != null
+                    ? rule.getColumn().getDataset().getDatasetName()
+                    : null
+            )
+            .build();
+    }
+
+    public CleaningRule toEntity(CleaningRuleRequest request, DatasetColumn column) {
+        if (request == null) {
+            return null;
+        }
+
+        return CleaningRule.builder()
+            .ruleType(request.getRuleType())
+            .parametersJson(request.getParametersJson())
+            .executionOrder(
+                request.getExecutionOrder() != null
+                    ? request.getExecutionOrder()
+                    : 0
+            )
+            .isActive(
+                request.getIsActive() != null
+                    ? request.getIsActive()
+                    : true
+            )
+            .column(column)
+            .build();
+    }
+
+    public void updateEntity(CleaningRule rule, CleaningRuleRequest request) {
+        if (rule == null || request == null) {
+            return;
+        }
+
+        if (request.getRuleType() != null) {
+            rule.setRuleType(request.getRuleType());
+        }
+        if (request.getParametersJson() != null) {
+            rule.setParametersJson(request.getParametersJson());
+        }
+        if (request.getExecutionOrder() != null) {
+            rule.setExecutionOrder(request.getExecutionOrder());
+        }
+        if (request.getIsActive() != null) {
+            rule.setIsActive(request.getIsActive());
+        }
+    }
+
+    private String getRuleTypeLabel(RuleType ruleType) {
+        if (ruleType == null) {
+            return null;
+        }
+        return switch (ruleType) {
+            case TYPE_CONVERSION -> "Type Conversion";
+            case DUPLICATE_REMOVAL -> "Duplicate Removal";
+            case NULL_IMPUTATION -> "Null Imputation";
+            case REGEX_CLEANING -> "Regex Cleaning";
+            case TRIM -> "Trim Whitespace";
+            case VALUE_CONSTRAINT -> "Value Constraint";
+        };
+    }
+}
+```
+
+---
+
+## 10. CleaningHistoryMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.CleaningHistoryResponse;
+import com.henri_fraise.hff_data_studio.entity.CleaningHistory;
+import com.henri_fraise.hff_data_studio.enums.CleaningHistoryStatus;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CleaningHistoryMapper {
+
+    public CleaningHistoryResponse toResponse(CleaningHistory history) {
+        if (history == null) {
+            return null;
+        }
+
+        return CleaningHistoryResponse.builder()
+            .historyId(history.getId())
+            .executedAt(history.getExecutedAt())
+            .status(history.getStatus())
+            .statusLabel(getStatusLabel(history.getStatus()))
+            .details(history.getDetails())
+            .datasetId(history.getDataset() != null ? history.getDataset().getId() : null)
+            .datasetName(history.getDataset() != null ? history.getDataset().getDatasetName() : null)
+            .ruleId(history.getRule() != null ? history.getRule().getId() : null)
+            .ruleType(history.getRule() != null ? history.getRule().getRuleType().name() : null)
+            .userId(history.getUser() != null ? history.getUser().getId() : null)
+            .userFullName(
+                history.getUser() != null
+                    ? history.getUser().getFirstName() + " " + history.getUser().getLastName()
+                    : null
+            )
+            .build();
+    }
+
+    private String getStatusLabel(CleaningHistoryStatus status) {
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case SUCCESS -> "Success";
+            case FAILURE -> "Failure";
+            case PARTIAL_SUCCESS -> "Partial Success";
+            case IN_PROGRESS -> "In Progress";
+            case CANCELLED -> "Cancelled";
+            case PENDING -> "Pending";
+        };
+    }
+}
+```
+
+---
+
+## 11. PredefinedAnalysisMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.PredefinedAnalysisResponse;
+import com.henri_fraise.hff_data_studio.entity.PredefinedAnalysis;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PredefinedAnalysisMapper {
+
+    public PredefinedAnalysisResponse toResponse(PredefinedAnalysis analysis) {
+        if (analysis == null) {
+            return null;
+        }
+
+        return PredefinedAnalysisResponse.builder()
+            .analysisId(analysis.getId())
+            .analysisName(analysis.getAnalysisName())
+            .description(analysis.getDescription())
+            .category(analysis.getCategory())
+            .categoryLabel(getCategoryLabel(analysis.getCategory()))
+            .referenceScript(analysis.getReferenceScript())
+            .requiredParametersJson(analysis.getRequiredParametersJson())
+            .executionCount(
+                analysis.getAnalysisExecutions() != null
+                    ? (long) analysis.getAnalysisExecutions().size()
+                    : 0L
+            )
+            .build();
+    }
+
+    private String getCategoryLabel(String category) {
+        if (category == null) {
+            return null;
+        }
+        return switch (category) {
+            case "STATISTICAL" -> "Statistical Analysis";
+            case "CORRELATION" -> "Correlation Analysis";
+            case "TEMPORAL" -> "Temporal Analysis";
+            case "SEGMENTATION" -> "Data Segmentation";
+            case "FINANCIAL" -> "Financial Analysis";
+            default -> category;
+        };
+    }
+}
+```
+
+---
+
+## 12. AnalysisExecutionMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.request.AnalysisExecutionRequest;
+import com.henri_fraise.hff_data_studio.dto.response.AnalysisExecutionResponse;
+import com.henri_fraise.hff_data_studio.entity.AnalysisExecution;
+import com.henri_fraise.hff_data_studio.entity.Dataset;
+import com.henri_fraise.hff_data_studio.entity.PredefinedAnalysis;
+import com.henri_fraise.hff_data_studio.entity.User;
+import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.stream.Collectors;
+
+@Component
+@RequiredArgsConstructor
+public class AnalysisExecutionMapper {
+
+    private final AnalysisResultMapper resultMapper;
+
+    public AnalysisExecutionResponse toResponse(AnalysisExecution execution) {
+        if (execution == null) {
+            return null;
+        }
+
+        return AnalysisExecutionResponse.builder()
+            .executionId(execution.getId())
+            .executedAt(execution.getExecutedAt())
+            .status(execution.getStatus())
+            .statusLabel(getStatusLabel(execution.getStatus()))
+            .durationMs(execution.getDurationMs())
+            .durationFormatted(formatDuration(execution.getDurationMs()))
+            .usedParametersJson(execution.getUsedParametersJson())
+            .datasetId(execution.getDataset() != null ? execution.getDataset().getId() : null)
+            .datasetName(execution.getDataset() != null ? execution.getDataset().getDatasetName() : null)
+            .analysisId(
+                execution.getPredefinedAnalysis() != null
+                    ? execution.getPredefinedAnalysis().getId()
+                    : null
+            )
+            .analysisName(
+                execution.getPredefinedAnalysis() != null
+                    ? execution.getPredefinedAnalysis().getAnalysisName()
+                    : "Custom Analysis"
+            )
+            .analysisCategory(
+                execution.getPredefinedAnalysis() != null
+                    ? execution.getPredefinedAnalysis().getCategory()
+                    : null
+            )
+            .userId(execution.getUser() != null ? execution.getUser().getId() : null)
+            .userFullName(
+                execution.getUser() != null
+                    ? execution.getUser().getFirstName() + " " + execution.getUser().getLastName()
+                    : null
+            )
+            .results(
+                execution.getResults() != null
+                    ? execution.getResults().stream()
+                        .map(resultMapper::toResponse)
+                        .collect(Collectors.toList())
+                    : null
+            )
+            .resultCount(execution.getResults() != null ? execution.getResults().size() : 0)
+            .build();
+    }
+
+    public AnalysisExecution toEntity(
+            AnalysisExecutionRequest request,
+            Dataset dataset,
+            PredefinedAnalysis predefinedAnalysis,
+            User user) {
+        if (request == null) {
+            return null;
+        }
+
+        return AnalysisExecution.builder()
+            .status(AnalysisExecutionStatus.IN_PROGRESS)
+            .usedParametersJson(request.getParameters())
+            .dataset(dataset)
+            .predefinedAnalysis(predefinedAnalysis)
+            .user(user)
+            .build();
+    }
+
+    private String getStatusLabel(AnalysisExecutionStatus status) {
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case IN_PROGRESS -> "In Progress";
+            case COMPLETED -> "Completed";
+            case ERROR -> "Error";
+            case CANCELLED -> "Cancelled";
+            case PENDING -> "Pending";
+        };
+    }
+
+    private String formatDuration(Integer durationMs) {
+        if (durationMs == null) {
+            return null;
+        }
+        if (durationMs < 1000) {
+            return durationMs + "ms";
+        }
+        if (durationMs < 60000) {
+            return String.format("%.2fs", durationMs / 1000.0);
+        }
+        long minutes = durationMs / 60000;
+        long seconds = (durationMs % 60000) / 1000;
+        return String.format("%dm %ds", minutes, seconds);
+    }
+}
+```
+
+---
+
+## 13. AnalysisResultMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.AnalysisResultResponse;
+import com.henri_fraise.hff_data_studio.dto.response.ChartResponse;
+import com.henri_fraise.hff_data_studio.entity.AnalysisResult;
+import com.henri_fraise.hff_data_studio.enums.ResultType;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class AnalysisResultMapper {
+
+    private final ChartMapper chartMapper;
+
+    public AnalysisResultResponse toResponse(AnalysisResult result) {
+        if (result == null) {
+            return null;
+        }
+
+        ChartResponse chartResponse = null;
+        if (result.getChart() != null) {
+            chartResponse = chartMapper.toResponse(result.getChart());
+        }
+
+        return AnalysisResultResponse.builder()
+            .resultId(result.getId())
+            .resultType(result.getResultType())
+            .resultTypeLabel(getResultTypeLabel(result.getResultType()))
+            .title(result.getTitle())
+            .filePath(result.getFilePath())
+            .fileFormat(result.getFileFormat())
+            .displayOrder(result.getDisplayOrder())
+            .executionId(result.getExecution() != null ? result.getExecution().getId() : null)
+            .chart(chartResponse)
+            .downloadUrl("/api/v1/results/" + result.getId() + "/download")
+            .build();
+    }
+
+    private String getResultTypeLabel(ResultType resultType) {
+        if (resultType == null) {
+            return null;
+        }
+        return switch (resultType) {
+            case TABLE -> "Table";
+            case CHART -> "Chart";
+            case KPI -> "KPI";
+        };
+    }
+}
+```
+
+---
+
+## 14. ChartMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.ChartResponse;
+import com.henri_fraise.hff_data_studio.entity.Chart;
+import com.henri_fraise.hff_data_studio.enums.ChartType;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ChartMapper {
+
+    public ChartResponse toResponse(Chart chart) {
+        if (chart == null) {
+            return null;
+        }
+
+        return ChartResponse.builder()
+            .chartId(chart.getId())
+            .chartType(chart.getChartType())
+            .chartTypeLabel(getChartTypeLabel(chart.getChartType()))
+            .configJson(chart.getConfigJson())
+            .resultId(chart.getResult() != null ? chart.getResult().getId() : null)
+            .build();
+    }
+
+    private String getChartTypeLabel(ChartType chartType) {
+        if (chartType == null) {
+            return null;
+        }
+        return switch (chartType) {
+            case BAR -> "Bar Chart";
+            case LINE -> "Line Chart";
+            case PIE -> "Pie Chart";
+            case SCATTER -> "Scatter Plot";
+            case AREA -> "Area Chart";
+        };
+    }
+}
+```
+
+---
+
+## 15. ExportMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.ExportResponse;
+import com.henri_fraise.hff_data_studio.entity.Export;
+import com.henri_fraise.hff_data_studio.enums.ExportFormat;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ExportMapper {
+
+    public ExportResponse toResponse(Export export) {
+        if (export == null) {
+            return null;
+        }
+
+        return ExportResponse.builder()
+            .exportId(export.getId())
+            .exportFormat(export.getExportFormat())
+            .formatLabel(getFormatLabel(export.getExportFormat()))
+            .exportedAt(export.getExportedAt())
+            .filePath(export.getFilePath())
+            .fileName(extractFileName(export.getFilePath()))
+            .fileSize(export.getFileSize() != null ? export.getFileSize() : 0L)
+            .fileSizeFormatted(formatFileSize(export.getFileSize()))
+            .executionId(export.getExecution() != null ? export.getExecution().getId() : null)
+            .executionStatus(
+                export.getExecution() != null && export.getExecution().getStatus() != null
+                    ? export.getExecution().getStatus().name()
+                    : null
+            )
+            .userId(export.getUser() != null ? export.getUser().getId() : null)
+            .userFullName(
+                export.getUser() != null
+                    ? export.getUser().getFirstName() + " " + export.getUser().getLastName()
+                    : null
+            )
+            .downloadUrl("/api/v1/exports/" + export.getId() + "/download")
+            .build();
+    }
+
+    private String getFormatLabel(ExportFormat format) {
+        if (format == null) {
+            return null;
+        }
+        return switch (format) {
+            case CSV -> "CSV File";
+            case XLSX -> "Excel File";
+            case PNG -> "PNG Image";
+            case ZIP -> "ZIP Archive";
+        };
+    }
+
+    private String extractFileName(String filePath) {
+        if (filePath == null) {
+            return null;
+        }
+        int lastSlash = filePath.lastIndexOf('/');
+        if (lastSlash == -1) {
+            lastSlash = filePath.lastIndexOf('\\');
+        }
+        return lastSlash == -1 ? filePath : filePath.substring(lastSlash + 1);
+    }
+
+    private String formatFileSize(Long bytes) {
+        if (bytes == null || bytes == 0) {
+            return "0 B";
+        }
+        if (bytes < 1024) {
+            return bytes + " B";
+        }
+        if (bytes < 1024 * 1024) {
+            return String.format("%.2f KB", bytes / 1024.0);
+        }
+        if (bytes < 1024 * 1024 * 1024) {
+            return String.format("%.2f MB", bytes / (1024.0 * 1024));
+        }
+        return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
+    }
+}
+```
+
+---
+
+## 16. AuditLogMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.AuditLogResponse;
+import com.henri_fraise.hff_data_studio.entity.AuditLog;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AuditLogMapper {
+
+    public AuditLogResponse toResponse(AuditLog log) {
+        if (log == null) {
+            return null;
+        }
+
+        return AuditLogResponse.builder()
+            .logId(log.getId())
+            .action(log.getAction())
+            .concernedEntity(log.getConcernedEntity())
+            .entityId(log.getEntityId())
+            .actionDate(log.getActionDate())
+            .ipAddress(log.getIpAddress())
+            .userId(log.getUser() != null ? log.getUser().getId() : null)
+            .userFullName(
+                log.getUser() != null
+                    ? log.getUser().getFirstName() + " " + log.getUser().getLastName()
+                    : null
+            )
+            .userEmail(log.getUser() != null ? log.getUser().getEmail() : null)
+            .build();
+    }
+}
+```
+
+---
+
+## 17. PageMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.function.Function;
+
+@Component
+public class PageMapper {
+
+    public <T, R> PageResponse<R> toPageResponse(Page<T> page, Function<T, R> mapper) {
+        if (page == null) {
+            return PageResponse.<R>builder()
+                .content(List.of())
+                .pageNumber(0)
+                .pageSize(20)
+                .totalElements(0L)
+                .totalPages(0)
+                .isFirst(true)
+                .isLast(true)
+                .hasNext(false)
+                .hasPrevious(false)
+                .build();
+        }
+
+        List<R> content = page.getContent().stream()
+            .map(mapper)
+            .toList();
+
+        return PageResponse.<R>builder()
+            .content(content)
+            .pageNumber(page.getNumber())
+            .pageSize(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .isFirst(page.isFirst())
+            .isLast(page.isLast())
+            .hasNext(page.hasNext())
+            .hasPrevious(page.hasPrevious())
+            .build();
+    }
+
+    public <T, R> PageResponse<R> toPageResponse(
+            List<T> content,
+            Page<T> page,
+            Function<T, R> mapper) {
+        if (page == null || content == null) {
+            return PageResponse.<R>builder()
+                .content(List.of())
+                .pageNumber(0)
+                .pageSize(20)
+                .totalElements(0L)
+                .totalPages(0)
+                .isFirst(true)
+                .isLast(true)
+                .hasNext(false)
+                .hasPrevious(false)
+                .build();
+        }
+
+        List<R> mappedContent = content.stream()
+            .map(mapper)
+            .toList();
+
+        return PageResponse.<R>builder()
+            .content(mappedContent)
+            .pageNumber(page.getNumber())
+            .pageSize(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .isFirst(page.isFirst())
+            .isLast(page.isLast())
+            .hasNext(page.hasNext())
+            .hasPrevious(page.hasPrevious())
+            .build();
+    }
+}
+```
+
+---
+
+## 18. Utilisation dans les Services
+
+### UserService.java (extrait)
+
+```java
+package com.henri_fraise.hff_data_studio.service;
+
+import com.henri_fraise.hff_data_studio.dto.request.UserCreationRequest;
+import com.henri_fraise.hff_data_studio.dto.request.UserUpdateRequest;
+import com.henri_fraise.hff_data_studio.dto.response.UserResponse;
+import com.henri_fraise.hff_data_studio.entity.User;
+import com.henri_fraise.hff_data_studio.entity.UserCategory;
+import com.henri_fraise.hff_data_studio.exception.ResourceNotFoundException;
+import com.henri_fraise.hff_data_studio.mapper.UserMapper;
+import com.henri_fraise.hff_data_studio.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final UserCategoryService categoryService;
+    private final UserMapper userMapper;
+
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        Page<User> users = userRepository.findAll(pageable);
+        return users.map(userMapper::toResponse);
+    }
+
+    public UserResponse getUserById(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        return userMapper.toResponse(user);
+    }
+
+    @Transactional
+    public UserResponse createUser(UserCreationRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email already in use: " + request.getEmail());
+        }
+
+        UserCategory category = categoryService.getCategoryById(request.getCategoryId());
+        User user = userMapper.toEntity(request, category);
+        User saved = userRepository.save(user);
+        return userMapper.toResponse(saved);
+    }
+
+    @Transactional
+    public UserResponse updateUser(Long userId, UserUpdateRequest request) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+        UserCategory category = null;
+        if (request.getCategoryId() != null) {
+            category = categoryService.getCategoryById(request.getCategoryId());
+        }
+
+        userMapper.updateEntity(user, request, category);
+        User updated = userRepository.save(user);
+        return userMapper.toResponse(updated);
+    }
+
+    @Transactional
+    public void deactivateUser(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        user.setIsActive(false);
+        userRepository.save(user);
+    }
+}
+```
+
+---
+
+## 19. Utilisation dans les Controllers
 
 ### UserController.java
 
@@ -2943,6 +3955,7 @@ import com.henri_fraise.hff_data_studio.dto.request.UserCreationRequest;
 import com.henri_fraise.hff_data_studio.dto.request.UserUpdateRequest;
 import com.henri_fraise.hff_data_studio.dto.response.PageResponse;
 import com.henri_fraise.hff_data_studio.dto.response.UserResponse;
+import com.henri_fraise.hff_data_studio.mapper.PageMapper;
 import com.henri_fraise.hff_data_studio.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -2962,13 +3975,14 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final PageMapper pageMapper;
 
     @GetMapping
     @PreAuthorize("hasAuthority('USER_VIEW')")
     public ResponseEntity<PageResponse<UserResponse>> getAllUsers(
             @PageableDefault(size = 20) Pageable pageable) {
         Page<UserResponse> users = userService.getAllUsers(pageable);
-        return ResponseEntity.ok(PageResponse.from(users));
+        return ResponseEntity.ok(pageMapper.toPageResponse(users, user -> user));
     }
 
     @GetMapping("/{userId}")
@@ -3005,47 +4019,24 @@ public class UserController {
 
 ---
 
-## Résumé des DTOs créés
+## Résumé des Mappers
 
-### Request DTOs (13)
-1. `LoginRequest` - Connexion
-2. `RefreshTokenRequest` - Rafraîchissement token
-3. `UserCreationRequest` - Création utilisateur
-4. `UserUpdateRequest` - Mise à jour utilisateur
-5. `CategoryCreationRequest` - Création catégorie
-6. `ProjectCreationRequest` - Création projet
-7. `ProjectUpdateRequest` - Mise à jour projet
-8. `FileUploadRequest` - Upload fichier
-9. `DatasetColumnUpdateRequest` - Mise à jour colonne
-10. `CleaningRuleRequest` - Création règle nettoyage
-11. `AnalysisExecutionRequest` - Lancement analyse
-12. `ExportRequest` - Export résultats
-13. `PermissionUpdateRequest` - Mise à jour permissions
-
-### Response DTOs (19)
-1. `TokenResponse` - Réponse authentification
-2. `UserResponse` - Utilisateur
-3. `UserCategoryResponse` - Catégorie utilisateur
-4. `PermissionResponse` - Permission
-5. `ProjectResponse` - Projet
-6. `SourceFileResponse` - Fichier source
-7. `DatasetResponse` - Dataset
-8. `DatasetColumnResponse` - Colonne dataset
-9. `ExplorationReportResponse` - Rapport exploration
-10. `CleaningRuleResponse` - Règle nettoyage
-11. `CleaningHistoryResponse` - Historique nettoyage
-12. `PredefinedAnalysisResponse` - Analyse prédéfinie
-13. `AnalysisExecutionResponse` - Exécution analyse
-14. `AnalysisResultResponse` - Résultat analyse
-15. `ChartResponse` - Graphique
-16. `ExportResponse` - Export
-17. `AuditLogResponse` - Journal audit
-18. `PageResponse<T>` - Pagination générique
-19. `ErrorResponse` - Erreur
-
-### Mappers (4)
-1. `UserMapper`
-2. `UserCategoryMapper`
-3. `PermissionMapper`
-4. `ProjectMapper`
-5. `DatasetMapper`
+| Mapper | Entité → Response | Request → Entité | Update |
+|--------|-------------------|------------------|--------|
+| UserMapper | ✅ toResponse() | ✅ toEntity() | ✅ updateEntity() |
+| UserCategoryMapper | ✅ toResponse() | ✅ toEntity() | ❌ |
+| PermissionMapper | ✅ toResponse() | ❌ | ❌ |
+| ProjectMapper | ✅ toResponse() | ✅ toEntity() | ✅ updateEntity() |
+| SourceFileMapper | ✅ toResponse() | ❌ | ❌ |
+| DatasetMapper | ✅ toResponse() | ❌ | ❌ |
+| DatasetColumnMapper | ✅ toResponse() | ❌ | ✅ updateEntity() |
+| ExplorationReportMapper | ✅ toResponse() | ❌ | ❌ |
+| CleaningRuleMapper | ✅ toResponse() | ✅ toEntity() | ✅ updateEntity() |
+| CleaningHistoryMapper | ✅ toResponse() | ❌ | ❌ |
+| PredefinedAnalysisMapper | ✅ toResponse() | ❌ | ❌ |
+| AnalysisExecutionMapper | ✅ toResponse() | ✅ toEntity() | ❌ |
+| AnalysisResultMapper | ✅ toResponse() | ❌ | ❌ |
+| ChartMapper | ✅ toResponse() | ❌ | ❌ |
+| ExportMapper | ✅ toResponse() | ❌ | ❌ |
+| AuditLogMapper | ✅ toResponse() | ❌ | ❌ |
+| PageMapper | ✅ toPageResponse() | ❌ | ❌ |
