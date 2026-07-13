@@ -1,15 +1,13 @@
 package com.henri_fraise.hff_data_studio.dto.response;
 
 import com.henri_fraise.hff_data_studio.enums.ColumnType;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.UUID;
 
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class DatasetColumnResponse {
