@@ -4,7 +4,9 @@ import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.enums.FileProcessingStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +36,10 @@ public class SourceFile {
 
     @Column(name = "size_bytes", nullable = false)
     private Long sizeBytes;
+
+    @CreationTimestamp
+    @Column(name = "upload_at")
+    private LocalDateTime uploadAt;
 
     @Column(name = "processing_status", nullable = false)
     @Builder.Default
