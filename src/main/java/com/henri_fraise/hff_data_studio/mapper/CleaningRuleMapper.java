@@ -57,6 +57,18 @@ public class CleaningRuleMapper {
 				.build();
 	}
 
+	public void updateEntity(CleaningRule rule, CleaningRuleRequest request) {
+		if (request == null || rule == null) return;
+		if (request.getRuleType() != null)
+			rule.setRuleType(request.getRuleType());
+		if (request.getParametersJson() != null)
+			rule.setParametersJson(objectMapper.writeValueAsString(request.getParametersJson()));
+		if (request.getExecutionOrder() != null)
+			rule.setExecutionOrder(request.getExecutionOrder());
+		if (request.getIsActive() != null)
+			rule.setIsActive(request.getIsActive());
+	}
+
 	private Map<String, Object> parseParametersJson(String parametersJson) {
 		if (parametersJson == null || parametersJson.isBlank()) {
 			return Collections.emptyMap();
