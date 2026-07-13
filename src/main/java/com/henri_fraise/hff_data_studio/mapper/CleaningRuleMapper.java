@@ -12,7 +12,24 @@ public class CleaningRuleMapper {
 			return null;
 
 		return CleaningRuleResponse.builder()
-
+				.ruleId(rule.getId())
+				.ruleType(rule.getRuleType())
+				.ruleTypeLabel(getRuleTypeLabel(rule.getRuleType()))
+				.parametersJson(rule.getParametersJson())
+				.executionOrder(rule.getExecutionOrder())
+				.isActive(rule.getIsActive())
+				.columnId(rule.getColumn() != null ? rule.getColumn().getId() : null)
+				.columnName(rule.getColumn() != null ? rule.getColumn().getOriginalName() : null)
+				.datasetId(
+						rule.getColumn() != null && rule.getColumn().getDataset() != null
+								? rule.getColumn().getDataset().getId()
+								: null
+				)
+				.datasetName(
+						rule.getColumn() != null && rule.getColumn().getDataset() != null
+								? rule.getColumn().getDataset().getDatasetName()
+								: null
+				)
 				.build();
 	}
 }
