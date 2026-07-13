@@ -2,6 +2,7 @@ package com.henri_fraise.hff_data_studio.mapper;
 
 import com.henri_fraise.hff_data_studio.dto.response.CleaningRuleResponse;
 import com.henri_fraise.hff_data_studio.entity.CleaningRule;
+import com.henri_fraise.hff_data_studio.enums.RuleType;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,5 +32,18 @@ public class CleaningRuleMapper {
 								: null
 				)
 				.build();
+	}
+
+	private String getRuleTypeLabel(RuleType ruleType) {
+		if (ruleType == null)
+			return null;
+		return switch (ruleType) {
+			case TYPE_CONVERSION -> "Type conversion";
+			case DUPLICATE_REMOVAL -> "Duplicate removal";
+			case NULL_IMPUTATION -> "Null imputation";
+			case REGEX_CLEANING -> "Regex cleaning";
+			case TRIM -> "Trim";
+			case VALUE_CONSTRAINT -> "Value constraint";
+		};
 	}
 }
