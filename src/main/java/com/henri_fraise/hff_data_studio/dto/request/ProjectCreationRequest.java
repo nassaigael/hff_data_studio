@@ -1,5 +1,6 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
+import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
@@ -15,4 +16,7 @@ public class ProjectCreationRequest {
     private String projectName;
 
     private String description;
+
+    @Builder.Default
+    private ProjectStatus status = ProjectStatus.IN_PROGRESS;
 }
