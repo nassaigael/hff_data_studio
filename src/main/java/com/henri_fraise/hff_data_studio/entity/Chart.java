@@ -14,7 +14,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class Chart {
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "chart_id")
