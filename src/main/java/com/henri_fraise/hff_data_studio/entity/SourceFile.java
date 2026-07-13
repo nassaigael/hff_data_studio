@@ -1,7 +1,7 @@
 package com.henri_fraise.hff_data_studio.entity;
 
 import com.henri_fraise.hff_data_studio.enums.FileType;
-import com.henri_fraise.hff_data_studio.enums.ProcessingStatus;
+import com.henri_fraise.hff_data_studio.enums.FileProcessingStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -37,7 +37,7 @@ public class SourceFile {
 
     @Column(name = "processing_status", nullable = false)
     @Builder.Default
-    private ProcessingStatus processingStatus = ProcessingStatus.RECEIVED;
+    private FileProcessingStatus processingStatus = FileProcessingStatus.RECEIVED;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
