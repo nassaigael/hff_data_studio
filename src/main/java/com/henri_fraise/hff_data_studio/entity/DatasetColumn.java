@@ -1,5 +1,6 @@
 package com.henri_fraise.hff_data_studio.entity;
 
+import com.henri_fraise.hff_data_studio.enums.ColumnType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,10 +28,11 @@ public class DatasetColumn {
     private String normalizedName;
 
     @Column(name = "detected_type", nullable = false)
-    private String detectedType;
+    @Enumerated(EnumType.STRING)
+    private ColumnType detectedType;
 
     @Column(name = "target_type", nullable = false)
-    private String targetType;
+    private ColumnType targetType;
 
     @Column(name = "position", nullable = false)
     private Integer position;
