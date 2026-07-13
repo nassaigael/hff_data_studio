@@ -19,7 +19,7 @@ public class PredefinedAnalysis {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "analysis_id")
-    private UUID analysisId;
+    private UUID id;
 
     @Column(name = "analysis_name", nullable = false)
     private String analysisName;
