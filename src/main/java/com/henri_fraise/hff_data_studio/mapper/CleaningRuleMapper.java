@@ -1,5 +1,6 @@
 package com.henri_fraise.hff_data_studio.mapper;
 
+import com.henri_fraise.hff_data_studio.dto.request.CleaningRuleRequest;
 import com.henri_fraise.hff_data_studio.dto.response.CleaningRuleResponse;
 import com.henri_fraise.hff_data_studio.entity.CleaningRule;
 import com.henri_fraise.hff_data_studio.entity.Dataset;
@@ -41,6 +42,10 @@ public class CleaningRuleMapper {
 				.datasetId(dataset != null ? dataset.getId() : null)
 				.datasetName(dataset != null ? dataset.getDatasetName() : null)
 				.build();
+	}
+
+	public CleaningRule toEntity(CleaningRuleRequest request, DatasetColumn column) {
+
 	}
 
 	private Map<String, Object> parseParametersJson(String parametersJson) {
