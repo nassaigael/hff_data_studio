@@ -1443,3 +1443,1609 @@ file.max-size=200MB
 # CORS
 cors.allowed-origins=http://localhost:3000,http://localhost:3001
 ```
+Parfait ! Passons aux DTOs (Data Transfer Objects) pour toutes les entités. Je vais structurer les packages `request` et `response` comme demandé.
+
+---
+
+## Structure des packages
+
+```
+com.henri_fraise.hff_data_studio
+├── dto
+│   ├── request
+│   │   ├── LoginRequest.java
+│   │   ├── RefreshTokenRequest.java
+│   │   ├── UserCreationRequest.java
+│   │   ├── UserUpdateRequest.java
+│   │   ├── CategoryCreationRequest.java
+│   │   ├── ProjectCreationRequest.java
+│   │   ├── ProjectUpdateRequest.java
+│   │   ├── FileUploadRequest.java
+│   │   ├── DatasetColumnUpdateRequest.java
+│   │   ├── CleaningRuleRequest.java
+│   │   ├── AnalysisExecutionRequest.java
+│   │   ├── ExportRequest.java
+│   │   └── PermissionUpdateRequest.java
+│   └── response
+│       ├── TokenResponse.java
+│       ├── UserResponse.java
+│       ├── UserCategoryResponse.java
+│       ├── PermissionResponse.java
+│       ├── ProjectResponse.java
+│       ├── SourceFileResponse.java
+│       ├── DatasetResponse.java
+│       ├── DatasetColumnResponse.java
+│       ├── ExplorationReportResponse.java
+│       ├── CleaningRuleResponse.java
+│       ├── CleaningHistoryResponse.java
+│       ├── PredefinedAnalysisResponse.java
+│       ├── AnalysisExecutionResponse.java
+│       ├── AnalysisResultResponse.java
+│       ├── ChartResponse.java
+│       ├── ExportResponse.java
+│       ├── AuditLogResponse.java
+│       ├── PageResponse.java
+│       └── ErrorResponse.java
+```
+
+---
+
+## 1. Request DTOs
+
+### LoginRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class LoginRequest {
+
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be valid")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    private String password;
+}
+```
+
+---
+
+### RefreshTokenRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class RefreshTokenRequest {
+
+    @NotBlank(message = "Refresh token is required")
+    private String refreshToken;
+}
+```
+
+---
+
+### UserCreationRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserCreationRequest {
+
+    @NotBlank(message = "Last name is required")
+    private String lastName;
+
+    @NotBlank(message = "First name is required")
+    private String firstName;
+
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be valid")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    private String password;
+
+    @NotNull(message = "Category ID is required")
+    private UUID categoryId;
+}
+```
+
+---
+
+### UserUpdateRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import jakarta.validation.constraints.Email;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserUpdateRequest {
+
+    private String lastName;
+
+    private String firstName;
+
+    @Email(message = "Email must be valid")
+    private String email;
+
+    private Boolean isActive;
+
+    private UUID categoryId;
+
+    private String newPassword;
+}
+```
+
+---
+
+### CategoryCreationRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CategoryCreationRequest {
+
+    @NotBlank(message = "Category label is required")
+    private String label;
+
+    private String description;
+
+    @NotNull(message = "Access level is required")
+    private Integer accessLevel;
+}
+```
+
+---
+
+### ProjectCreationRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProjectCreationRequest {
+
+    @NotBlank(message = "Project name is required")
+    private String projectName;
+
+    private String description;
+}
+```
+
+---
+
+### ProjectUpdateRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProjectUpdateRequest {
+
+    @NotBlank(message = "Project name is required")
+    private String projectName;
+
+    private String description;
+
+    private ProjectStatus status;
+}
+```
+
+---
+
+### FileUploadRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import com.henri_fraise.hff_data_studio.enums.FileType;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class FileUploadRequest {
+
+    @NotNull(message = "File is required")
+    private MultipartFile file;
+
+    @NotNull(message = "Project ID is required")
+    private UUID projectId;
+
+    @NotNull(message = "File type is required")
+    private FileType fileType;
+}
+```
+
+---
+
+### DatasetColumnUpdateRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import com.henri_fraise.hff_data_studio.enums.ColumnType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class DatasetColumnUpdateRequest {
+
+    private String normalizedName;
+
+    private ColumnType targetType;
+}
+```
+
+---
+
+### CleaningRuleRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import com.henri_fraise.hff_data_studio.enums.RuleType;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Map;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CleaningRuleRequest {
+
+    @NotNull(message = "Rule type is required")
+    private RuleType ruleType;
+
+    private Map<String, Object> parametersJson;
+
+    private Integer executionOrder;
+
+    @Builder.Default
+    private Boolean isActive = true;
+}
+```
+
+---
+
+### AnalysisExecutionRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Map;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AnalysisExecutionRequest {
+
+    @NotNull(message = "Dataset ID is required")
+    private UUID datasetId;
+
+    private UUID analysisId;
+
+    private Map<String, Object> parameters;
+}
+```
+
+---
+
+### ExportRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import com.henri_fraise.hff_data_studio.enums.ExportFormat;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExportRequest {
+
+    @NotNull(message = "Execution ID is required")
+    private UUID executionId;
+
+    @NotNull(message = "Export format is required")
+    private ExportFormat exportFormat;
+
+    private List<UUID> resultIds;
+}
+```
+
+---
+
+### PermissionUpdateRequest.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.request;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PermissionUpdateRequest {
+
+    private List<UUID> permissionIds;
+}
+```
+
+---
+
+## 2. Response DTOs
+
+### TokenResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class TokenResponse {
+
+    private String accessToken;
+
+    private String refreshToken;
+
+    private Long expiresIn;
+
+    private String tokenType;
+
+    @Builder.Default
+    private String tokenType = "Bearer";
+}
+```
+
+---
+
+### UserResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserResponse {
+
+    private UUID userId;
+
+    private String lastName;
+
+    private String firstName;
+
+    private String email;
+
+    private Boolean isActive;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime lastLogin;
+
+    private UserCategoryResponse category;
+}
+```
+
+---
+
+### UserCategoryResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserCategoryResponse {
+
+    private UUID categoryId;
+
+    private String label;
+
+    private String description;
+
+    private Integer accessLevel;
+
+    private List<PermissionResponse> permissions;
+}
+```
+
+---
+
+### PermissionResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PermissionResponse {
+
+    private UUID permissionId;
+
+    private String code;
+
+    private String label;
+
+    private String module;
+}
+```
+
+---
+
+### ProjectResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProjectResponse {
+
+    private UUID projectId;
+
+    private String projectName;
+
+    private String description;
+
+    private LocalDateTime createdAt;
+
+    private ProjectStatus status;
+
+    private UUID creatorUserId;
+
+    private String creatorFullName;
+
+    private Long fileCount;
+
+    private Long datasetCount;
+}
+```
+
+---
+
+### SourceFileResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.henri_fraise.hff_data_studio.enums.FileProcessingStatus;
+import com.henri_fraise.hff_data_studio.enums.FileType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SourceFileResponse {
+
+    private UUID fileId;
+
+    private String fileName;
+
+    private FileType fileType;
+
+    private String storagePath;
+
+    private Long sizeBytes;
+
+    private String sizeFormatted;
+
+    private LocalDateTime uploadedAt;
+
+    private FileProcessingStatus processingStatus;
+
+    private UUID projectId;
+
+    private String projectName;
+
+    private UUID userId;
+
+    private String userFullName;
+
+    private Integer datasetCount;
+}
+```
+
+---
+
+### DatasetResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class DatasetResponse {
+
+    private UUID datasetId;
+
+    private String datasetName;
+
+    private Integer rowCount;
+
+    private Integer columnCount;
+
+    private LocalDateTime createdAt;
+
+    private Boolean isCleaned;
+
+    private UUID fileId;
+
+    private String fileName;
+
+    private UUID projectId;
+
+    private String projectName;
+
+    private Integer qualityScore;
+
+    private Long analysisCount;
+}
+```
+
+---
+
+### DatasetColumnResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.henri_fraise.hff_data_studio.enums.ColumnType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class DatasetColumnResponse {
+
+    private UUID columnId;
+
+    private String originalName;
+
+    private String normalizedName;
+
+    private ColumnType detectedType;
+
+    private ColumnType targetType;
+
+    private Integer position;
+
+    private Integer nullCount;
+
+    private Double nullPercentage;
+
+    private Integer uniqueCount;
+
+    private Double uniquePercentage;
+
+    private Integer cleaningRuleCount;
+
+    private UUID datasetId;
+}
+```
+
+---
+
+### ExplorationReportResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExplorationReportResponse {
+
+    private UUID reportId;
+
+    private LocalDateTime generatedAt;
+
+    private Integer totalRows;
+
+    private Integer duplicateCount;
+
+    private Integer missingValuesCount;
+
+    private BigDecimal qualityScore;
+
+    private String reportPdfPath;
+
+    private UUID datasetId;
+
+    private String datasetName;
+
+    // Statistiques détaillées par colonne
+    private Object columnStatistics;
+}
+```
+
+---
+
+### CleaningRuleResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.henri_fraise.hff_data_studio.enums.RuleType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Map;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CleaningRuleResponse {
+
+    private UUID ruleId;
+
+    private RuleType ruleType;
+
+    private String ruleTypeLabel;
+
+    private Map<String, Object> parametersJson;
+
+    private Integer executionOrder;
+
+    private Boolean isActive;
+
+    private UUID columnId;
+
+    private String columnName;
+
+    private UUID datasetId;
+
+    private String datasetName;
+}
+```
+
+---
+
+### CleaningHistoryResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.henri_fraise.hff_data_studio.enums.CleaningHistoryStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CleaningHistoryResponse {
+
+    private UUID historyId;
+
+    private LocalDateTime executedAt;
+
+    private CleaningHistoryStatus status;
+
+    private String statusLabel;
+
+    private String details;
+
+    private UUID datasetId;
+
+    private String datasetName;
+
+    private UUID ruleId;
+
+    private String ruleType;
+
+    private UUID userId;
+
+    private String userFullName;
+}
+```
+
+---
+
+### PredefinedAnalysisResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Map;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PredefinedAnalysisResponse {
+
+    private UUID analysisId;
+
+    private String analysisName;
+
+    private String description;
+
+    private String category;
+
+    private String categoryLabel;
+
+    private String referenceScript;
+
+    private Map<String, Object> requiredParametersJson;
+
+    private Long executionCount;
+}
+```
+
+---
+
+### AnalysisExecutionResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AnalysisExecutionResponse {
+
+    private UUID executionId;
+
+    private LocalDateTime executedAt;
+
+    private AnalysisExecutionStatus status;
+
+    private String statusLabel;
+
+    private Integer durationMs;
+
+    private String durationFormatted;
+
+    private Map<String, Object> usedParametersJson;
+
+    private UUID datasetId;
+
+    private String datasetName;
+
+    private UUID analysisId;
+
+    private String analysisName;
+
+    private String analysisCategory;
+
+    private UUID userId;
+
+    private String userFullName;
+
+    private List<AnalysisResultResponse> results;
+
+    private Integer resultCount;
+}
+```
+
+---
+
+### AnalysisResultResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.henri_fraise.hff_data_studio.enums.ResultType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AnalysisResultResponse {
+
+    private UUID resultId;
+
+    private ResultType resultType;
+
+    private String resultTypeLabel;
+
+    private String title;
+
+    private String filePath;
+
+    private String fileFormat;
+
+    private Integer displayOrder;
+
+    private UUID executionId;
+
+    private ChartResponse chart;
+
+    private String downloadUrl;
+}
+```
+
+---
+
+### ChartResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.henri_fraise.hff_data_studio.enums.ChartType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Map;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChartResponse {
+
+    private UUID chartId;
+
+    private ChartType chartType;
+
+    private String chartTypeLabel;
+
+    private Map<String, Object> configJson;
+
+    private UUID resultId;
+}
+```
+
+---
+
+### ExportResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.henri_fraise.hff_data_studio.enums.ExportFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExportResponse {
+
+    private UUID exportId;
+
+    private ExportFormat exportFormat;
+
+    private String formatLabel;
+
+    private LocalDateTime exportedAt;
+
+    private String filePath;
+
+    private String fileName;
+
+    private Long fileSize;
+
+    private String fileSizeFormatted;
+
+    private UUID executionId;
+
+    private String executionStatus;
+
+    private UUID userId;
+
+    private String userFullName;
+
+    private String downloadUrl;
+}
+```
+
+---
+
+### AuditLogResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AuditLogResponse {
+
+    private UUID logId;
+
+    private String action;
+
+    private String concernedEntity;
+
+    private UUID entityId;
+
+    private LocalDateTime actionDate;
+
+    private String ipAddress;
+
+    private UUID userId;
+
+    private String userFullName;
+
+    private String userEmail;
+}
+```
+
+---
+
+### PageResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PageResponse<T> {
+
+    private List<T> content;
+
+    private Integer pageNumber;
+
+    private Integer pageSize;
+
+    private Long totalElements;
+
+    private Integer totalPages;
+
+    private Boolean isFirst;
+
+    private Boolean isLast;
+
+    private Boolean hasNext;
+
+    private Boolean hasPrevious;
+
+    public static <T> PageResponse<T> from(org.springframework.data.domain.Page<T> page) {
+        return PageResponse.<T>builder()
+            .content(page.getContent())
+            .pageNumber(page.getNumber())
+            .pageSize(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .isFirst(page.isFirst())
+            .isLast(page.isLast())
+            .hasNext(page.hasNext())
+            .hasPrevious(page.hasPrevious())
+            .build();
+    }
+}
+```
+
+---
+
+### ErrorResponse.java
+
+```java
+package com.henri_fraise.hff_data_studio.dto.response;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ErrorResponse {
+
+    private String code;
+
+    private String message;
+
+    private String details;
+
+    private LocalDateTime timestamp;
+
+    private String path;
+
+    private String method;
+
+    private Integer status;
+
+    private List<String> errors;
+
+    private Map<String, String> validationErrors;
+
+    @Builder.Default
+    private LocalDateTime timestamp = LocalDateTime.now();
+}
+```
+
+---
+
+## 3. Mappers (pour la conversion Entity ↔ DTO)
+
+### UserMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.UserResponse;
+import com.henri_fraise.hff_data_studio.dto.response.UserCategoryResponse;
+import com.henri_fraise.hff_data_studio.entity.User;
+import org.springframework.stereotype.Component;
+
+@Component
+public class UserMapper {
+
+    private final UserCategoryMapper categoryMapper;
+
+    public UserMapper(UserCategoryMapper categoryMapper) {
+        this.categoryMapper = categoryMapper;
+    }
+
+    public UserResponse toResponse(User user) {
+        if (user == null) {
+            return null;
+        }
+
+        UserCategoryResponse categoryResponse = null;
+        if (user.getCategory() != null) {
+            categoryResponse = categoryMapper.toResponse(user.getCategory());
+        }
+
+        return UserResponse.builder()
+            .userId(user.getId())
+            .lastName(user.getLastName())
+            .firstName(user.getFirstName())
+            .email(user.getEmail())
+            .isActive(user.getIsActive())
+            .createdAt(user.getCreatedAt())
+            .lastLogin(user.getLastLogin())
+            .category(categoryResponse)
+            .build();
+    }
+}
+```
+
+---
+
+### UserCategoryMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.UserCategoryResponse;
+import com.henri_fraise.hff_data_studio.dto.response.PermissionResponse;
+import com.henri_fraise.hff_data_studio.entity.UserCategory;
+import org.springframework.stereotype.Component;
+
+import java.util.stream.Collectors;
+
+@Component
+public class UserCategoryMapper {
+
+    private final PermissionMapper permissionMapper;
+
+    public UserCategoryMapper(PermissionMapper permissionMapper) {
+        this.permissionMapper = permissionMapper;
+    }
+
+    public UserCategoryResponse toResponse(UserCategory category) {
+        if (category == null) {
+            return null;
+        }
+
+        return UserCategoryResponse.builder()
+            .categoryId(category.getId())
+            .label(category.getLabel())
+            .description(category.getDescription())
+            .accessLevel(category.getAccessLevel())
+            .permissions(
+                category.getPermissions() != null
+                    ? category.getPermissions().stream()
+                        .map(permissionMapper::toResponse)
+                        .collect(Collectors.toList())
+                    : null
+            )
+            .build();
+    }
+}
+```
+
+---
+
+### PermissionMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.PermissionResponse;
+import com.henri_fraise.hff_data_studio.entity.Permission;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PermissionMapper {
+
+    public PermissionResponse toResponse(Permission permission) {
+        if (permission == null) {
+            return null;
+        }
+
+        return PermissionResponse.builder()
+            .permissionId(permission.getId())
+            .code(permission.getCode())
+            .label(permission.getLabel())
+            .module(permission.getModule())
+            .build();
+    }
+}
+```
+
+---
+
+### ProjectMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.ProjectResponse;
+import com.henri_fraise.hff_data_studio.entity.Project;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ProjectMapper {
+
+    public ProjectResponse toResponse(Project project) {
+        if (project == null) {
+            return null;
+        }
+
+        return ProjectResponse.builder()
+            .projectId(project.getId())
+            .projectName(project.getProjectName())
+            .description(project.getDescription())
+            .createdAt(project.getCreatedAt())
+            .status(project.getStatus())
+            .creatorUserId(project.getCreator() != null ? project.getCreator().getId() : null)
+            .creatorFullName(
+                project.getCreator() != null
+                    ? project.getCreator().getFirstName() + " " + project.getCreator().getLastName()
+                    : null
+            )
+            .fileCount(
+                project.getSourceFiles() != null ? (long) project.getSourceFiles().size() : 0L
+            )
+            .datasetCount(
+                project.getSourceFiles() != null
+                    ? project.getSourceFiles().stream()
+                        .mapToLong(f -> f.getDatasets() != null ? f.getDatasets().size() : 0)
+                        .sum()
+                    : 0L
+            )
+            .build();
+    }
+}
+```
+
+---
+
+### DatasetMapper.java
+
+```java
+package com.henri_fraise.hff_data_studio.mapper;
+
+import com.henri_fraise.hff_data_studio.dto.response.DatasetResponse;
+import com.henri_fraise.hff_data_studio.entity.Dataset;
+import org.springframework.stereotype.Component;
+
+@Component
+public class DatasetMapper {
+
+    public DatasetResponse toResponse(Dataset dataset) {
+        if (dataset == null) {
+            return null;
+        }
+
+        return DatasetResponse.builder()
+            .datasetId(dataset.getId())
+            .datasetName(dataset.getDatasetName())
+            .rowCount(dataset.getRowCount())
+            .columnCount(dataset.getColumnCount())
+            .createdAt(dataset.getCreatedAt())
+            .isCleaned(dataset.getIsCleaned())
+            .fileId(dataset.getSourceFile() != null ? dataset.getSourceFile().getId() : null)
+            .fileName(dataset.getSourceFile() != null ? dataset.getSourceFile().getFileName() : null)
+            .projectId(
+                dataset.getSourceFile() != null && dataset.getSourceFile().getProject() != null
+                    ? dataset.getSourceFile().getProject().getId()
+                    : null
+            )
+            .projectName(
+                dataset.getSourceFile() != null && dataset.getSourceFile().getProject() != null
+                    ? dataset.getSourceFile().getProject().getProjectName()
+                    : null
+            )
+            .qualityScore(
+                dataset.getExplorationReport() != null
+                    ? dataset.getExplorationReport().getQualityScore().intValue()
+                    : null
+            )
+            .analysisCount(
+                dataset.getAnalysisExecutions() != null
+                    ? (long) dataset.getAnalysisExecutions().size()
+                    : 0L
+            )
+            .build();
+    }
+}
+```
+
+---
+
+## 4. Exemple de Controller utilisant les DTOs
+
+### UserController.java
+
+```java
+package com.henri_fraise.hff_data_studio.controller;
+
+import com.henri_fraise.hff_data_studio.dto.request.UserCreationRequest;
+import com.henri_fraise.hff_data_studio.dto.request.UserUpdateRequest;
+import com.henri_fraise.hff_data_studio.dto.response.PageResponse;
+import com.henri_fraise.hff_data_studio.dto.response.UserResponse;
+import com.henri_fraise.hff_data_studio.service.UserService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/admin/users")
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserService userService;
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('USER_VIEW')")
+    public ResponseEntity<PageResponse<UserResponse>> getAllUsers(
+            @PageableDefault(size = 20) Pageable pageable) {
+        Page<UserResponse> users = userService.getAllUsers(pageable);
+        return ResponseEntity.ok(PageResponse.from(users));
+    }
+
+    @GetMapping("/{userId}")
+    @PreAuthorize("hasAuthority('USER_VIEW')")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable UUID userId) {
+        UserResponse user = userService.getUserById(userId);
+        return ResponseEntity.ok(user);
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserCreationRequest request) {
+        UserResponse created = userService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/{userId}")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable UUID userId,
+            @Valid @RequestBody UserUpdateRequest request) {
+        UserResponse updated = userService.updateUser(userId, request);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{userId}")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
+    public ResponseEntity<Void> deactivateUser(@PathVariable UUID userId) {
+        userService.deactivateUser(userId);
+        return ResponseEntity.noContent().build();
+    }
+}
+```
+
+---
+
+## Résumé des DTOs créés
+
+### Request DTOs (13)
+1. `LoginRequest` - Connexion
+2. `RefreshTokenRequest` - Rafraîchissement token
+3. `UserCreationRequest` - Création utilisateur
+4. `UserUpdateRequest` - Mise à jour utilisateur
+5. `CategoryCreationRequest` - Création catégorie
+6. `ProjectCreationRequest` - Création projet
+7. `ProjectUpdateRequest` - Mise à jour projet
+8. `FileUploadRequest` - Upload fichier
+9. `DatasetColumnUpdateRequest` - Mise à jour colonne
+10. `CleaningRuleRequest` - Création règle nettoyage
+11. `AnalysisExecutionRequest` - Lancement analyse
+12. `ExportRequest` - Export résultats
+13. `PermissionUpdateRequest` - Mise à jour permissions
+
+### Response DTOs (19)
+1. `TokenResponse` - Réponse authentification
+2. `UserResponse` - Utilisateur
+3. `UserCategoryResponse` - Catégorie utilisateur
+4. `PermissionResponse` - Permission
+5. `ProjectResponse` - Projet
+6. `SourceFileResponse` - Fichier source
+7. `DatasetResponse` - Dataset
+8. `DatasetColumnResponse` - Colonne dataset
+9. `ExplorationReportResponse` - Rapport exploration
+10. `CleaningRuleResponse` - Règle nettoyage
+11. `CleaningHistoryResponse` - Historique nettoyage
+12. `PredefinedAnalysisResponse` - Analyse prédéfinie
+13. `AnalysisExecutionResponse` - Exécution analyse
+14. `AnalysisResultResponse` - Résultat analyse
+15. `ChartResponse` - Graphique
+16. `ExportResponse` - Export
+17. `AuditLogResponse` - Journal audit
+18. `PageResponse<T>` - Pagination générique
+19. `ErrorResponse` - Erreur
+
+### Mappers (4)
+1. `UserMapper`
+2. `UserCategoryMapper`
+3. `PermissionMapper`
+4. `ProjectMapper`
+5. `DatasetMapper`
