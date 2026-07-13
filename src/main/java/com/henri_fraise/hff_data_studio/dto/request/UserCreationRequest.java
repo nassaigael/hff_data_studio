@@ -24,8 +24,10 @@ public class UserCreationRequest {
     private String email;
 
     @NotBlank(message = "Password is required")
-    private String password;
+    private String newPassword;
 
     @NotBlank(message = "Category is required")
     private UUID categoryId;
+
+    private Boolean isActive;
 }
