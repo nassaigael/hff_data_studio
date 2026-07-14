@@ -1,4 +1,6 @@
 package com.henri_fraise.hff_data_studio.validation.Group;
 
-public interface OnCreate {
+import javax.validation.groups.Default;
+
+public interface OnCreate extends Default{
 }
