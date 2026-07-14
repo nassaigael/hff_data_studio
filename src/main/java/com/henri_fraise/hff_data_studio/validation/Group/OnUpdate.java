@@ -1,4 +1,6 @@
 package com.henri_fraise.hff_data_studio.validation.Group;
 
-public interface OnUpdate {
+import javax.validation.groups.Default;
+
+public interface OnUpdate extends Default {
 }
