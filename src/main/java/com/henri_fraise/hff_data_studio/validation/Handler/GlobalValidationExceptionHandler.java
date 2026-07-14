@@ -121,4 +121,21 @@ public class GlobalValidationExceptionHandler {
 				.build();
 		return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(response);
 	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+			IllegalArgumentException ex,
+			WebRequest request
+	) {
+		log.error("Illegal argument error: {}", ex.getMessage());
+
+		ErrorResponse response = ErrorResponse.builder()
+				.status(HttpStatus.BAD_REQUEST.value())
+				.code("ILLEGAL_ARGUMENT")
+				.message(ex.getMessage())
+				.path(request.getDescription(false).replaceFirst("uri=", ""))
+				.details(ex.getMessage())
+				.build();
+		return ResponseEntity.badRequest().body(response);
+	}
 }
