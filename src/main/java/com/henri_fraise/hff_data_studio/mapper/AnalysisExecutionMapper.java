@@ -73,7 +73,7 @@ public class AnalysisExecutionMapper {
 		if (request == null || dataset == null || user == null) return null;
 		return AnalysisExecution.builder()
 				.status(AnalysisExecutionStatus.IN_PROGRESS)
-				.usedParametersJson(request.getParameters())
+				.usedParametersJson(request.getParameters().toString())
 				.dataset(dataset)
 				.predefinedAnalysis(predefinedAnalysis)
 				.user(user)
