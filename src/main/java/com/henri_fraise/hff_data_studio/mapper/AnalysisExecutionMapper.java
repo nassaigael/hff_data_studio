@@ -82,13 +82,22 @@ public class AnalysisExecutionMapper {
 
 	private String getStatusLabel(AnalysisExecutionStatus status) {
 		if (status == null) return null;
-		return switch (status){
+		return switch (status) {
 			case IN_PROGRESS -> "In progress";
 			case ERROR -> "Error";
 			case COMPLETED -> "Completed";
 			case CANCELLED -> "Cancelled";
 			case PENDING -> "Pending";
 		};
+	}
+
+	private String formatDuration(Integer durationMs) {
+		if (durationMs == null) return null;
+		if (durationMs < 1000) return durationMs + "ms";
+		if (durationMs < 60000) return String.format("%.2f s", durationMs / 1000.0);
+		long minutes = durationMs / 60000;
+		long seconds = (durationMs % 60000) / 1000;
+		return String.format("%d min %d s", minutes, seconds);
 	}
 
 }
