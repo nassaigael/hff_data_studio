@@ -1,6 +1,6 @@
 package com.henri_fraise.hff_data_studio.validation.Annotation;
 
-import com.networknt.org.apache.commons.validator.routines.EmailValidator;
+import com.henri_fraise.hff_data_studio.validation.Validator.EmailValidator;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;
@@ -24,11 +24,9 @@ public @interface ValidEmail {
 
 	Class<? extends Payload>[] payload() default {};
 
-	boolean nullable() default false;
+	boolean allowNull() default false;
 
-	boolean blankAllowed() default false;
+	boolean allowEmpty() default false;
 
-	boolean emptyAllowed() default false;
-
-	String[] domains() default {};
+	String[] allowedDomains() default {};
 }
