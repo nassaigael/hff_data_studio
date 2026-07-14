@@ -28,7 +28,7 @@ public class AuditLog {
     private String concernedEntity;
 
     @Column(name = "entity_id")
-    private Long entityId;
+    private UUID entityId;
 
     @CreationTimestamp
     @Column(name = "action_date", nullable = false, updatable = false)
