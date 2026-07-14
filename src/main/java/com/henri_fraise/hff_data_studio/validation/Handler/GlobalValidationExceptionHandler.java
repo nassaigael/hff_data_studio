@@ -1,5 +1,6 @@
 package com.henri_fraise.hff_data_studio.validation.Handler;
 
+import com.henri_fraise.hff_data_studio.dto.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -101,5 +103,22 @@ public class GlobalValidationExceptionHandler {
 				.path(request.getDescription(false).replaceFirst("uri=", ""))
 				.build();
 		return ResponseEntity.badRequest().body(response);
+	}
+
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(
+			MaxUploadSizeExceededException ex,
+			WebRequest request
+	) {
+		log.error("Max upload size exceeded error: {}", ex.getMessage());
+
+		ErrorResponse response = ErrorResponse.builder()
+				.status(HttpStatus.CONTENT_TOO_LARGE.value())
+				.code("FILE_SIZE_EXCEEDED")
+				.message("File size exceeds maximum limit allowed : " + ex.getMaxUploadSize() + "bytes")
+				.path(request.getDescription(false).replaceFirst("uri=", ""))
+				.details(ex.getMessage())
+				.build();
+		return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(response);
 	}
 }
