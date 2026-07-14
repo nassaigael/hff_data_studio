@@ -1,7 +1,7 @@
 package com.henri_fraise.hff_data_studio.dto.response;
 
 import com.henri_fraise.hff_data_studio.enums.AnalysisCategory;
-import com.henri_fraise.hff_data_studio.enums.ExecutionStatus;
+import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -17,7 +17,7 @@ import java.util.UUID;
 public class AnalysisExecutionResponse {
 	private UUID executionId;
 	private LocalDateTime executedAt;
-	private ExecutionStatus status;
+	private AnalysisExecutionStatus status;
 	private String statusLabel;
 	private Integer durationMs;
 	private String durationFormatted;
@@ -28,6 +28,7 @@ public class AnalysisExecutionResponse {
 	private String analysisName;
 	private AnalysisCategory analysisCategory;
 	private UUID userId;
+	private String userFullName;
 	private List<AnalysisResultResponse> results;
 	private Integer resultCount;
 }

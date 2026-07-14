@@ -1,6 +1,6 @@
 package com.henri_fraise.hff_data_studio.dto.response;
 
-import com.henri_fraise.hff_data_studio.enums.ExecutionStatus;
+import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
 import com.henri_fraise.hff_data_studio.enums.ExportFormat;
 import lombok.*;
 
@@ -21,7 +21,7 @@ public class ExportResponse {
 	private String fileName;
 	private String fileSizeFormatted;
 	private UUID executionId;
-	private ExecutionStatus executionStatus;
+	private AnalysisExecutionStatus executionStatus;
 	private UUID userId;
 	private String userFullName;
 	private String downloadUrl;
