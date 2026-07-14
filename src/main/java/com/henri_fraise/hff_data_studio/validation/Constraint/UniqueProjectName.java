@@ -19,7 +19,7 @@ public @interface UniqueProjectName {
 
 	Class<?>[] payload() default {};
 
-	UUID excludeProjectId() default "0";
+	String excludeProjectId() default "";
 }
 
 @Component
@@ -28,6 +28,16 @@ class UniqueProjectNameValidator implements ConstraintValidator<UniqueProjectNam
 
 	private final ProjectRepository projectRepository;
 	private UUID excludeProjectId;
+
+	@Override
+	public void initialize(UniqueProjectName constraintAnnotation) {
+		String value = constraintAnnotation.excludeProjectId();
+		if (value == null || value.isBlank()) {
+			this.excludeProjectId = null;
+			return;
+		}
+		this.excludeProjectId = UUID.fromString(value);
+	}
 
 	@Override
 	public boolean isValid(String projectName, ConstraintValidatorContext context) {
