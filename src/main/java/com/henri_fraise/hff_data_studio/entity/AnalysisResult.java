@@ -28,6 +28,9 @@ public class AnalysisResult {
     @Column(name = "title", nullable = false)
     private String title;
 
+    @Column(name = "file_path", nullable = false)
+    private String filePath;
+
     @Column(name = "file_format", nullable = false)
     @Enumerated(EnumType.STRING)
     private FileFormat fileFormat;
