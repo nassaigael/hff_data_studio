@@ -138,4 +138,21 @@ public class GlobalValidationExceptionHandler {
 				.build();
 		return ResponseEntity.badRequest().body(response);
 	}
+
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ErrorResponse> handleAllException(
+			Exception ex,
+			WebRequest request
+	) {
+		log.error("Unexpected error: {}", ex.getMessage());
+
+		ErrorResponse response = ErrorResponse.builder()
+				.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+				.code("INTERNAL_SERVER_ERROR")
+				.message("Internal server error")
+				.path(request.getDescription(false).replaceFirst("uri=", ""))
+				.details(ex.getMessage())
+				.build();
+		return ResponseEntity.internalServerError().body(response);
+	}
 }
