@@ -28,7 +28,7 @@ public class AnalysisResultMapper {
 				.resultTypeLabel(getResultTypeLabel(result.getResultType()))
 				.title(result.getTitle())
 				.filePath(result.getFilePath())
-				.fileFormat(result.getFileFormat())
+				.fileFormat(String.valueOf(result.getFileFormat()))
 				.displayOrder(result.getDisplayOrder())
 				.executionId(result.getExecution() != null ? result.getExecution().getId() : null)
 				.chart(chartResponse)
