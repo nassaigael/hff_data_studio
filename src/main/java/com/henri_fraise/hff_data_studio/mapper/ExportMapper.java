@@ -36,4 +36,12 @@ public class ExportMapper {
 				.downloadUrl(EXPORT_PATH + export.getId() + "/download")
 				.build();
 	}
+
+	private String extractFileName(String filePath) {
+		if (filePath == null) return null;
+		int lastSlash = filePath.lastIndexOf("/");
+		if (lastSlash == -1)
+			lastSlash = filePath.lastIndexOf("\\");
+		return lastSlash == -1 ? filePath : filePath.substring(lastSlash + 1);
+	}
 }
