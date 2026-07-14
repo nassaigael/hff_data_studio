@@ -35,6 +35,6 @@ public class PredefinedAnalysisMapper {
 			case SEGMENTATION -> "Segmentation Analysis";
 			case FINANCIAL -> "Financial Analysis";
 			default -> category.name();
-		}
+		};
 	};
 }

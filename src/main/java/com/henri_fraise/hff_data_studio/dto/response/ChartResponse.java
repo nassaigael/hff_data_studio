@@ -15,6 +15,6 @@ public class ChartResponse {
 	private UUID chartId;
 	private ChartType chartType;
 	private String chartTypeLabel;
-	private Map<String, Object> configJson;
+	private String configJson;
 	private UUID resultId;
 }

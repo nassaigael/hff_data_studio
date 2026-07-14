@@ -18,6 +18,6 @@ public class PredefinedAnalysisResponse {
 	private AnalysisCategory category;
 	private String categoryLabel;
 	private String referenceScript;
-	private Map<String, Object> requiredParametersJson;
+	private String requiredParametersJson;
 	private Long executionCount;
 }
