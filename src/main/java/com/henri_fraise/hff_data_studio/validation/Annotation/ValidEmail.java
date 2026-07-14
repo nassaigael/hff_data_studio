@@ -24,11 +24,9 @@ public @interface ValidEmail {
 
 	Class<? extends Payload>[] payload() default {};
 
-	boolean nullable() default false;
+	boolean allowNull() default false;
 
-	boolean blankAllowed() default false;
+	boolean allowEmpty() default false;
 
-	boolean emptyAllowed() default false;
-
-	String[] domains() default {};
+	String[] allowedDomains() default {};
 }
