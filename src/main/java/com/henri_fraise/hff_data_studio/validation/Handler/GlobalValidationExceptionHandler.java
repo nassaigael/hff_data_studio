@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -66,6 +67,22 @@ public class GlobalValidationExceptionHandler {
 				.path(request.getDescription(false).replaceFirst("uri=", ""))
 				.validationErrors(errors)
 				.build();
+		return ResponseEntity.badRequest().body(response);
+	}
+
+	@ExceptionHandler(MissingServletRequestParameterException.class)
+	public ResponseEntity<ValidationErrorResponse> handleMissingServletRequestParameterException(
+			MissingServletRequestParameterException ex,
+			WebRequest request
+	) {
+		log.error("Missing request parameter error: {}", ex.getMessage());
+
+		ValidationErrorResponse response = ValidationErrorResponse.builder()
+					.status(HttpStatus.BAD_REQUEST.value())
+					.error("Missing Request Parameter Error")
+					.message("Missing request parameter: " + ex.getParameterName())
+					.path(request.getDescription(false).replaceFirst("uri=", ""))
+					.build();
 		return ResponseEntity.badRequest().body(response);
 	}
 }
