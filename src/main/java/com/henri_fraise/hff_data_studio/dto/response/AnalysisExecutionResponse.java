@@ -21,7 +21,7 @@ public class AnalysisExecutionResponse {
 	private String statusLabel;
 	private Integer durationMs;
 	private String durationFormatted;
-	private Map<String, Object> usedParametersJson;
+	private String usedParametersJson;
 	private UUID datasetId;
 	private String datasetName;
 	private UUID analysisId;
