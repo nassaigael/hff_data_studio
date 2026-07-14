@@ -4,6 +4,7 @@ import com.henri_fraise.hff_data_studio.dto.response.ExportResponse;
 import com.henri_fraise.hff_data_studio.entity.Export;
 import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
 import com.henri_fraise.hff_data_studio.enums.ExportFormat;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,6 +37,19 @@ public class ExportMapper {
 				)
 				.downloadUrl(EXPORT_PATH + export.getId() + "/download")
 				.build();
+	}
+
+	private String formatFileSize(Long bytes) {
+		if (bytes == null || bytes == 0) return "0 B";
+		return getBytesString(bytes);
+	}
+
+	@NonNull
+	static String getBytesString(Long bytes) {
+		if (bytes < 1024) return bytes + " B";
+		if (bytes < 1024 * 1024) return String.format("%.2f KB", bytes / 1024.0);
+		if (bytes < 1024 * 1024 * 1024) return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
+		return String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
 	}
 
 	private String getFormatLabel(ExportFormat format) {
