@@ -1,4 +1,24 @@
 package com.henri_fraise.hff_data_studio.validation.Annotation;
 
-public interface ValidFileType {
+import com.henri_fraise.hff_data_studio.validation.Validator.FileTypeValidator;
+
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import java.lang.annotation.*;
+
+@Documented
+@Constraint(validatedBy = FileTypeValidator.class)
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ValidFileType {
+
+	String message() default "File type not allowed. Allowed types are: CSV, EXCEL, SQL";
+
+	Class<?>[] groups() default {};
+
+	Class<? extends Payload>[] payload() default {};
+
+	String[] allowedTypes() default {"CSV", "EXCEL", "SQL"};
+
+	long maxSize() default 200 * 1024 * 1024;
 }
