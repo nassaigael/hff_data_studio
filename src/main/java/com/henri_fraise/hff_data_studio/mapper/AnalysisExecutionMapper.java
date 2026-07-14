@@ -6,7 +6,7 @@ import com.henri_fraise.hff_data_studio.entity.AnalysisExecution;
 import com.henri_fraise.hff_data_studio.entity.Dataset;
 import com.henri_fraise.hff_data_studio.entity.PredefinedAnalysis;
 import com.henri_fraise.hff_data_studio.entity.User;
-import com.henri_fraise.hff_data_studio.enums.ExecutionStatus;
+import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -72,12 +72,23 @@ public class AnalysisExecutionMapper {
 	) {
 		if (request == null || dataset == null || user == null) return null;
 		return AnalysisExecution.builder()
-				.status(ExecutionStatus.IN_PROGRESS)
+				.status(AnalysisExecutionStatus.IN_PROGRESS)
 				.usedParametersJson(request.getParameters())
 				.dataset(dataset)
 				.predefinedAnalysis(predefinedAnalysis)
 				.user(user)
 				.build();
+	}
+
+	private String getStatusLabel(AnalysisExecutionStatus status) {
+		if (status == null) return null;
+		return switch (status){
+			case IN_PROGRESS -> "In progress";
+			case ERROR -> "Error";
+			case COMPLETED -> "Completed";
+			case CANCELLED -> "Cancelled";
+			case PENDING -> "Pending";
+		};
 	}
 
 }
