@@ -776,7 +776,7 @@ public class UrlValidator implements ConstraintValidator<ValidUrl, String> {
                 return false;
             }
 
-            // Check allowed protocols
+            // Check allowed allowedProtocols
             if (allowedProtocols.length > 0) {
                 boolean protocolAllowed = Arrays.stream(allowedProtocols)
                     .anyMatch(p -> p.equalsIgnoreCase(protocol));
