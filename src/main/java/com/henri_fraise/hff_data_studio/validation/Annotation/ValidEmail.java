@@ -1,6 +1,6 @@
 package com.henri_fraise.hff_data_studio.validation.Annotation;
 
-import com.networknt.org.apache.commons.validator.routines.EmailValidator;
+import com.henri_fraise.hff_data_studio.validation.Validator.EmailValidator;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;
