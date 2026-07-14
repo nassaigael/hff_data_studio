@@ -3,6 +3,7 @@ package com.henri_fraise.hff_data_studio.mapper;
 import com.henri_fraise.hff_data_studio.dto.response.AnalysisResultResponse;
 import com.henri_fraise.hff_data_studio.dto.response.ChartResponse;
 import com.henri_fraise.hff_data_studio.entity.AnalysisResult;
+import com.henri_fraise.hff_data_studio.enums.ResultType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -33,5 +34,15 @@ public class AnalysisResultMapper {
 				.chart(chartResponse)
 				.downloadUrl(DOWNLOAD_URL + result.getId() + "download")
 				.build();
+	}
+
+	private String getResultTypeLabel(ResultType type){
+		if (type == null) return null;
+
+		return switch (type){
+			case KPI -> "KPI";
+			case CHART -> "Chart";
+			case TABLE -> "Table";
+		};
 	}
 }
