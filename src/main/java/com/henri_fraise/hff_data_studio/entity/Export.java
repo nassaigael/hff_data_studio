@@ -32,6 +32,9 @@ public class Export {
     @Column(name = "file_path", nullable = false)
     private String filePath;
 
+    @Column(name = "file_size", nullable = false)
+    private Long fileSize;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "execution_id", nullable = false)
     private AnalysisExecution execution;

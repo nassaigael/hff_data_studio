@@ -19,6 +19,7 @@ public class ExportResponse {
 	private LocalDateTime exportedAt;
 	private String filePath;
 	private String fileName;
+	private Long fileSize;
 	private String fileSizeFormatted;
 	private UUID executionId;
 	private AnalysisExecutionStatus executionStatus;
