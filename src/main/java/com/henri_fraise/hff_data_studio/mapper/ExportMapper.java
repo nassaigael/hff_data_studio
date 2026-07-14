@@ -3,6 +3,7 @@ package com.henri_fraise.hff_data_studio.mapper;
 import com.henri_fraise.hff_data_studio.dto.response.ExportResponse;
 import com.henri_fraise.hff_data_studio.entity.Export;
 import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
+import com.henri_fraise.hff_data_studio.enums.ExportFormat;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,6 +36,17 @@ public class ExportMapper {
 				)
 				.downloadUrl(EXPORT_PATH + export.getId() + "/download")
 				.build();
+	}
+
+	private String getFormatLabel(ExportFormat format) {
+		if (format == null) return null;
+
+		return switch (format) {
+			case CSV -> "CSV File";
+			case XLSX -> "Excel File";
+			case PNG -> "PNG Image";
+			case ZIP -> "ZIP Archive";
+		};
 	}
 
 	private String extractFileName(String filePath) {
