@@ -1,7 +1,12 @@
 package com.henri_fraise.hff_data_studio.mapper;
 
+import com.henri_fraise.hff_data_studio.dto.request.AnalysisExecutionRequest;
 import com.henri_fraise.hff_data_studio.dto.response.AnalysisExecutionResponse;
 import com.henri_fraise.hff_data_studio.entity.AnalysisExecution;
+import com.henri_fraise.hff_data_studio.entity.Dataset;
+import com.henri_fraise.hff_data_studio.entity.PredefinedAnalysis;
+import com.henri_fraise.hff_data_studio.entity.User;
+import com.henri_fraise.hff_data_studio.enums.ExecutionStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -56,6 +61,22 @@ public class AnalysisExecutionMapper {
 								: null
 				)
 				.resultCount(execution.getResults() != null ? execution.getResults().size() : 0)
+				.build();
+	}
+
+	public AnalysisExecution toEntity(
+			AnalysisExecutionRequest request,
+			Dataset dataset,
+			PredefinedAnalysis predefinedAnalysis,
+			User user
+	) {
+		if (request == null || dataset == null || user == null) return null;
+		return AnalysisExecution.builder()
+				.status(ExecutionStatus.IN_PROGRESS)
+				.usedParametersJson(request.getParameters())
+				.dataset(dataset)
+				.predefinedAnalysis(predefinedAnalysis)
+				.user(user)
 				.build();
 	}
 
