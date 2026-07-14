@@ -20,7 +20,7 @@ public class CleaningHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "history_id")
-    private UUID historyId;
+    private UUID id;
 
     @CreationTimestamp
     @Column(name = "executed_at", nullable = false, updatable = false)
