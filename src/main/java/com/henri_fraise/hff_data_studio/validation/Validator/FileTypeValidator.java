@@ -43,16 +43,13 @@ public class FileTypeValidator implements ConstraintValidator<ValidFileType, Mul
 		String contentType = file.getContentType();
 
 		boolean typeAllowed = Arrays.stream(allowedTypes).anyMatch(type -> {
-			if (type.equals("CSV")) {
-				return extension.equals("CSV") || (contentType != null && contentType.contains("csv"));
-			}
-			if (type.equals("EXCEL")) {
-				return extension.equals("XLSX") || extension.equals("XLS") || (contentType != null && (contentType.contains("excel") || contentType.contains("spreadsheet")));
-			}
-			if (type.equals("SQL")) {
-				return extension.equals("SQL") || (contentType != null && contentType.contains("sql"));
-			}
-			return false;
+			return switch (type) {
+				case "CSV" -> extension.equals("CSV") || (contentType != null && contentType.contains("csv"));
+				case "EXCEL" ->
+						extension.equals("XLSX") || extension.equals("XLS") || (contentType != null && (contentType.contains("excel") || contentType.contains("spreadsheet")));
+				case "SQL" -> extension.equals("SQL") || (contentType != null && contentType.contains("sql"));
+				default -> false;
+			};
 		});
 
 		if (!typeAllowed) {
