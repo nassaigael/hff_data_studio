@@ -17,7 +17,7 @@ public class AnalysisResultMapper {
 		if (result == null) return null;
 
 		ChartResponse chartResponse = null;
-		if(result.getChart() != null)
+		if (result.getChart() != null)
 			chartResponse = chartMapper.toResponse(result.getChart());
 
 		String DOWNLOAD_URL = "/api/v1/results/";
