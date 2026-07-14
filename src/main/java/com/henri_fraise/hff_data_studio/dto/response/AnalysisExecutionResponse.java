@@ -28,6 +28,7 @@ public class AnalysisExecutionResponse {
 	private String analysisName;
 	private AnalysisCategory analysisCategory;
 	private UUID userId;
+	private String userFullName;
 	private List<AnalysisResultResponse> results;
 	private Integer resultCount;
 }
