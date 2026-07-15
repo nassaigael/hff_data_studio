@@ -4,6 +4,8 @@ import com.henri_fraise.hff_data_studio.dto.response.SourceFileResponse;
 import com.henri_fraise.hff_data_studio.entity.SourceFile;
 import org.springframework.stereotype.Component;
 
+import static com.henri_fraise.hff_data_studio.mapper.ExportMapper.getBytesString;
+
 @Component
 public class SourceFileMapper {
   public SourceFileResponse toResponse(SourceFile file) {
