@@ -48,7 +48,7 @@ public interface CleaningHistoryRepository extends JpaRepository<CleaningHistory
 	long countCleaningOperationBetween(LocalDateTime start_date, LocalDateTime end_date);
 
 	@Query("SELECT AVG(h.durationMs) FROM CleaningHistory h WHERE h.status = 'SUCCESS' ")
-	Double averageSuccessfullCleaningDuration();
+	Double averageSuccessfulCleaningDuration();
 
 
 
