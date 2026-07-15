@@ -4,45 +4,51 @@ import com.henri_fraise.hff_data_studio.dto.response.CleaningHistoryResponse;
 import com.henri_fraise.hff_data_studio.entity.CleaningHistory;
 import com.henri_fraise.hff_data_studio.enums.CleaningHistoryStatus;
 import com.henri_fraise.hff_data_studio.enums.RuleType;
-import org.springframework.stereotype.Component;
 import java.time.format.DateTimeFormatter;
+import org.springframework.stereotype.Component;
 
 @Component
 public class CleaningHistoryMapper {
 
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+  private static final DateTimeFormatter DATE_FORMATTER =
+      DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
   public CleaningHistoryResponse toResponse(CleaningHistory history) {
     if (history == null) return null;
 
     return CleaningHistoryResponse.builder()
-            .historyId(history.getId())
-            .executedAt(history.getExecutedAt())
-            .executedAtFormatted(history.getExecutedAt() != null ? history.getExecutedAt().format(DATE_FORMATTER) : null)
-            .status(history.getStatus())
-            .statusLabel(getStatusLabel(history.getStatus()))
-            .details(history.getDetails())
-            .durationMs(history.getDurationMs())
-            .durationFormatted(formatDuration(history.getDurationMs()))
-            .affectedRows(history.getAffectedRows())
-            .datasetId(history.getDataset() != null ? history.getDataset().getId() : null)
-            .datasetName(history.getDataset() != null ? history.getDataset().getDatasetName() : null)
-            .datasetRowCount(history.getDataset() != null ? history.getDataset().getRowCount() : null)
-            .ruleId(history.getRule() != null ? history.getRule().getId() : null)
-            .ruleType(history.getRule() != null ? history.getRule().getRuleType() : null)
-            .ruleTypeLabel(history.getRule() != null ? getRuleTypeLabel(history.getRule().getRuleType()) : null)
-            .columnName(history.getRule() != null && history.getRule().getColumn() != null
-                    ? history.getRule().getColumn().getOriginalName()
-                    : null)
-            .ruleParameters(history.getRule() != null && history.getRule().getParametersJson() != null
-                    ? history.getRule().getParametersJson().toString()
-                    : null)
-            .userId(history.getUser() != null ? history.getUser().getId() : null)
-            .userFullName(history.getUser() != null
-                    ? history.getUser().getFirstName() + " " + history.getUser().getLastName()
-                    : null)
-            .userEmail(history.getUser() != null ? history.getUser().getEmail() : null)
-            .build();
+        .historyId(history.getId())
+        .executedAt(history.getExecutedAt())
+        .executedAtFormatted(
+            history.getExecutedAt() != null ? history.getExecutedAt().format(DATE_FORMATTER) : null)
+        .status(history.getStatus())
+        .statusLabel(getStatusLabel(history.getStatus()))
+        .details(history.getDetails())
+        .durationMs(history.getDurationMs())
+        .durationFormatted(formatDuration(history.getDurationMs()))
+        .affectedRows(history.getAffectedRows())
+        .datasetId(history.getDataset() != null ? history.getDataset().getId() : null)
+        .datasetName(history.getDataset() != null ? history.getDataset().getDatasetName() : null)
+        .datasetRowCount(history.getDataset() != null ? history.getDataset().getRowCount() : null)
+        .ruleId(history.getRule() != null ? history.getRule().getId() : null)
+        .ruleType(history.getRule() != null ? history.getRule().getRuleType() : null)
+        .ruleTypeLabel(
+            history.getRule() != null ? getRuleTypeLabel(history.getRule().getRuleType()) : null)
+        .columnName(
+            history.getRule() != null && history.getRule().getColumn() != null
+                ? history.getRule().getColumn().getOriginalName()
+                : null)
+        .ruleParameters(
+            history.getRule() != null && history.getRule().getParametersJson() != null
+                ? history.getRule().getParametersJson().toString()
+                : null)
+        .userId(history.getUser() != null ? history.getUser().getId() : null)
+        .userFullName(
+            history.getUser() != null
+                ? history.getUser().getFirstName() + " " + history.getUser().getLastName()
+                : null)
+        .userEmail(history.getUser() != null ? history.getUser().getEmail() : null)
+        .build();
   }
 
   private String getStatusLabel(CleaningHistoryStatus status) {
@@ -56,7 +62,6 @@ public class CleaningHistoryMapper {
       case PENDING -> "Pending";
     };
   }
-
 
   private String getRuleTypeLabel(RuleType ruleType) {
     if (ruleType == null) return null;
