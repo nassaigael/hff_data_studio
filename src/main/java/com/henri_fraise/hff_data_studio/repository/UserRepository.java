@@ -10,7 +10,11 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
@@ -29,5 +33,20 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
 	long countByIsActiveTrue();
 	long countByCategory_Id(UUID categoryId);
+
+	@Modifying
+	@Transactional
+	@Query("UPDATE User u SET u.isActive = false WHERE u.id = :user_id")
+	void deactivateUser(@Param("user_id") UUID userId);
+
+	@Modifying
+	@Transactional
+	@Query("UPDATE User u SET u.lastLogin = :lastLogin WHERE u.id = :user_id")
+	void updateLastLogin(@Param("user_id") UUID userId, @Param("lastLogin") LocalDateTime lastLogin);
+
+	@Modifying
+	@Transactional
+	@Query("UPDATE User u SET u.passwordHash = :passwordHash WHERE u.id = :user_id")
+	void updatePassword(@Param("user_id") UUID userId, @Param("passwordHash") String passwordHash);
 
 }
