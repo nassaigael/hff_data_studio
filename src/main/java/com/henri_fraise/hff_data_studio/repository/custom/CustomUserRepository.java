@@ -1,4 +1,3 @@
 package com.henri_fraise.hff_data_studio.repository.custom;
 
-public interface CustomUserRepository {
-}
+public interface CustomUserRepository {}
