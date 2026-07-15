@@ -1,9 +1,8 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
-import lombok.*;
-
 import java.util.List;
 import java.util.UUID;
+import lombok.*;
 
 @Getter
 @Setter
@@ -12,5 +11,5 @@ import java.util.UUID;
 @NoArgsConstructor
 public class PermissionUpdateRequest {
 
-    private List<UUID> permissionIDs;
+  private List<UUID> permissionIDs;
 }

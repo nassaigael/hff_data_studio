@@ -1,10 +1,8 @@
 package com.henri_fraise.hff_data_studio.dto.response;
 
 import com.henri_fraise.hff_data_studio.enums.ChartType;
-import lombok.*;
-
-import java.util.Map;
 import java.util.UUID;
+import lombok.*;
 
 @Getter
 @Setter
@@ -12,9 +10,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChartResponse {
-	private UUID chartId;
-	private ChartType chartType;
-	private String chartTypeLabel;
-	private String configJson;
-	private UUID resultId;
+  private UUID chartId;
+  private ChartType chartType;
+  private String chartTypeLabel;
+  private String configJson;
+  private UUID resultId;
 }

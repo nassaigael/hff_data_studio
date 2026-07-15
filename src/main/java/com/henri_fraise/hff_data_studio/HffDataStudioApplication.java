@@ -6,8 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class HffDataStudioApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(HffDataStudioApplication.class, args);
-    }
-
+  public static void main(String[] args) {
+    SpringApplication.run(HffDataStudioApplication.class, args);
+  }
 }

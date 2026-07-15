@@ -1,10 +1,9 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
 import com.henri_fraise.hff_data_studio.enums.RuleType;
-import lombok.*;
-
-import javax.validation.constraints.NotNull;
 import java.util.Map;
+import javax.validation.constraints.NotNull;
+import lombok.*;
 
 @Getter
 @Setter
@@ -13,13 +12,12 @@ import java.util.Map;
 @NoArgsConstructor
 public class CleaningRuleRequest {
 
-    @NotNull(message = "Rule type is required")
-    private RuleType ruleType;
+  @NotNull(message = "Rule type is required")
+  private RuleType ruleType;
 
-    private Map<String, Object> parametersJson;
+  private Map<String, Object> parametersJson;
 
-    private Integer executionOrder;
+  private Integer executionOrder;
 
-    @Builder.Default
-    private Boolean isActive = true;
+  @Builder.Default private Boolean isActive = true;
 }

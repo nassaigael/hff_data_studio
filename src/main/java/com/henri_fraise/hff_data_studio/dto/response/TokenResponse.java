@@ -11,14 +11,13 @@ import lombok.Setter;
 @AllArgsConstructor
 public class TokenResponse {
 
-    private String accessToken;
+  private String accessToken;
 
-    private String refreshToken;
+  private String refreshToken;
 
-    private Long expiresIn;
+  private Long expiresIn;
 
-    private String tokenType;
+  private String tokenType;
 
-    @Builder.Default
-    private String tokerType = "Bearer";
+  @Builder.Default private String tokerType = "Bearer";
 }

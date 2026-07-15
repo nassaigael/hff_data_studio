@@ -1,10 +1,9 @@
 package com.henri_fraise.hff_data_studio.validation.Annotation;
 
 import com.henri_fraise.hff_data_studio.validation.Validator.FilePathValidator;
-
+import java.lang.annotation.*;
 import javax.validation.Constraint;
 import javax.validation.Payload;
-import java.lang.annotation.*;
 
 @Documented
 @Constraint(validatedBy = FilePathValidator.class)
@@ -12,15 +11,15 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidFilePath {
 
-	String message() default "Invalid file path";
+  String message() default "Invalid file path";
 
-	Class<?>[] groups() default {};
+  Class<?>[] groups() default {};
 
-	Class<? extends Payload>[] payload() default {};
+  Class<? extends Payload>[] payload() default {};
 
-	boolean allowNull() default false;
+  boolean allowNull() default false;
 
-	boolean mustExist() default false;
+  boolean mustExist() default false;
 
-	String[] allowedExtensions() default {};
+  String[] allowedExtensions() default {};
 }

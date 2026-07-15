@@ -1,9 +1,8 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
-import lombok.*;
-
-import javax.validation.constraints.Email;
 import java.util.UUID;
+import javax.validation.constraints.Email;
+import lombok.*;
 
 @Getter
 @Setter
@@ -12,17 +11,16 @@ import java.util.UUID;
 @NoArgsConstructor
 public class UserUpdateRequest {
 
-    private String lastName;
+  private String lastName;
 
-    private String firstName;
+  private String firstName;
 
-    @Email(message = "Email must be valid")
-    private String email;
+  @Email(message = "Email must be valid")
+  private String email;
 
-    private Boolean isActive;
+  private Boolean isActive;
 
-    private UUID categoryId;
+  private UUID categoryId;
 
-    private String newPassword;
-
+  private String newPassword;
 }

@@ -1,8 +1,7 @@
 package com.henri_fraise.hff_data_studio.dto.response;
 
-import lombok.*;
-
 import java.util.UUID;
+import lombok.*;
 
 @Getter
 @Setter
@@ -10,8 +9,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PermissionResponse {
-    private UUID permissionId;
-    private String code;
-    private String label;
-    private String module;
+  private UUID permissionId;
+  private String code;
+  private String label;
+  private String module;
 }

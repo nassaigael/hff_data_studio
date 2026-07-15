@@ -339,7 +339,6 @@ import com.henri_fraise.hff_data_studio.entity.UserCategory;
 import com.henri_fraise.hff_data_studio.exception.DatabaseException;
 import com.henri_fraise.hff_data_studio.exception.ResourceAlreadyExistsException;
 import com.henri_fraise.hff_data_studio.exception.ResourceNotFoundException;
-import com.henri_fraise.hff_data_studio.exception.ValidationException;
 import com.henri_fraise.hff_data_studio.mapper.UserCategoryMapper;
 import com.henri_fraise.hff_data_studio.repository.UserCategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -356,166 +355,166 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UserCategoryService {
 
-    private final UserCategoryRepository categoryRepository;
-    private final PermissionService permissionService;
-    private final UserCategoryMapper categoryMapper;
-    private final AuditLogService auditLogService;
+	private final UserCategoryRepository categoryRepository;
+	private final PermissionService permissionService;
+	private final UserCategoryMapper categoryMapper;
+	private final AuditLogService auditLogService;
 
-    // ==================== CRUD Operations ====================
+	// ==================== CRUD Operations ====================
 
-    public List<UserCategoryResponse> getAllCategories() {
-        try {
-            return categoryRepository.findAll().stream()
-                .map(categoryMapper::toResponse)
-                .collect(Collectors.toList());
-        } catch (Exception ex) {
-            log.error("Error retrieving categories: {}", ex.getMessage(), ex);
-            throw new DatabaseException("Failed to retrieve categories", ex);
-        }
-    }
+	public List<UserCategoryResponse> getAllCategories() {
+		try {
+			return categoryRepository.findAll().stream()
+					.map(categoryMapper::toResponse)
+					.collect(Collectors.toList());
+		} catch (Exception ex) {
+			log.error("Error retrieving categories: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve categories", ex);
+		}
+	}
 
-    public UserCategoryResponse getCategoryById(UUID categoryId) {
-        UserCategory category = getCategoryEntityById(categoryId);
-        return categoryMapper.toResponse(category);
-    }
+	public UserCategoryResponse getCategoryById(UUID categoryId) {
+		UserCategory category = getCategoryEntityById(categoryId);
+		return categoryMapper.toResponse(category);
+	}
 
-    public UserCategory getCategoryEntityById(UUID categoryId) {
-        return categoryRepository.findById(categoryId)
-            .orElseThrow(() -> new ResourceNotFoundException("UserCategory", categoryId));
-    }
+	public UserCategory getCategoryEntityById(UUID categoryId) {
+		return categoryRepository.findById(categoryId)
+				.orElseThrow(() -> new ResourceNotFoundException("UserCategory", categoryId));
+	}
 
-    public UserCategory getCategoryEntityByLabel(String label) {
-        return categoryRepository.findByLabel(label)
-            .orElseThrow(() -> new ResourceNotFoundException("UserCategory", "label", label));
-    }
+	public UserCategory getCategoryEntityByLabel(String label) {
+		return categoryRepository.findByLabel(label)
+				.orElseThrow(() -> new ResourceNotFoundException("UserCategory", "label", label));
+	}
 
-    @Transactional
-    public UserCategoryResponse createCategory(CategoryCreationRequest request) {
-        // Check if label already exists
-        if (categoryRepository.existsByLabel(request.getLabel())) {
-            throw new ResourceAlreadyExistsException("UserCategory", "label", request.getLabel());
-        }
+	@Transactional
+	public UserCategoryResponse createCategory(CategoryCreationRequest request) {
+		// Check if label already exists
+		if (categoryRepository.existsByLabel(request.getLabel())) {
+			throw new ResourceAlreadyExistsException("UserCategory", "label", request.getLabel());
+		}
 
-        try {
-            UserCategory category = categoryMapper.toEntity(request);
-            UserCategory saved = categoryRepository.save(category);
-            
-            log.info("Category created successfully: {} ({})", saved.getLabel(), saved.getId());
-            
-            // Audit log
-            auditLogService.logAction(
-                "CATEGORY_CREATED",
-                "UserCategory",
-                saved.getId(),
-                "Category " + saved.getLabel() + " created"
-            );
-            
-            return categoryMapper.toResponse(saved);
-        } catch (Exception ex) {
-            log.error("Error creating category: {}", ex.getMessage(), ex);
-            throw new DatabaseException("Failed to create category", ex);
-        }
-    }
+		try {
+			UserCategory category = categoryMapper.toEntity(request);
+			UserCategory saved = categoryRepository.save(category);
 
-    @Transactional
-    public UserCategoryResponse updateCategory(UUID categoryId, CategoryCreationRequest request) {
-        UserCategory category = getCategoryEntityById(categoryId);
+			log.info("Category created successfully: {} ({})", saved.getLabel(), saved.getId());
 
-        // Check label uniqueness if changed
-        if (!category.getLabel().equals(request.getLabel()) && 
-            categoryRepository.existsByLabel(request.getLabel())) {
-            throw new ResourceAlreadyExistsException("UserCategory", "label", request.getLabel());
-        }
+			// Audit log
+			auditLogService.logAction(
+					"CATEGORY_CREATED",
+					"UserCategory",
+					saved.getId(),
+					"Category " + saved.getLabel() + " created"
+			);
 
-        try {
-            category.setLabel(request.getLabel());
-            category.setDescription(request.getDescription());
-            category.setAccessLevel(request.getAccessLevel());
-            
-            UserCategory updated = categoryRepository.save(category);
-            log.info("Category updated successfully: {} ({})", updated.getLabel(), updated.getId());
-            
-            // Audit log
-            auditLogService.logAction(
-                "CATEGORY_UPDATED",
-                "UserCategory",
-                updated.getId(),
-                "Category " + updated.getLabel() + " updated"
-            );
-            
-            return categoryMapper.toResponse(updated);
-        } catch (Exception ex) {
-            log.error("Error updating category: {}", ex.getMessage(), ex);
-            throw new DatabaseException("Failed to update category", ex);
-        }
-    }
+			return categoryMapper.toResponse(saved);
+		} catch (Exception ex) {
+			log.error("Error creating category: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to create category", ex);
+		}
+	}
 
-    @Transactional
-    public void deleteCategory(UUID categoryId) {
-        UserCategory category = getCategoryEntityById(categoryId);
-        
-        // Check if category has users
-        if (!category.getUsers().isEmpty()) {
-            throw new ValidationException("Cannot delete category with assigned users. Please reassign or deactivate users first.");
-        }
-        
-        try {
-            categoryRepository.delete(category);
-            log.info("Category deleted successfully: {} ({})", category.getLabel(), categoryId);
-            
-            // Audit log
-            auditLogService.logAction(
-                "CATEGORY_DELETED",
-                "UserCategory",
-                categoryId,
-                "Category " + category.getLabel() + " deleted"
-            );
-        } catch (Exception ex) {
-            log.error("Error deleting category: {}", ex.getMessage(), ex);
-            throw new DatabaseException("Failed to delete category", ex);
-        }
-    }
+	@Transactional
+	public UserCategoryResponse updateCategory(UUID categoryId, CategoryCreationRequest request) {
+		UserCategory category = getCategoryEntityById(categoryId);
 
-    // ==================== Permission Management ====================
+		// Check label uniqueness if changed
+		if (!category.getLabel().equals(request.getLabel()) &&
+				categoryRepository.existsByLabel(request.getLabel())) {
+			throw new ResourceAlreadyExistsException("UserCategory", "label", request.getLabel());
+		}
 
-    @Transactional
-    public void assignPermissionsToCategory(UUID categoryId, List<UUID> permissionIds) {
-        UserCategory category = getCategoryEntityById(categoryId);
-        
-        try {
-            List<Permission> permissions = permissionService.getPermissionEntitiesByIds(permissionIds);
-            category.setPermissions(permissions);
-            categoryRepository.save(category);
-            
-            log.info("Permissions assigned to category {}: {}", category.getLabel(), permissionIds.size());
-            
-            // Audit log
-            auditLogService.logAction(
-                "PERMISSIONS_ASSIGNED",
-                "UserCategory",
-                categoryId,
-                "Assigned " + permissionIds.size() + " permissions to category " + category.getLabel()
-            );
-        } catch (Exception ex) {
-            log.error("Error assigning permissions to category: {}", ex.getMessage(), ex);
-            throw new DatabaseException("Failed to assign permissions to category", ex);
-        }
-    }
+		try {
+			category.setLabel(request.getLabel());
+			category.setDescription(request.getDescription());
+			category.setAccessLevel(request.getAccessLevel());
 
-    public List<Permission> getPermissionsForCategory(UUID categoryId) {
-        UserCategory category = getCategoryEntityById(categoryId);
-        return category.getPermissions();
-    }
+			UserCategory updated = categoryRepository.save(category);
+			log.info("Category updated successfully: {} ({})", updated.getLabel(), updated.getId());
 
-    // ==================== Validation Methods ====================
+			// Audit log
+			auditLogService.logAction(
+					"CATEGORY_UPDATED",
+					"UserCategory",
+					updated.getId(),
+					"Category " + updated.getLabel() + " updated"
+			);
 
-    public boolean existsByLabel(String label) {
-        return categoryRepository.existsByLabel(label);
-    }
+			return categoryMapper.toResponse(updated);
+		} catch (Exception ex) {
+			log.error("Error updating category: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to update category", ex);
+		}
+	}
 
-    public List<UserCategory> getCategoriesByAccessLevel(Integer maxAccessLevel) {
-        return categoryRepository.findByMaxAccessLevel(maxAccessLevel);
-    }
+	@Transactional
+	public void deleteCategory(UUID categoryId) {
+		UserCategory category = getCategoryEntityById(categoryId);
+
+		// Check if category has users
+		if (!category.getUsers().isEmpty()) {
+			throw new ValidationException("Cannot delete category with assigned users. Please reassign or deactivate users first.");
+		}
+
+		try {
+			categoryRepository.delete(category);
+			log.info("Category deleted successfully: {} ({})", category.getLabel(), categoryId);
+
+			// Audit log
+			auditLogService.logAction(
+					"CATEGORY_DELETED",
+					"UserCategory",
+					categoryId,
+					"Category " + category.getLabel() + " deleted"
+			);
+		} catch (Exception ex) {
+			log.error("Error deleting category: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to delete category", ex);
+		}
+	}
+
+	// ==================== Permission Management ====================
+
+	@Transactional
+	public void assignPermissionsToCategory(UUID categoryId, List<UUID> permissionIds) {
+		UserCategory category = getCategoryEntityById(categoryId);
+
+		try {
+			List<Permission> permissions = permissionService.getPermissionEntitiesByIds(permissionIds);
+			category.setPermissions(permissions);
+			categoryRepository.save(category);
+
+			log.info("Permissions assigned to category {}: {}", category.getLabel(), permissionIds.size());
+
+			// Audit log
+			auditLogService.logAction(
+					"PERMISSIONS_ASSIGNED",
+					"UserCategory",
+					categoryId,
+					"Assigned " + permissionIds.size() + " permissions to category " + category.getLabel()
+			);
+		} catch (Exception ex) {
+			log.error("Error assigning permissions to category: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to assign permissions to category", ex);
+		}
+	}
+
+	public List<Permission> getPermissionsForCategory(UUID categoryId) {
+		UserCategory category = getCategoryEntityById(categoryId);
+		return category.getPermissions();
+	}
+
+	// ==================== Validation Methods ====================
+
+	public boolean existsByLabel(String label) {
+		return categoryRepository.existsByLabel(label);
+	}
+
+	public List<UserCategory> getCategoriesByAccessLevel(Integer maxAccessLevel) {
+		return categoryRepository.findByMaxAccessLevel(maxAccessLevel);
+	}
 }
 ```
 
@@ -1569,7 +1568,6 @@ import com.henri_fraise.hff_data_studio.dto.request.LoginRequest;
 import com.henri_fraise.hff_data_studio.dto.request.RefreshTokenRequest;
 import com.henri_fraise.hff_data_studio.dto.response.TokenResponse;
 import com.henri_fraise.hff_data_studio.entity.User;
-import com.henri_fraise.hff_data_studio.exception.InvalidCredentialsException;
 import com.henri_fraise.hff_data_studio.exception.TokenExpiredException;
 import com.henri_fraise.hff_data_studio.exception.TokenInvalidException;
 import com.henri_fraise.hff_data_studio.exception.UserDisabledException;
@@ -1589,100 +1587,100 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class AuthService {
 
-    private final AuthenticationManager authenticationManager;
-    private final UserDetailsService userDetailsService;
-    private final JwtService jwtService;
-    private final UserService userService;
+	private final AuthenticationManager authenticationManager;
+	private final UserDetailsService userDetailsService;
+	private final JwtService jwtService;
+	private final UserService userService;
 
-    @Transactional
-    public TokenResponse login(LoginRequest request) {
-        try {
-            // Authenticate user
-            Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    request.getEmail(),
-                    request.getPassword()
-                )
-            );
+	@Transactional
+	public TokenResponse login(LoginRequest request) {
+		try {
+			// Authenticate user
+			Authentication authentication = authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(
+							request.getEmail(),
+							request.getPassword()
+					)
+			);
 
-            // Get user details
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            User user = userService.getUserEntityByEmail(request.getEmail());
+			// Get user details
+			UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+			User user = userService.getUserEntityByEmail(request.getEmail());
 
-            // Check if user is active
-            if (!user.getIsActive()) {
-                throw new UserDisabledException("Account is disabled");
-            }
+			// Check if user is active
+			if (!user.getIsActive()) {
+				throw new UserDisabledException("Account is disabled");
+			}
 
-            // Update last login
-            userService.updateLastLogin(user.getId());
+			// Update last login
+			userService.updateLastLogin(user.getId());
 
-            // Generate tokens
-            String accessToken = jwtService.generateToken(userDetails);
-            String refreshToken = jwtService.generateRefreshToken(userDetails);
+			// Generate tokens
+			String accessToken = jwtService.generateToken(userDetails);
+			String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-            log.info("User logged in successfully: {}", request.getEmail());
+			log.info("User logged in successfully: {}", request.getEmail());
 
-            return TokenResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(jwtService.getAccessTokenExpiration())
-                .tokenType("Bearer")
-                .build();
+			return TokenResponse.builder()
+					.accessToken(accessToken)
+					.refreshToken(refreshToken)
+					.expiresIn(jwtService.getAccessTokenExpiration())
+					.tokenType("Bearer")
+					.build();
 
-        } catch (Exception ex) {
-            log.warn("Login failed for {}: {}", request.getEmail(), ex.getMessage());
-            throw new InvalidCredentialsException("Invalid email or password");
-        }
-    }
+		} catch (Exception ex) {
+			log.warn("Login failed for {}: {}", request.getEmail(), ex.getMessage());
+			throw new InvalidCredentialsException("Invalid email or password");
+		}
+	}
 
-    public TokenResponse refreshToken(RefreshTokenRequest request) {
-        try {
-            String refreshToken = request.getRefreshToken();
-            
-            // Validate refresh token
-            if (!jwtService.isTokenValid(refreshToken)) {
-                throw new TokenInvalidException("Invalid refresh token");
-            }
+	public TokenResponse refreshToken(RefreshTokenRequest request) {
+		try {
+			String refreshToken = request.getRefreshToken();
 
-            // Extract username
-            String username = jwtService.extractUsername(refreshToken);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+			// Validate refresh token
+			if (!jwtService.isTokenValid(refreshToken)) {
+				throw new TokenInvalidException("Invalid refresh token");
+			}
 
-            // Generate new access token
-            String newAccessToken = jwtService.generateToken(userDetails);
+			// Extract username
+			String username = jwtService.extractUsername(refreshToken);
+			UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            log.info("Token refreshed for user: {}", username);
+			// Generate new access token
+			String newAccessToken = jwtService.generateToken(userDetails);
 
-            return TokenResponse.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(jwtService.getAccessTokenExpiration())
-                .tokenType("Bearer")
-                .build();
+			log.info("Token refreshed for user: {}", username);
 
-        } catch (TokenInvalidException | TokenExpiredException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            log.error("Error refreshing token: {}", ex.getMessage(), ex);
-            throw new TokenInvalidException("Failed to refresh token");
-        }
-    }
+			return TokenResponse.builder()
+					.accessToken(newAccessToken)
+					.refreshToken(refreshToken)
+					.expiresIn(jwtService.getAccessTokenExpiration())
+					.tokenType("Bearer")
+					.build();
 
-    @Transactional
-    public void logout(String token) {
-        try {
-            // Invalidate token (add to blacklist if using)
-            log.info("User logged out");
-        } catch (Exception ex) {
-            log.error("Error during logout: {}", ex.getMessage(), ex);
-        }
-    }
+		} catch (TokenInvalidException | TokenExpiredException ex) {
+			throw ex;
+		} catch (Exception ex) {
+			log.error("Error refreshing token: {}", ex.getMessage(), ex);
+			throw new TokenInvalidException("Failed to refresh token");
+		}
+	}
 
-    public User getCurrentUser(Authentication authentication) {
-        String email = authentication.getName();
-        return userService.getUserEntityByEmail(email);
-    }
+	@Transactional
+	public void logout(String token) {
+		try {
+			// Invalidate token (add to blacklist if using)
+			log.info("User logged out");
+		} catch (Exception ex) {
+			log.error("Error during logout: {}", ex.getMessage(), ex);
+		}
+	}
+
+	public User getCurrentUser(Authentication authentication) {
+		String email = authentication.getName();
+		return userService.getUserEntityByEmail(email);
+	}
 }
 ```
 
