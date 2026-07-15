@@ -17,6 +17,7 @@ public class CleaningHistoryResponse {
   private CleaningHistoryStatus status;
   private String statusLabel;
   private String details;
+  private Integer durationMs;
   private UUID datasetId;
   private String datasetName;
   private UUID ruleId;

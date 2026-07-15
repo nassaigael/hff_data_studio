@@ -32,6 +32,9 @@ public class CleaningHistory {
   @Column(name = "details", columnDefinition = "TEXT")
   private String details;
 
+  @Column(name = "duration_ms")
+  private Integer durationMs;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "dataset_id", nullable = false)
   private Dataset dataset;
