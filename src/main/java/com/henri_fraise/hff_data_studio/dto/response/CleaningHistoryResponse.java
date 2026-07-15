@@ -13,14 +13,23 @@ import lombok.*;
 @NoArgsConstructor
 public class CleaningHistoryResponse {
   private UUID historyId;
+  private UUID datasetId;
+  private UUID ruleId;
+  private UUID userId;
   private LocalDateTime executedAt;
+  private String executedAtFormatted;
   private CleaningHistoryStatus status;
   private String statusLabel;
   private String details;
-  private UUID datasetId;
+  private Integer durationMs;
+  private String durationFormatted;
+  private Integer affectedRows;
   private String datasetName;
-  private UUID ruleId;
+  private Integer datasetRowCount;
   private RuleType ruleType;
-  private UUID userId;
+  private String ruleTypeLabel;
+  private String columnName;
+  private String ruleParameters;
   private String userFullName;
+  private String userEmail;
 }
