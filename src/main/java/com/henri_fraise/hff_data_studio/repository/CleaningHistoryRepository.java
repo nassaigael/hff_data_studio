@@ -71,7 +71,6 @@ public interface CleaningHistoryRepository extends JpaRepository<CleaningHistory
       "SELECT h.user.id, COUNT(h) FROM CleaningHistory h GROUP BY h.user.id ORDER BY COUNT(h) DESC")
   List<Object[]> countByUserGrouped();
 
-  // ===== GET LATEST =====
   @Query(
       "SELECT h FROM CleaningHistory h WHERE h.dataset.id = :datasetId ORDER BY h.executedAt DESC")
   List<CleaningHistory> findLatestByDatasetId(
