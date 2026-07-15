@@ -16,7 +16,7 @@ public class SourceFileMapper {
         .storagePath(file.getStoragePath())
         .sizesBytes(file.getSizeBytes())
         .sizesFormatted(formatFileSize(file.getSizeBytes()))
-        .uploadAt(file.getUploadAt())
+        .uploadAt(file.getUploadedAt())
         .processingStatus(file.getProcessingStatus())
         .projectId(file.getProject().getId() != null ? file.getProject().getId() : null)
         .projectName(

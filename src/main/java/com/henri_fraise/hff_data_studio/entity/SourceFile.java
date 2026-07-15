@@ -37,8 +37,8 @@ public class SourceFile {
   private Long sizeBytes;
 
   @CreationTimestamp
-  @Column(name = "upload_at")
-  private LocalDateTime uploadAt;
+  @Column(name = "uploaded_at")
+  private LocalDateTime uploadedAt;
 
   @Column(name = "processing_status", nullable = false)
   @Builder.Default
