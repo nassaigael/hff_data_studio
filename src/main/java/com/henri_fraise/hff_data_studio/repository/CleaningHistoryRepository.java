@@ -12,6 +12,10 @@ import java.util.UUID;
 @Repository
 public interface CleaningHistoryRepository extends JpaRepository<CleaningHistory, UUID> {
 
+	Page<CleaningHistory> findByDatasetIdOrderByExecutedAtDesc(UUID datasetId, Pageable pageable);
+
+	List<CleaningHistory> findByDatasetIdOrderByExecutedAtDesc(UUID datasetId);
+
 
 
 }
