@@ -21,7 +21,6 @@ public class CleaningHistoryResponse {
   private String executedAtFormatted;
   private CleaningHistoryStatus status;
   private String statusLabel;
-  private String statusIcon;
   private String details;
   private Integer durationMs;
   private String durationFormatted;
