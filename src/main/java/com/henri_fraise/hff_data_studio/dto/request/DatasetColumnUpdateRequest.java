@@ -10,7 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 public class DatasetColumnUpdateRequest {
 
-    private String normalizedName;
+  private String normalizedName;
 
-    private ColumnType targetType;
+  private ColumnType targetType;
 }

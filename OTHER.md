@@ -356,7 +356,7 @@ public class EmailValidator implements ConstraintValidator<ValidEmail, String> {
             return false;
         }
 
-        // Check allowed domains
+        // Check allowed allowedDomains
         if (allowedDomains.length > 0) {
             String domain = value.substring(value.indexOf('@') + 1);
             boolean domainAllowed = Arrays.stream(allowedDomains)

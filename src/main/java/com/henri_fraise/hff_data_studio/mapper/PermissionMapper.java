@@ -6,15 +6,14 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PermissionMapper {
-	public PermissionResponse toResponse(Permission permission) {
-		if (permission == null)
-			return null;
+  public PermissionResponse toResponse(Permission permission) {
+    if (permission == null) return null;
 
-		return PermissionResponse.builder()
-				.permissionId(permission.getId())
-				.code(permission.getCode())
-				.label(permission.getLabel())
-				.module(permission.getModule())
-				.build();
-	}
+    return PermissionResponse.builder()
+        .permissionId(permission.getId())
+        .code(permission.getCode())
+        .label(permission.getLabel())
+        .module(permission.getModule())
+        .build();
+  }
 }

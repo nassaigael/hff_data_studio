@@ -1,9 +1,8 @@
 package com.henri_fraise.hff_data_studio.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.UUID;
+import lombok.*;
 
 @Getter
 @Setter
@@ -14,17 +13,17 @@ import java.util.UUID;
 @NoArgsConstructor
 public class Permission {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "permission_id")
-    private UUID id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "permission_id")
+  private UUID id;
 
-    @Column(name = "code", nullable = false, unique = true)
-    private String code;
+  @Column(name = "code", nullable = false, unique = true)
+  private String code;
 
-    @Column(name = "label", nullable = false)
-    private String label;
+  @Column(name = "label", nullable = false)
+  private String label;
 
-    @Column(name = "module", nullable = false)
-    private String module;
+  @Column(name = "module", nullable = false)
+  private String module;
 }

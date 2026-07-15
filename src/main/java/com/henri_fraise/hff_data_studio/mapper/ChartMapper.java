@@ -8,27 +8,27 @@ import org.springframework.stereotype.Component;
 @Component
 public class ChartMapper {
 
-	public ChartResponse toResponse(Chart chart) {
-		if (chart == null) return null;
+  public ChartResponse toResponse(Chart chart) {
+    if (chart == null) return null;
 
-		return ChartResponse.builder()
-				.chartId(chart.getId())
-				.chartType(chart.getChartType())
-				.chartTypeLabel(getChartTypeLabel(chart.getChartType()))
-				.configJson(chart.getConfigJson())
-				.resultId(chart.getResult() != null ? chart.getResult().getId() : null)
-				.build();
-	}
+    return ChartResponse.builder()
+        .chartId(chart.getId())
+        .chartType(chart.getChartType())
+        .chartTypeLabel(getChartTypeLabel(chart.getChartType()))
+        .configJson(chart.getConfigJson())
+        .resultId(chart.getResult() != null ? chart.getResult().getId() : null)
+        .build();
+  }
 
-	public String getChartTypeLabel(ChartType type) {
-		if (type == null) return null;
+  public String getChartTypeLabel(ChartType type) {
+    if (type == null) return null;
 
-		return switch (type) {
-			case BAR -> "Bar Chart";
-			case LINE -> "Line Chart";
-			case PIE -> "Pie Chart";
-			case AREA -> "Area Chart";
-			case SCATTER -> "Scatter Chart";
-		};
-	}
+    return switch (type) {
+      case BAR -> "Bar Chart";
+      case LINE -> "Line Chart";
+      case PIE -> "Pie Chart";
+      case AREA -> "Area Chart";
+      case SCATTER -> "Scatter Chart";
+    };
+  }
 }

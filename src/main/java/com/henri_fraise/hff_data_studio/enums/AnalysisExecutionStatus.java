@@ -1,5 +1,9 @@
 package com.henri_fraise.hff_data_studio.enums;
 
 public enum AnalysisExecutionStatus {
-    IN_PROGRESS, COMPLETED, ERROR, CANCELLED, PENDING
+  IN_PROGRESS,
+  COMPLETED,
+  ERROR,
+  CANCELLED,
+  PENDING
 }

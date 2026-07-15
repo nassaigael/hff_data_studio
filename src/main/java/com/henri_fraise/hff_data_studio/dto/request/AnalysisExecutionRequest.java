@@ -1,10 +1,9 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
-import lombok.*;
-
-import javax.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.UUID;
+import javax.validation.constraints.NotNull;
+import lombok.*;
 
 @Getter
 @Setter
@@ -13,10 +12,10 @@ import java.util.UUID;
 @NoArgsConstructor
 public class AnalysisExecutionRequest {
 
-    @NotNull(message = "Dataset ID is required")
-    private UUID datasetId;
+  @NotNull(message = "Dataset ID is required")
+  private UUID datasetId;
 
-    private UUID analysisId;
+  private UUID analysisId;
 
-    private Map<String, Object> parameters;
+  private Map<String, Object> parameters;
 }

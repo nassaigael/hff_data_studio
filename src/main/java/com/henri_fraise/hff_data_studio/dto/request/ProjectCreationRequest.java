@@ -1,9 +1,8 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
 import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
-import lombok.*;
-
 import javax.validation.constraints.NotBlank;
+import lombok.*;
 
 @Getter
 @Setter
@@ -12,11 +11,10 @@ import javax.validation.constraints.NotBlank;
 @NoArgsConstructor
 public class ProjectCreationRequest {
 
-    @NotBlank(message = "Project name is required")
-    private String projectName;
+  @NotBlank(message = "Project name is required")
+  private String projectName;
 
-    private String description;
+  private String description;
 
-    @Builder.Default
-    private ProjectStatus status = ProjectStatus.IN_PROGRESS;
+  @Builder.Default private ProjectStatus status = ProjectStatus.IN_PROGRESS;
 }
