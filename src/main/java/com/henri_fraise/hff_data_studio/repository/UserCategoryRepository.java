@@ -11,4 +11,7 @@ public interface UserCategoryRepository extends JpaRepository<UserCategory, UUID
 	Optional<UserCategory> findByLabel(String label);
 	List<UserCategory> findAllByOrderByAccessLevelDesc();
 	List<UserCategory> findByAccessLevelGreaterThanEqual(Integer accessLevel);
+
+	boolean existsByLabel(String label);
+	boolean existsByLabelAndIdNot(String label, UUID id);
 }
