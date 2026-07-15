@@ -27,10 +27,14 @@ public class CleaningHistory {
 
   @Column(name = "status", nullable = false)
   @Enumerated(EnumType.STRING)
-  private CleaningHistoryStatus status;
+  @Builder.Default
+  private CleaningHistoryStatus status = CleaningHistoryStatus.PENDING;
 
   @Column(name = "details", columnDefinition = "TEXT")
   private String details;
+
+  @Column(name = "affected_rows")
+  private Integer affectedRows;
 
   @Column(name = "duration_ms")
   private Integer durationMs;
