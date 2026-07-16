@@ -39,4 +39,16 @@ public class SecurityConfig {
 			"/api/v1/audit/**"
 	};
 
+	private static final String[] USER_ENDPOINTS = {
+			"/api/v1/projects/**",
+			"/api/v1/files/**",
+			"/api/v1/datasets/**",
+			"/api/v1/exploration/**",
+			"/api/v1/cleaning/**",
+			"/api/v1/analyses/**",
+			"/api/v1/executions/**",
+			"/api/v1/exports/**",
+			"/api/v1/results/**"
+	};
+
 }
