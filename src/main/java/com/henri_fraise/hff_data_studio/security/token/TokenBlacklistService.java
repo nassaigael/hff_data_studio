@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,10 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class TokenBlacklistService {
 
-	// In-memory blacklist (for production, use Redis or database)
 	private final Map<String, Long> blacklistedTokens = new ConcurrentHashMap<>();
 
-	private static final long TOKEN_BLACKLIST_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+	private static final long TOKEN_BLACKLIST_DURATION = 24 * 60 * 60 * 1000;
 
 	public void blacklist(String token) {
 		if (token != null && !token.isEmpty()) {
@@ -25,17 +23,12 @@ public class TokenBlacklistService {
 	}
 
 	public boolean isBlacklisted(String token) {
-		if (token == null || token.isEmpty()) {
-			return false;
-		}
+		if (token == null || token.isEmpty()) return false;
 
 		Long expiry = blacklistedTokens.get(token);
-		if (expiry == null) {
-			return false;
-		}
+		if (expiry == null) return false;
 
 		if (expiry < System.currentTimeMillis()) {
-			// Token has expired from blacklist
 			blacklistedTokens.remove(token);
 			return false;
 		}
@@ -49,7 +42,7 @@ public class TokenBlacklistService {
 		}
 	}
 
-	@Scheduled(cron = "0 0 * * * *") // Run every hour
+	@Scheduled(cron = "0 0 * * * *")
 	public void cleanupBlacklist() {
 		long now = System.currentTimeMillis();
 		long before = blacklistedTokens.size();
