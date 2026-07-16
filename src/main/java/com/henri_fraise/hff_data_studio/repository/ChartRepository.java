@@ -15,5 +15,7 @@ public interface ChartRepository  extends JpaRepository<Chart, UUID> {
 	Optional<Chart> findByResultId(UUID resultId);
 
 	List<Chart> findByChartType(ChartType chartType);
+
+	long countByChartType(ChartType chartType);
 	
 }
