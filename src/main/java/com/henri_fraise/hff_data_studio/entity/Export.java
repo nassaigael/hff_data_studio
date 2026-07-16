@@ -25,8 +25,8 @@ public class Export {
   private ExportFormat exportFomat;
 
   @CreationTimestamp
-  @Column(name = "export_at", nullable = false, updatable = false)
-  private LocalDateTime exportAt;
+  @Column(name = "exported_at", nullable = false, updatable = false)
+  private LocalDateTime exportedAt;
 
   @Column(name = "file_path", nullable = false)
   private String filePath;
