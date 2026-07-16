@@ -20,4 +20,15 @@ public class SecurityConfig {
 	private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 	private final CustomAccessDeniedHandler accessDeniedHandler;
 
+	private static final String[] PUBLICS_ENDPOINTS = {
+			"/api/v1/auth/**",
+			"/api/v1/health",
+			"/api/v1/actuator/health",
+			"/swagger-ui/**",
+			"/swagger-ui.html",
+			"/v3/api-docs/**",
+			"/v3/api-docs.yaml",
+			"/api/v1/actuator/info"
+	};
+
 }
