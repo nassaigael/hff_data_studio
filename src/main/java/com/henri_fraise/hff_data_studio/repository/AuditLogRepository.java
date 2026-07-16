@@ -21,4 +21,10 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
 
 	List<AuditLog> findByUserIdOrderByActionDateDesc(UUID userId);
 
+	long countByUserId(UUID userId);
+
+	long countByConcernedEntity(String concernedEntity);
+
+	long countByActionContainingIgnoreCase(String action);
+	
 }
