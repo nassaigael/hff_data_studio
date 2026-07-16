@@ -1,6 +1,7 @@
 package com.henri_fraise.hff_data_studio.entity;
 
 import com.henri_fraise.hff_data_studio.enums.ExportFormat;
+import com.henri_fraise.hff_data_studio.enums.FileFormat;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -21,12 +22,15 @@ public class Export {
   @Column(name = "export_id")
   private UUID id;
 
+  @Column(name = "file_name", nullable = false)
+  private String fileName;
+
   @Column(name = "export_format", nullable = false)
-  private ExportFormat exportFomat;
+  private FileFormat fileFormat;
 
   @CreationTimestamp
-  @Column(name = "export_at", nullable = false, updatable = false)
-  private LocalDateTime exportAt;
+  @Column(name = "exported_at", nullable = false, updatable = false)
+  private LocalDateTime exportedAt;
 
   @Column(name = "file_path", nullable = false)
   private String filePath;

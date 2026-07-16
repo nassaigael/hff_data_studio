@@ -3,7 +3,7 @@ package com.henri_fraise.hff_data_studio.mapper;
 import com.henri_fraise.hff_data_studio.dto.response.ExportResponse;
 import com.henri_fraise.hff_data_studio.entity.Export;
 import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
-import com.henri_fraise.hff_data_studio.enums.ExportFormat;
+import com.henri_fraise.hff_data_studio.enums.FileFormat;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
@@ -16,9 +16,9 @@ public class ExportMapper {
 
     return ExportResponse.builder()
         .exportId(export.getId())
-        .exportFormat(export.getExportFomat())
-        .formatLabel(getFormatLabel(export.getExportFomat()))
-        .exportedAt(export.getExportAt())
+        .exportFormat(export.getFileFormat())
+        .formatLabel(getFormatLabel(export.getFileFormat()))
+        .exportedAt(export.getExportedAt())
         .filePath(export.getFilePath())
         .fileName(extractFileName(export.getFilePath()))
         .fileSize(export.getFileSize() != null ? export.getFileSize() : null)
@@ -50,7 +50,7 @@ public class ExportMapper {
     return String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
   }
 
-  private String getFormatLabel(ExportFormat format) {
+  private String getFormatLabel(FileFormat format) {
     if (format == null) return null;
 
     return switch (format) {
@@ -58,6 +58,10 @@ public class ExportMapper {
       case XLSX -> "Excel File";
       case PNG -> "PNG Image";
       case ZIP -> "ZIP Archive";
+      case PDF -> "PDF Document";
+      case HTML -> "HTML File";
+      case JSON -> "JSON File";
+      default -> format.name();
     };
   }
 
