@@ -35,7 +35,6 @@ public class PermissionAspect {
 		String entity = hasPermission.entity();
 		String operation = hasPermission.operation();
 
-		// Get current user
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null || !authentication.isAuthenticated()) {
 			throw new ForbiddenException("Authentication required");
@@ -44,7 +43,6 @@ public class PermissionAspect {
 		String email = authentication.getName();
 		User currentUser = userService.getUserEntityByEmail(email);
 
-		// Check if user has permission
 		boolean hasAccess = currentUser.getCategory().getPermissions().stream()
 				.anyMatch(p -> p.getCode().equals(permission));
 
