@@ -21,5 +21,16 @@ public interface ExportRepository extends JpaRepository<Export, UUID> {
 
 	List<Export> findByUserIdOrderByExportedAtDesc(UUID userId);
 
+	long countByUserId(UUID userId);
+
+	long countByExecutionId(UUID executionId);
+
+	long countByFileFormat(FileFormat fileFormat);
+
+	long countByUserIdAndFileFormat(UUID userId, FileFormat fileFormat);
+
+
+
+
 
 }
