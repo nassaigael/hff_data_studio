@@ -24,4 +24,16 @@ public interface AnalysisExecutionRepository extends JpaRepository<AnalysisExecu
 	Page<AnalysisExecution> findByDatasetIdAndUserId(UUID datasetId, UUID userId, Pageable pageable);
 
 	Page<AnalysisExecution> findByPredefinedAnalysisId(UUID analysisId, Pageable pageable);
+
+	long countByDatasetId(UUID datasetId);
+
+	long countByUserId(UUID userId);
+
+	long countByStatus(AnalysisExecutionStatus status);
+
+	long countByPredefinedAnalysisId(UUID analysisId);
+
+	long countByDatasetIdAndStatus(UUID datasetId, AnalysisExecutionStatus status);
+	
+	
 }
