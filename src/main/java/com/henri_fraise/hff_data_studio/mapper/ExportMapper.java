@@ -16,8 +16,8 @@ public class ExportMapper {
 
     return ExportResponse.builder()
         .exportId(export.getId())
-        .exportFormat(export.getExportFomat())
-        .formatLabel(getFormatLabel(export.getExportFomat()))
+        .exportFormat(export.getFileFormat())
+        .formatLabel(getFormatLabel(export.getFileFormat()))
         .exportedAt(export.getExportedAt())
         .filePath(export.getFilePath())
         .fileName(extractFileName(export.getFilePath()))
