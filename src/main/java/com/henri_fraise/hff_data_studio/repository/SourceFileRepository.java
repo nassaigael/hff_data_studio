@@ -16,9 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
-  Page<SourceFile> findByProject_Id(UUID projectId, Pageable pageable);
+  Page<SourceFile> findByProjectId(UUID projectId, Pageable pageable);
 
-  Page<SourceFile> findByUser_Id(UUID userId, Pageable pageable);
+  Page<SourceFile> findByUserId(UUID userId, Pageable pageable);
 
   Page<SourceFile> findByProject_IdAndUser_Id(UUID projectId, UUID userId, Pageable pageable);
 
@@ -57,7 +57,7 @@ public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
       @Param("current_status") FileProcessingStatus currentStatus);
 
   @Query(
-      "SELECT f FROM SourceFile f WHERE f.project_id = :project_id AND (:search_term IS NULL OR"
+      "SELECT f FROM SourceFile f WHERE f.project.id = :project_id AND (:search_term IS NULL OR"
           + " LOWER(f.fileName) LIKE LOWER(CONCAT('%', :search_term, '%')))")
   Page<SourceFile> searchProjectFiles(
       @Param("project_id") UUID projectId,
@@ -71,10 +71,13 @@ public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
   List<SourceFile> findOldFilesByStatus(
       @Param("date") LocalDateTime date, @Param("status") FileProcessingStatus status);
 
-  @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f WHERE f.project_id = :project_id")
+  @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f WHERE f.project.id = :project_id")
   Long sumFileSizesByProjectId(@Param("project_id") UUID projectId);
 
   @Query("SELECT COUNT(f) FROM SourceFile  f WHERE f.uploadedAt BETWEEN :start_date AND :end_date")
   long countFilesUploadedBetween(
       @Param("start_date") LocalDateTime startDate, @Param("end_date") LocalDateTime endDate);
+
+  @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f WHERE f.project.id = :project_id")
+  Long sumFileSizeByProjectId(@Param("project_id") UUID projectId);
 }
