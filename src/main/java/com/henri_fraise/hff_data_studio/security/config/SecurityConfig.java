@@ -31,4 +31,12 @@ public class SecurityConfig {
 			"/api/v1/actuator/info"
 	};
 
+	private static  final String[] ADMIN_ENDPOINTS = {
+			"/api/v1/admin/**",
+			"/api/v1/users/**",
+			"/api/v1/categories/**",
+			"/api/v1/permissions/**",
+			"/api/v1/audit/**"
+	};
+
 }
