@@ -1,6 +1,8 @@
 package com.henri_fraise.hff_data_studio.repository;
 
 import com.henri_fraise.hff_data_studio.entity.Dataset;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -68,7 +70,7 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
       Pageable pageable);
 
   @Query("SELECT d FROM Dataset d WHERE d.isCleaned = false AND  d.createdAt < :date")
-  List<Data> findUncleanedDatasetsOlderThan(@Param("date") String date);
+  List<Dataset> findUncleanedDatasetsOlderThan(@Param("date") LocalDateTime date);
 
   @Query("SELECT d FROM Dataset d WHERE d.project_id = :project_id ORDER BY d.createdAt DESC")
   List<Dataset> findRecentDatasetsByProjectId(@Param("project_id") UUID projectId);
