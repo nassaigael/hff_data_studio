@@ -40,7 +40,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			@NonNull FilterChain filterChain
 	) throws ServletException, IOException {
 
-		// Skip authentication for OPTIONS requests
 		if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
 			filterChain.doFilter(request, response);
 			return;
@@ -56,7 +55,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		try {
 			final String jwt = authHeader.substring(BEARER_PREFIX.length());
 
-			// Check if token is blacklisted
 			if (tokenBlacklistService.isBlacklisted(jwt)) {
 				log.warn("Token is blacklisted: {}", jwt);
 				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
