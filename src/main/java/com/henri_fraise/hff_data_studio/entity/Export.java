@@ -22,6 +22,9 @@ public class Export {
   @Column(name = "export_id")
   private UUID id;
 
+  @Column(name = "file_name", nullable = false)
+  private String fileName;
+
   @Column(name = "export_format", nullable = false)
   private FileFormat fileFormat;
 
