@@ -14,7 +14,7 @@ public class SourceFileMapper {
     return SourceFileResponse.builder()
         .fileId(file.getId())
         .fileName(file.getFileName())
-        .fileType(file.getFileFormat())
+        .fileFormat(file.getFileFormat())
         .storagePath(file.getStoragePath())
         .sizesBytes(file.getSizeBytes())
         .sizesFormatted(formatFileSize(file.getSizeBytes()))

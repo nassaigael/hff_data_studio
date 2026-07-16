@@ -1,6 +1,7 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
-import com.henri_fraise.hff_data_studio.enums.FileType;
+import com.henri_fraise.hff_data_studio.enums.FileFormat;
+
 import java.util.UUID;
 import javax.validation.constraints.NotNull;
 import lombok.*;
@@ -20,5 +21,5 @@ public class FileUploadRequest {
   private UUID projectId;
 
   @NotNull(message = "File type is required")
-  private FileType fileType;
+  private FileFormat fileFormat;
 }
