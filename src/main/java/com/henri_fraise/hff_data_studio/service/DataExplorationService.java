@@ -102,6 +102,7 @@ public class DataExplorationService {
 		colStats.put("uniquePercentage", BigDecimal.valueOf(uniquePercentage).setScale(2, RoundingMode.HALF_UP));
 	}
 
+	@Transactional
 	public ExplorationReportResponse getExplorationSummary(UUID datasetId) {
 		ExplorationReport report = reportRepository.findByDatasetId(datasetId)
 				.orElse(null);
