@@ -23,8 +23,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 	@PersistenceContext
 	private final EntityManager entityManager;
 
-	// ==================== STATISTICS ====================
-
 	@Override
 	public UserStatisticsResponse getUserStatistics() {
 		try {
@@ -131,8 +129,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 		}
 		return stats;
 	}
-
-	// ==================== COUNT METHODS ====================
 
 	@Override
 	public long countActiveUsersByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
@@ -289,8 +285,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 		}
 	}
 
-	// ==================== ACTIVITY METHODS ====================
-
 	@Override
 	@Transactional
 	public void updateUserActivity(UUID userId, String activity) {
@@ -343,8 +337,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 		}
 	}
 
-	// ==================== GROUP BY METHODS ====================
-
 	@Override
 	public List<Object[]> countGroupByCategory() {
 		try {
@@ -385,6 +377,58 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 
 		} catch (Exception e) {
 			log.error("Error counting users grouped by category with details: {}", e.getMessage(), e);
+			return List.of();
+		}
+	}
+
+	@Override
+	public List<Object[]> countByMonth(int year) {
+		try {
+			String sql = """
+                    SELECT 
+                        EXTRACT(MONTH FROM created_at) AS month,
+                        COUNT(user_id) AS total,
+                        SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) AS active,
+                        SUM(CASE WHEN is_active = false THEN 1 ELSE 0 END) AS inactive,
+                        MIN(created_at) AS firstUser,
+                        MAX(created_at) AS lastUser
+                    FROM users
+                    WHERE EXTRACT(YEAR FROM created_at) = :year
+                    GROUP BY EXTRACT(MONTH FROM created_at)
+                    ORDER BY month
+                    """;
+
+			Query query = entityManager.createNativeQuery(sql);
+			query.setParameter("year", year);
+			return query.getResultList();
+
+		} catch (Exception e) {
+			log.error("Error counting users by month for year {}: {}", year, e.getMessage(), e);
+			return List.of();
+		}
+	}
+
+	@Override
+	public List<Object[]> countByYear() {
+		try {
+			String sql = """
+                    SELECT 
+                        EXTRACT(YEAR FROM created_at) AS year,
+                        COUNT(user_id) AS total,
+                        SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) AS active,
+                        SUM(CASE WHEN is_active = false THEN 1 ELSE 0 END) AS inactive,
+                        MIN(created_at) AS firstUser,
+                        MAX(created_at) AS lastUser
+                    FROM users
+                    GROUP BY EXTRACT(YEAR FROM created_at)
+                    ORDER BY year DESC
+                    """;
+
+			Query query = entityManager.createNativeQuery(sql);
+			return query.getResultList();
+
+		} catch (Exception e) {
+			log.error("Error counting users by year: {}", e.getMessage(), e);
 			return List.of();
 		}
 	}
@@ -482,8 +526,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 		}
 	}
 
-	// ==================== STATISTICS BY PERIOD ====================
-
 	@Override
 	public Map<String, Object> getStatisticsByPeriod(LocalDateTime startDate, LocalDateTime endDate) {
 		Map<String, Object> stats = new HashMap<>();
@@ -549,8 +591,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 		}
 		return stats;
 	}
-
-	// ==================== USER ACTIVITY STATISTICS ====================
 
 	@Override
 	public Map<String, Object> getUserActivityStatistics() {
@@ -657,8 +697,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 		}
 	}
 
-	// ==================== CATEGORY STATISTICS ====================
-
 	@Override
 	public Map<String, Object> getCategoryStatistics() {
 		Map<String, Object> stats = new HashMap<>();
@@ -705,8 +743,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 			return List.of();
 		}
 	}
-
-	// ==================== BULK OPERATIONS ====================
 
 	@Override
 	@Transactional
@@ -786,8 +822,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 			throw new RuntimeException("Failed to delete users in bulk", e);
 		}
 	}
-
-	// ==================== CUSTOM QUERIES ====================
 
 	@Override
 	public List<Object[]> findUsersWithNoActivity() {
@@ -875,8 +909,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 			return 0L;
 		}
 	}
-
-	// ==================== UTILITY METHODS ====================
 
 	private Long getLongValue(Object value) {
 		if (value == null) return 0L;
