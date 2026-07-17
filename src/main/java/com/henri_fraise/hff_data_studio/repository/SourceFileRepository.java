@@ -32,11 +32,15 @@ public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
   List<SourceFile> findByUploadedAtBefore(LocalDateTime date);
 
   List<SourceFile> findByUploadedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+  List<SourceFile> findByFileFormat(FileType fileFormat);
   
   long countByProjectId(UUID projectId);
 
   long countByUserId(UUID userId);
 
+  long countByFileFormat(FileType fileFormat);
+  
   long countByProcessingStatus(FileProcessingStatus status);
   
   boolean existsByFileNameAndProjectId(String fileName, UUID projectId);
