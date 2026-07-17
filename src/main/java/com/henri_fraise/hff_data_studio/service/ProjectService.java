@@ -32,7 +32,9 @@ public class ProjectService {
 	private final UserService userService;
 	private final AuditLogService auditLogService;
 
-	// ==================== CRUD Operations ====================
+	public long countProjects() {
+		return projectRepository.count();
+	}
 
 	public Page<ProjectResponse> getAllProjects(Pageable pageable) {
 		try {
@@ -46,7 +48,6 @@ public class ProjectService {
 
 	public Page<ProjectResponse> getUserProjects(UUID userId, Pageable pageable) {
 		try {
-			// Verify user exists
 			userService.getUserEntityById(userId);
 
 			Page<Project> projects = projectRepository.findByCreatorId(userId, pageable);
@@ -86,7 +87,6 @@ public class ProjectService {
 	public ProjectResponse createProject(ProjectCreationRequest request, UUID userId) {
 		User user = userService.getUserEntityById(userId);
 
-		// Check if project name already exists for this user
 		if (projectRepository.existsByProjectNameAndCreatorId(request.getProjectName(), userId)) {
 			throw new ResourceAlreadyExistsException("Project", "name", request.getProjectName());
 		}
@@ -98,7 +98,6 @@ public class ProjectService {
 			log.info("Project created successfully: {} ({}) by user {}",
 					saved.getProjectName(), saved.getId(), userId);
 
-			// Audit log
 			auditLogService.logAction(
 					"PROJECT_CREATED",
 					"Project",
@@ -117,12 +116,10 @@ public class ProjectService {
 	public ProjectResponse updateProject(UUID projectId, ProjectUpdateRequest request, UUID userId) {
 		Project project = getProjectEntityById(projectId);
 
-		// Verify user owns the project
 		if (!project.getCreator().getId().equals(userId)) {
 			throw new ForbiddenException("You don't have permission to update this project");
 		}
 
-		// Check name uniqueness if changed
 		if (request.getProjectName() != null && !request.getProjectName().equals(project.getProjectName())) {
 			if (projectRepository.existsByProjectNameAndCreatorId(request.getProjectName(), userId)) {
 				throw new ResourceAlreadyExistsException("Project", "name", request.getProjectName());
@@ -135,7 +132,6 @@ public class ProjectService {
 
 			log.info("Project updated successfully: {} ({})", updated.getProjectName(), updated.getId());
 
-			// Audit log
 			auditLogService.logAction(
 					"PROJECT_UPDATED",
 					"Project",
@@ -154,7 +150,6 @@ public class ProjectService {
 	public void archiveProject(UUID projectId, UUID userId) {
 		Project project = getProjectEntityById(projectId);
 
-		// Verify user owns the project
 		if (!project.getCreator().getId().equals(userId)) {
 			throw new ForbiddenException("You don't have permission to archive this project");
 		}
@@ -169,7 +164,6 @@ public class ProjectService {
 
 			log.info("Project archived successfully: {} ({})", project.getProjectName(), projectId);
 
-			// Audit log
 			auditLogService.logAction(
 					"PROJECT_ARCHIVED",
 					"Project",
@@ -186,7 +180,6 @@ public class ProjectService {
 	public void restoreProject(UUID projectId, UUID userId) {
 		Project project = getProjectEntityById(projectId);
 
-		// Verify user owns the project
 		if (!project.getCreator().getId().equals(userId)) {
 			throw new ForbiddenException("You don't have permission to restore this project");
 		}
@@ -200,8 +193,6 @@ public class ProjectService {
 			projectRepository.save(project);
 
 			log.info("Project restored successfully: {} ({})", project.getProjectName(), projectId);
-
-			// Audit log
 			auditLogService.logAction(
 					"PROJECT_RESTORED",
 					"Project",
@@ -217,22 +208,15 @@ public class ProjectService {
 	@Transactional
 	public void deleteProject(UUID projectId, UUID userId) {
 		Project project = getProjectEntityById(projectId);
-
-		// Verify user owns the project or is admin
-		if (!project.getCreator().getId().equals(userId)) {
+		if (!project.getCreator().getId().equals(userId))
 			throw new ForbiddenException("You don't have permission to delete this project");
-		}
 
-		// Check if project has files
-		if (!project.getSourceFiles().isEmpty()) {
+		if (!project.getSourceFiles().isEmpty())
 			throw new ValidationException("Cannot delete project with existing files. Please delete files first.");
-		}
 
 		try {
 			projectRepository.delete(project);
 			log.info("Project deleted successfully: {} ({})", project.getProjectName(), projectId);
-
-			// Audit log
 			auditLogService.logAction(
 					"PROJECT_DELETED",
 					"Project",
@@ -244,8 +228,6 @@ public class ProjectService {
 			throw new DatabaseException("Failed to delete project", ex);
 		}
 	}
-
-	// ==================== Search Operations ====================
 
 	public Page<ProjectResponse> searchUserProjects(UUID userId, String searchTerm, Pageable pageable) {
 		try {
@@ -270,8 +252,6 @@ public class ProjectService {
 		}
 	}
 
-	// ==================== Statistics Operations ====================
-
 	public ProjectStatisticsResponse getProjectStatistics() {
 		try {
 			return customProjectRepository.getProjectStatistics();
@@ -289,7 +269,9 @@ public class ProjectService {
 		return projectRepository.countByCreatorIdAndStatus(userId, status);
 	}
 
-	// ==================== Validation Methods ====================
+	long countProjectsByStatus(ProjectStatus status) {
+		return projectRepository.countByStatus(status);
+	}
 
 	public boolean existsByProjectName(String projectName) {
 		return projectRepository.existsByProjectName(projectName);
@@ -298,8 +280,6 @@ public class ProjectService {
 	public boolean existsByProjectNameAndUser(String projectName, UUID userId) {
 		return projectRepository.existsByProjectNameAndCreatorId(projectName, userId);
 	}
-
-	// ==================== Maintenance Operations ====================
 
 	@Transactional
 	public void archiveInactiveProjects() {
@@ -311,5 +291,9 @@ public class ProjectService {
 			log.error("Error archiving inactive projects: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to archive inactive projects", ex);
 		}
+	}
+
+	public long countProjectsCreatedBetween(LocalDateTime startDate, LocalDateTime endDate) {
+		return projectRepository.countProjectsCreatedBetween(startDate, endDate);
 	}
 }
