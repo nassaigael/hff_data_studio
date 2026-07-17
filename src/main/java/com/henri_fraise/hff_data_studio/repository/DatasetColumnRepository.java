@@ -31,6 +31,12 @@ public interface DatasetColumnRepository extends JpaRepository<DatasetColumn, UU
 
   long countByDatasetIdAndNullCountGreaterThan(UUID datasetId, Integer nullCount);
 
+  @Query("SELECT SUM(c.uniqueCount) FROM DatasetColumn c WHERE c.dataset.id = :dataset_id")
+  Long sumUniqueCountByDatasetId(@Param("dataset_id") UUID datasetId);
+
+  @Query("SELECT SUM(c.nullCount) FROM DatasetColumn  c WHERE c.dataset.id = :dataset_id")
+  Long sumNullCountByDatasetId(@Param("dataset_id") UUID datasetId);
+
   @Modifying
   @Transactional
   @Query("UPDATE DatasetColumn c SET c.normalizedName = :normalized_name WHERE c.id = :column_id")
