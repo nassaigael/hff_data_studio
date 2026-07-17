@@ -8,5 +8,6 @@ public enum FileFormat {
   PDF,
   HTML,
   ZIP,
+  SQL,
   JSON;
 }
