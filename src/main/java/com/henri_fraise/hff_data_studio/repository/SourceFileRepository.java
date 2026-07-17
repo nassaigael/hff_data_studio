@@ -2,35 +2,34 @@ package com.henri_fraise.hff_data_studio.repository;
 
 import com.henri_fraise.hff_data_studio.entity.SourceFile;
 import com.henri_fraise.hff_data_studio.enums.FileProcessingStatus;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import com.henri_fraise.hff_data_studio.enums.FileType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
+
+  List<SourceFile> findByProjectIdOrderByUploadedAtDesc(UUID projectId);
+
   Page<SourceFile> findByProjectId(UUID projectId, Pageable pageable);
 
-  Page<SourceFile> findByUserId(UUID userId, Pageable pageable);
-
-  Page<SourceFile> findByProject_IdAndUser_Id(UUID projectId, UUID userId, Pageable pageable);
-
-  List<SourceFile> findByProjectId(UUID projectId);
-
-  List<SourceFile> findByUserId(UUID userId);
-
-  Page<SourceFile> findByProcessingStatus(FileProcessingStatus status, Pageable pageable);
+  List<SourceFile> findByUserIdOrderByUploadedAtDesc(UUID userId);
 
   List<SourceFile> findByProcessingStatus(FileProcessingStatus status);
 
-  Page<SourceFile> findByFileNameContainingIgnoreCase(String fileName, Pageable pageable);
+  List<SourceFile> findByFileFormat(FileType fileFormat);
+
+  List<SourceFile> findByUploadedAtBefore(LocalDateTime date);
+
+  List<SourceFile> findByUploadedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
   long countByProjectId(UUID projectId);
 
@@ -38,46 +37,34 @@ public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
 
   long countByProcessingStatus(FileProcessingStatus status);
 
-  long countByProjectIdAndProcessingStatus(UUID projectId, FileProcessingStatus status);
+  long countByFileFormat(FileType fileFormat);
 
-  @Modifying
-  @Transactional
-  @Query("UPDATE  SourceFile  f SET f.processingStatus = :status WHERE f.id = :file_id")
-  void updateProcessingStatus(
-      @Param("file_id") UUID fileId, @Param("status") FileProcessingStatus status);
+  boolean existsByFileNameAndProjectId(String fileName, UUID projectId);
 
-  @Modifying
-  @Transactional
-  @Query(
-      "UPDATE SourceFile f SET f.processingStatus = :status WHERE f.id = :file_id AND"
-          + " f.processingStatus = :current_status")
-  void updateProcessingStatusIfCurrent(
-      @Param("file_id") UUID fileId,
-      @Param("status") FileProcessingStatus status,
-      @Param("current_status") FileProcessingStatus currentStatus);
+  @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f")
+  Long sumFileSizes();
 
-  @Query(
-      "SELECT f FROM SourceFile f WHERE f.project.id = :project_id AND (:search_term IS NULL OR"
-          + " LOWER(f.fileName) LIKE LOWER(CONCAT('%', :search_term, '%')))")
-  Page<SourceFile> searchProjectFiles(
-      @Param("project_id") UUID projectId,
-      @Param("search_term") String searchTerm,
-      Pageable pageable);
+  @Query("SELECT AVG(f.sizeBytes) FROM SourceFile f")
+  Double averageFileSize();
+
+  @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f WHERE f.project.id = :projectId")
+  Long sumFileSizesByProjectId(@Param("projectId") UUID projectId);
+
+  @Query("SELECT f FROM SourceFile f WHERE f.project.id = :projectId AND f.fileType = :fileType")
+  List<SourceFile> findByProjectIdAndFileType(@Param("projectId") UUID projectId, @Param("fileType") FileType fileType);
 
   @Query("SELECT f FROM SourceFile f WHERE f.processingStatus IN :statuses")
   List<SourceFile> findByProcessingStatusIn(@Param("statuses") List<FileProcessingStatus> statuses);
 
-  @Query("SELECT f FROM SourceFile  f WHERE f.uploadedAt < :date AND f.processingStatus = :status")
-  List<SourceFile> findOldFilesByStatus(
-      @Param("date") LocalDateTime date, @Param("status") FileProcessingStatus status);
+  @Query("SELECT COUNT(f) FROM SourceFile f WHERE f.project.id = :projectId AND f.processingStatus = :status")
+  long countByProjectIdAndStatus(@Param("projectId") UUID projectId, @Param("status") FileProcessingStatus status);
 
-  @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f WHERE f.project.id = :project_id")
-  Long sumFileSizesByProjectId(@Param("project_id") UUID projectId);
+  @Query("SELECT f FROM SourceFile f ORDER BY f.uploadedAt DESC")
+  List<SourceFile> findRecentFiles(Pageable pageable);
 
-  @Query("SELECT COUNT(f) FROM SourceFile  f WHERE f.uploadedAt BETWEEN :start_date AND :end_date")
-  long countFilesUploadedBetween(
-      @Param("start_date") LocalDateTime startDate, @Param("end_date") LocalDateTime endDate);
+  @Query("SELECT f.fileFormat, COUNT(f) FROM SourceFile f GROUP BY f.fileType")
+  List<Object[]> countGroupByFileType();
 
-  @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f WHERE f.project.id = :project_id")
-  Long sumFileSizeByProjectId(@Param("project_id") UUID projectId);
+  @Query("SELECT f.processingStatus, COUNT(f) FROM SourceFile f GROUP BY f.processingStatus")
+  List<Object[]> countGroupByProcessingStatus();
 }
