@@ -96,4 +96,7 @@ public interface CleaningHistoryRepository extends JpaRepository<CleaningHistory
           + "CAST(COUNT(h) AS DOUBLE) * 100 "
           + "FROM CleaningHistory h")
   Double calculateOverallSuccessRate();
+
+  @Query("SELECT COUNT(h) FROM CleaningHistory h WHERE h.rule.column.id = :columnId")
+  long countByColumnId(@Param("columnId") UUID columnId);
 }
