@@ -2,6 +2,8 @@ package com.henri_fraise.hff_data_studio.repository;
 
 import com.henri_fraise.hff_data_studio.entity.Project;
 import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -25,7 +27,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
   boolean existsByProjectNameAndIdNot(String projectName, UUID id);
 
   long countByStatus(ProjectStatus status);
-  
+
   @Modifying
   @Transactional
   @Query("UPDATE Project p SET p.status = :status WHERE p.id = :project_id")
@@ -64,5 +66,8 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
   Page<Project> findByCreatorId(UUID userId, Pageable pageable);
 
   Page<Project> findByCreatorIdAndStatus(UUID userId, ProjectStatus status, Pageable pageable);
+
+  @Query("SELECT COUNT(p) FROM Project p WHERE p.createdAt BETWEEN :start_date AND :end_date")
+  long countProjectsCreatedBetween(@Param("start_date") LocalDateTime startDate, @Param("end_date") LocalDateTime endDate);
 
 }
