@@ -1,5 +1,6 @@
 package com.henri_fraise.hff_data_studio.entity;
 
+import com.henri_fraise.hff_data_studio.enums.AnalysisCategory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -30,7 +31,7 @@ public class PredefinedAnalysis {
   private String description;
 
   @Column(name = "category", length = 60, nullable = false)
-  private String category;
+  private AnalysisCategory category;
 
   @Column(name = "reference_script", length = 255, nullable = false)
   private String referenceScript;
