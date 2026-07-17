@@ -4,7 +4,7 @@ import com.henri_fraise.hff_data_studio.dto.response.AnalysisResultResponse;
 import com.henri_fraise.hff_data_studio.entity.AnalysisExecution;
 import com.henri_fraise.hff_data_studio.entity.AnalysisResult;
 import com.henri_fraise.hff_data_studio.entity.Chart;
-import com.henri_fraise.hff_data_studio.enums.FileFormat;
+import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.enums.ResultType;
 import com.henri_fraise.hff_data_studio.exception.ResourceNotFoundException;
 import com.henri_fraise.hff_data_studio.mapper.AnalysisResultMapper;
@@ -35,7 +35,7 @@ public class AnalysisResultService {
 
 	@Transactional
 	public AnalysisResult createResult(AnalysisExecution execution, ResultType resultType,
-	                                   String title, String filePath, FileFormat fileFormat,
+	                                   String title, String filePath, FileType fileFormat,
 	                                   Integer displayOrder) {
 		AnalysisResult result = AnalysisResult.builder()
 				.execution(execution)
@@ -51,13 +51,13 @@ public class AnalysisResultService {
 	}
 
 	@Transactional
-	public AnalysisResult createResultWithChart(AnalysisExecution execution, ResultType resultType,
-	                                            String title, String filePath, String fileFormat,
-	                                            String chartType, String configJson) {
-		AnalysisResult result = createResult(execution, resultType, title, filePath, FileFormat.valueOf(fileFormat), 0);
+	public void createResultWithChart(AnalysisExecution execution, ResultType resultType,
+	                                  String title, String filePath, String fileFormat,
+	                                  String chartType, String configJson) {
+		AnalysisResult result = createResult(execution, resultType, title, filePath, FileType.valueOf(fileFormat), 0);
 		Chart chart = chartService.createChart(result, chartType, configJson);
 		result.setChart(chart);
-		return resultRepository.save(result);
+		resultRepository.save(result);
 	}
 
 	public AnalysisResult getResultEntityById(UUID resultId) {
