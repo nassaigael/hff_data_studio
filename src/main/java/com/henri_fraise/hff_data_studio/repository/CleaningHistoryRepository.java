@@ -99,4 +99,6 @@ public interface CleaningHistoryRepository extends JpaRepository<CleaningHistory
 
   @Query("SELECT COUNT(h) FROM CleaningHistory h WHERE h.rule.column.id = :columnId")
   long countByColumnId(@Param("columnId") UUID columnId);
+
+  long countByUserId(UUID userId);
 }
