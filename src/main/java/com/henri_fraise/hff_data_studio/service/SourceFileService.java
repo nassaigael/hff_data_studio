@@ -5,7 +5,7 @@ import com.henri_fraise.hff_data_studio.entity.Dataset;
 import com.henri_fraise.hff_data_studio.entity.Project;
 import com.henri_fraise.hff_data_studio.entity.SourceFile;
 import com.henri_fraise.hff_data_studio.entity.User;
-import com.henri_fraise.hff_data_studio.enums.FileFormat;
+import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.enums.FileProcessingStatus;
 import com.henri_fraise.hff_data_studio.exception.*;
 import com.henri_fraise.hff_data_studio.mapper.SourceFileMapper;
@@ -19,9 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -39,8 +36,6 @@ public class SourceFileService {
 	private final FileStorageService fileStorageService;
 	private final DatasetService datasetService;
 	private final AuditLogService auditLogService;
-
-	// ==================== CRUD Operations ====================
 
 	public Page<SourceFileResponse> getFilesByProject(UUID projectId, Pageable pageable) {
 		try {
@@ -83,16 +78,12 @@ public class SourceFileService {
 		Project project = projectService.getProjectEntityById(projectId);
 		User user = userService.getUserEntityById(userId);
 
-		// Verify user has access to project
 		if (!project.getCreator().getId().equals(userId)) {
 			throw new ForbiddenException("You don't have permission to upload files to this project");
 		}
 
 		try {
-			// Save file to storage
 			String storagePath = fileStorageService.saveFile(file, projectId, userId);
-
-			// Create file entity
 			SourceFile sourceFile = SourceFile.builder()
 					.fileName(file.getOriginalFilename())
 					.fileFormat(detectFileFormat(file.getOriginalFilename()))
@@ -108,7 +99,6 @@ public class SourceFileService {
 			log.info("File uploaded successfully: {} ({}) to project {}",
 					saved.getFileName(), saved.getId(), projectId);
 
-			// Audit log
 			auditLogService.logAction(
 					"FILE_UPLOADED",
 					"SourceFile",
@@ -116,7 +106,6 @@ public class SourceFileService {
 					"File " + saved.getFileName() + " uploaded to project " + project.getProjectName()
 			);
 
-			// Process file asynchronously - extract datasets
 			processFileAsync(saved);
 
 			return sourceFileMapper.toResponse(saved);
@@ -144,27 +133,22 @@ public class SourceFileService {
 	public void deleteFile(UUID fileId, UUID userId) {
 		SourceFile file = getFileEntityById(fileId);
 
-		// Verify user has access
 		if (!file.getUser().getId().equals(userId) &&
 				!file.getProject().getCreator().getId().equals(userId)) {
 			throw new ForbiddenException("You don't have permission to delete this file");
 		}
 
 		try {
-			// Delete physical file
 			fileStorageService.deleteFile(file.getStoragePath());
 
-			// Delete associated datasets
 			for (Dataset dataset : file.getDatasets()) {
 				datasetService.deleteDataset(dataset.getId(), userId);
 			}
 
-			// Delete entity
 			sourceFileRepository.delete(file);
 
 			log.info("File deleted successfully: {} ({})", file.getFileName(), fileId);
 
-			// Audit log
 			auditLogService.logAction(
 					"FILE_DELETED",
 					"SourceFile",
@@ -179,8 +163,6 @@ public class SourceFileService {
 			throw new DatabaseException("Failed to delete file", ex);
 		}
 	}
-
-	// ==================== Search Operations ====================
 
 	public Page<SourceFileResponse> searchProjectFiles(UUID projectId, String searchTerm, Pageable pageable) {
 		try {
@@ -207,8 +189,6 @@ public class SourceFileService {
 		}
 	}
 
-	// ==================== Statistics Operations ====================
-
 	public long countFilesByProject(UUID projectId) {
 		return sourceFileRepository.countByProjectId(projectId);
 	}
@@ -225,17 +205,11 @@ public class SourceFileService {
 		return sourceFileRepository.sumFileSizeByProjectId(projectId);
 	}
 
-	// ==================== Processing Operations ====================
 
-	private void processFileAsync(SourceFile file) {
-		// Update status to analyzing
+	@Transactional
+	protected void processFileAsync(SourceFile file) {
 		updateProcessingStatus(file.getId(), FileProcessingStatus.ANALYZING);
-
-		// This would typically be done asynchronously
-		// For now, we'll just update status to explored
-		// In production, this would trigger a background job
 		try {
-			// Extract datasets from file
 			List<Dataset> datasets = fileStorageService.extractDatasets(file);
 			for (Dataset dataset : datasets) {
 				datasetService.createDataset(dataset);
@@ -248,20 +222,18 @@ public class SourceFileService {
 		}
 	}
 
-	private FileFormat detectFileFormat(String fileName) {
+	private FileType detectFileFormat(String fileName) {
 		if (fileName == null) {
 			return null;
 		}
 		String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
 		return switch (extension) {
-			case "csv" -> FileFormat.CSV;
-			case "xlsx", "xls" -> FileFormat.XLSX;
-			case "sql" -> FileFormat.SQL;
+			case "csv" -> FileType.CSV;
+			case "xlsx", "xls" -> FileType.XLSX;
+			case "sql" -> FileType.SQL;
 			default -> throw new ValidationException("Unsupported file format: " + extension);
 		};
 	}
-
-	// ==================== Maintenance Operations ====================
 
 	@Transactional
 	public void cleanupFailedFiles() {
@@ -270,7 +242,6 @@ public class SourceFileService {
 			List<SourceFile> failedFiles = sourceFileRepository.findByProcessingStatus(FileProcessingStatus.ERROR);
 			for (SourceFile file : failedFiles) {
 				if (file.getUploadedAt().isBefore(threshold)) {
-					// Mark for deletion or clean up
 					log.info("Cleaning up failed file: {} ({})", file.getFileName(), file.getId());
 				}
 			}
