@@ -45,6 +45,12 @@ public class CleaningHistoryService {
 		log.info("Cleaning history created: {} for dataset: {}", saved.getId(), dataset.getDatasetName());
 	}
 
+//
+public long countByColumn(UUID columnId) {
+	return historyRepository.countByColumnId(columnId);
+}
+
+
 	public CleaningHistory getHistoryEntityById(UUID historyId) {
 		return historyRepository.findById(historyId)
 				.orElseThrow(() -> new ResourceNotFoundException("Cleaning history not found: " + historyId));
