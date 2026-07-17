@@ -18,8 +18,8 @@ public class PredefinedAnalysisMapper {
             .analysisId(analysis.getId())
             .analysisName(analysis.getAnalysisName())
             .description(analysis.getDescription())
-            .category(analysis.getCategory())
-            .categoryLabel(getCategoryLabel(analysis.getCategory()))
+            .category(String.valueOf(analysis.getCategory()))
+            .categoryLabel(getCategoryLabel(String.valueOf(analysis.getCategory())))
             .referenceScript(analysis.getReferenceScript())
             .requiredParametersJson(analysis.getRequiredParametersJson())
             .executionCount(
@@ -38,7 +38,7 @@ public class PredefinedAnalysisMapper {
     return PredefinedAnalysis.builder()
             .analysisName(request.getAnalysisName())
             .description(request.getDescription())
-            .category(request.getCategory() != null ? request.getCategory().name() : null)
+            .category(request.getCategory() != null ? request.getCategory() : null)
             .referenceScript(request.getReferenceScript())
             .requiredParametersJson(request.getRequiredParametersJson())
             .build();
@@ -56,7 +56,7 @@ public class PredefinedAnalysisMapper {
       analysis.setDescription(request.getDescription());
     }
     if (request.getCategory() != null) {
-      analysis.setCategory(request.getCategory().name());
+      analysis.setCategory(request.getCategory());
     }
     if (request.getReferenceScript() != null) {
       analysis.setReferenceScript(request.getReferenceScript());
