@@ -32,8 +32,6 @@ public class DatasetService {
 	private final SourceFileService sourceFileService;
 	private final AuditLogService auditLogService;
 
-	// ==================== GET / FIND Methods ====================
-
 	public Dataset getDatasetEntityById(UUID datasetId) {
 		return datasetRepository.findById(datasetId)
 				.orElseThrow(() -> new ResourceNotFoundException("Dataset not found with id: " + datasetId));
@@ -97,8 +95,6 @@ public class DatasetService {
 				.orElseThrow(() -> new ResourceNotFoundException("Dataset not found with name: " + datasetName));
 	}
 
-	// ==================== CREATE Methods ====================
-
 	@Transactional
 	public Dataset createDataset(SourceFile sourceFile, String datasetName, Integer rowCount, Integer columnCount) {
 		try {
@@ -111,7 +107,7 @@ public class DatasetService {
 					.build();
 
 			Dataset saved = datasetRepository.save(dataset);
-			log.info("Dataset created successfully: {} ({})", saved.getDatasetName(), saved.getId());
+			log.info(" Dataset created successfully: {} ({})", saved.getDatasetName(), saved.getId());
 
 			auditLogService.logAction(
 					"DATASET_CREATED",
@@ -163,8 +159,6 @@ public class DatasetService {
 	public Dataset extractDatasetFromFile(SourceFile file) {
 		return createDatasetFromFile(file);
 	}
-
-	// ==================== UPDATE Methods ====================
 
 	@Transactional
 	public DatasetResponse updateDatasetStats(UUID datasetId, Integer rowCount, Integer columnCount) {
@@ -236,10 +230,10 @@ public class DatasetService {
 	}
 
 	@Transactional
-	public Dataset updateDatasetCleanedStatus(UUID datasetId) {
+	public void updateDatasetCleanedStatus(UUID datasetId) {
 		Dataset dataset = getDatasetEntityById(datasetId);
 		dataset.setIsCleaned(true);
-		return datasetRepository.save(dataset);
+		datasetRepository.save(dataset);
 	}
 
 	@Transactional
@@ -254,15 +248,13 @@ public class DatasetService {
 		return datasetRepository.save(dataset);
 	}
 
-	// ==================== DELETE Methods ====================
-
 	@Transactional
 	public void deleteDataset(UUID datasetId) {
 		Dataset dataset = getDatasetEntityById(datasetId);
 
 		try {
 			datasetRepository.delete(dataset);
-			log.info("Dataset deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
+			log.info("Dataset deleted successfully : {} ({})", dataset.getDatasetName(), datasetId);
 
 			auditLogService.logAction(
 					"DATASET_DELETED",
@@ -324,8 +316,6 @@ public class DatasetService {
 		}
 	}
 
-	// ==================== SEARCH Methods ====================
-
 	public Page<DatasetResponse> searchProjectDatasets(UUID projectId, String searchTerm, Pageable pageable) {
 		try {
 			Page<Dataset> datasets = datasetRepository.searchProjectDatasets(projectId, searchTerm, pageable);
@@ -343,8 +333,6 @@ public class DatasetService {
 	public Page<Dataset> searchDatasets(String searchTerm, Pageable pageable) {
 		return datasetRepository.findByDatasetNameContainingIgnoreCase(searchTerm, pageable);
 	}
-
-	// ==================== COUNT Methods ====================
 
 	public long countDatasets() {
 		return datasetRepository.count();
@@ -378,8 +366,6 @@ public class DatasetService {
 		return datasetRepository.countByCreatedAtBetween(startDate, endDate);
 	}
 
-	// ==================== STATISTICS Methods ====================
-
 	public DatasetStatisticsResponse getDatasetStatistics() {
 		try {
 			return customDatasetRepository.getDatasetStatistics();
@@ -400,8 +386,7 @@ public class DatasetService {
 
 	public double getAverageDatasetQualityScore() {
 		try {
-			Double avg = customDatasetRepository.getAverageDatasetQualityScore();
-			return avg != null ? avg : 0.0;
+			return customDatasetRepository.getAverageDatasetQualityScore();
 		} catch (Exception ex) {
 			log.error("Error getting average dataset quality score: {}", ex.getMessage(), ex);
 			return 0.0;
@@ -410,8 +395,7 @@ public class DatasetService {
 
 	public double getAverageDatasetQualityScoreByProject(UUID projectId) {
 		try {
-			Double avg = customDatasetRepository.getAverageDatasetQualityScoreByProjectId(projectId);
-			return avg != null ? avg : 0.0;
+			return customDatasetRepository.getAverageDatasetQualityScoreByProjectId(projectId);
 		} catch (Exception ex) {
 			log.error("Error getting average dataset quality score by project: {}", ex.getMessage(), ex);
 			return 0.0;
@@ -447,8 +431,6 @@ public class DatasetService {
 		Double avg = datasetRepository.averageColumnCount();
 		return avg != null ? avg : 0.0;
 	}
-
-	// ==================== UTILITY Methods ====================
 
 	public boolean existsByDatasetNameAndFile(String datasetName, UUID fileId) {
 		return datasetRepository.existsByDatasetNameAndSourceFileId(datasetName, fileId);
@@ -494,8 +476,6 @@ public class DatasetService {
 		return dataset.getSourceFile().getProject().getId();
 	}
 
-	// ==================== BATCH Operations ====================
-
 	@Transactional
 	public List<Dataset> saveAll(List<Dataset> datasets) {
 		try {
@@ -518,8 +498,6 @@ public class DatasetService {
 			throw new DatabaseException("Failed to delete datasets", ex);
 		}
 	}
-
-	// ==================== CLEANUP Methods ====================
 
 	@Transactional
 	public void cleanupOldDatasets(LocalDateTime thresholdDate) {
