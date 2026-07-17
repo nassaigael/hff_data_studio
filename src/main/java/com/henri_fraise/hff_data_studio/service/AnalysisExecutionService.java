@@ -171,14 +171,14 @@ public class AnalysisExecutionService {
 
 	@Transactional
 	public void updateExecutionWithResults(UUID executionId, AnalysisExecutionStatus status,
-	                                       Integer durationMs, Map<String, Object> usedParametersJson) {
+	                                       Integer durationMs, String usedParametersJson) {
 		AnalysisExecution execution = getExecutionEntityById(executionId);
 		execution.setStatus(status);
 		if (durationMs != null) {
 			execution.setDurationMs(durationMs);
 		}
 		if (usedParametersJson != null) {
-			execution.setUsedParametersJson(usedParametersJson.toString());
+			execution.setUsedParametersJson(usedParametersJson);
 		}
 		executionRepository.save(execution);
 		log.info("Execution updated with results: {}", executionId);
