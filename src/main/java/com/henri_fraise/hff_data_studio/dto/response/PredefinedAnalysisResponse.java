@@ -1,21 +1,32 @@
 package com.henri_fraise.hff_data_studio.dto.response;
 
-import com.henri_fraise.hff_data_studio.enums.AnalysisCategory;
-import java.util.UUID;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+import java.util.Map;
+import java.util.UUID;
+
+@Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class PredefinedAnalysisResponse {
+
   private UUID analysisId;
+
   private String analysisName;
+
   private String description;
-  private AnalysisCategory category;
+
+  private String category;
+
   private String categoryLabel;
+
   private String referenceScript;
-  private String requiredParametersJson;
+
+  private Map<String, Object> requiredParametersJson;
+
   private Long executionCount;
 }
