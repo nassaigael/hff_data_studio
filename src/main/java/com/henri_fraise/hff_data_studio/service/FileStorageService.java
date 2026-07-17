@@ -2,7 +2,6 @@ package com.henri_fraise.hff_data_studio.service;
 
 import com.henri_fraise.hff_data_studio.entity.Dataset;
 import com.henri_fraise.hff_data_studio.entity.SourceFile;
-import com.henri_fraise.hff_data_studio.enums.FileFormat;
 import com.henri_fraise.hff_data_studio.exception.FileProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
