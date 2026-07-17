@@ -6,7 +6,11 @@ import com.henri_fraise.hff_data_studio.dto.response.UserResponse;
 import com.henri_fraise.hff_data_studio.dto.response.UserStatisticsResponse;
 import com.henri_fraise.hff_data_studio.entity.User;
 import com.henri_fraise.hff_data_studio.entity.UserCategory;
-import com.henri_fraise.hff_data_studio.exception.*;
+import com.henri_fraise.hff_data_studio.exception.DatabaseException;
+import com.henri_fraise.hff_data_studio.exception.InvalidCredentialsException;
+import com.henri_fraise.hff_data_studio.exception.ResourceAlreadyExistsException;
+import com.henri_fraise.hff_data_studio.exception.ResourceNotFoundException;
+import com.henri_fraise.hff_data_studio.exception.ValidationException;
 import com.henri_fraise.hff_data_studio.mapper.UserMapper;
 import com.henri_fraise.hff_data_studio.repository.UserRepository;
 import com.henri_fraise.hff_data_studio.repository.custom.CustomUserRepository;
@@ -19,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -33,12 +38,40 @@ public class UserService {
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final AuditLogService auditLogService;
 
-	// ==================== CRUD Operations ====================
+	public User getUserEntityById(UUID userId) {
+		return userRepository.findById(userId)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+	}
+
+	public User getUserEntityByEmail(String email) {
+		return userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+	}
+
+	public UserResponse getUserById(UUID userId) {
+		User user = getUserEntityById(userId);
+		return userMapper.toResponse(user);
+	}
+
+	public UserResponse getUserByEmail(String email) {
+		User user = getUserEntityByEmail(email);
+		return userMapper.toResponse(user);
+	}
 
 	public Page<UserResponse> getAllUsers(Pageable pageable) {
 		try {
 			Page<User> users = userRepository.findAll(pageable);
 			return users.map(userMapper::toResponse);
+		} catch (Exception ex) {
+			log.error("Error retrieving users: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve users", ex);
+		}
+	}
+
+	public List<UserResponse> getAllUsers() {
+		try {
+			List<User> users = userRepository.findAll();
+			return users.stream().map(userMapper::toResponse).toList();
 		} catch (Exception ex) {
 			log.error("Error retrieving users: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to retrieve users", ex);
@@ -55,26 +88,80 @@ public class UserService {
 		}
 	}
 
-	public UserResponse getUserById(UUID userId) {
-		User user = getUserEntityById(userId);
-		return userMapper.toResponse(user);
+	public List<UserResponse> getActiveUsers() {
+		try {
+			List<User> users = userRepository.findByIsActiveTrue();
+			return users.stream().map(userMapper::toResponse).toList();
+		} catch (Exception ex) {
+			log.error("Error retrieving active users: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve active users", ex);
+		}
 	}
 
-	public User getUserEntityById(UUID userId) {
-		return userRepository.findById(userId)
-				.orElseThrow(() -> new ResourceNotFoundException("User", userId));
+	public List<UserResponse> getInactiveUsers() {
+		try {
+			List<User> users = userRepository.findByIsActiveFalse();
+			return users.stream().map(userMapper::toResponse).toList();
+		} catch (Exception ex) {
+			log.error("Error retrieving inactive users: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve inactive users", ex);
+		}
 	}
 
-	public User getUserEntityByEmail(String email) {
-		return userRepository.findByEmail(email)
-				.orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+	public Page<UserResponse> getUsersByCategory(UUID categoryId, Pageable pageable) {
+		try {
+			Page<User> users = userRepository.findByCategoryId(categoryId, pageable);
+			return users.map(userMapper::toResponse);
+		} catch (Exception ex) {
+			log.error("Error retrieving users by category: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve users by category", ex);
+		}
+	}
+
+	public List<UserResponse> getUsersByCategory(UUID categoryId) {
+		try {
+			List<User> users = userRepository.findByCategoryId(categoryId);
+			return users.stream().map(userMapper::toResponse).toList();
+		} catch (Exception ex) {
+			log.error("Error retrieving users by category: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve users by category", ex);
+		}
+	}
+
+	public List<UserResponse> getUsersByCategoryLabel(String categoryLabel) {
+		try {
+			List<User> users = userRepository.findByCategoryLabel(categoryLabel);
+			return users.stream().map(userMapper::toResponse).toList();
+		} catch (Exception ex) {
+			log.error("Error retrieving users by category label: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve users by category label", ex);
+		}
+	}
+
+	public List<UserResponse> getRecentUsers(int limit) {
+		try {
+			List<User> users = userRepository.findRecentUsers(limit);
+			return users.stream().map(userMapper::toResponse).toList();
+		} catch (Exception ex) {
+			log.error("Error retrieving recent users: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve recent users", ex);
+		}
+	}
+
+	public List<UserResponse> getUsersCreatedBetween(LocalDateTime startDate, LocalDateTime endDate) {
+		try {
+			List<User> users = userRepository.findByCreatedAtBetween(startDate, endDate);
+			return users.stream().map(userMapper::toResponse).toList();
+		} catch (Exception ex) {
+			log.error("Error retrieving users created between dates: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve users created between dates", ex);
+		}
 	}
 
 	@Transactional
 	public UserResponse createUser(UserCreationRequest request) {
-		// Check if email already exists
 		if (userRepository.existsByEmail(request.getEmail())) {
-			throw new ResourceAlreadyExistsException("User", "email", request.getEmail());
+			throw new ResourceAlreadyExistsException("User already exists with email: " + request.getEmail());
 		}
 
 		try {
@@ -84,12 +171,11 @@ public class UserService {
 
 			log.info("User created successfully: {} ({})", saved.getEmail(), saved.getId());
 
-			// Audit log
 			auditLogService.logAction(
 					"USER_CREATED",
 					"User",
 					saved.getId(),
-					saved.getEmail() + " created by admin"
+					"User " + saved.getEmail() + " created by admin"
 			);
 
 			return userMapper.toResponse(saved);
@@ -100,13 +186,27 @@ public class UserService {
 	}
 
 	@Transactional
+	public User createUserEntity(User user) {
+		try {
+			if (userRepository.existsByEmail(user.getEmail())) {
+				throw new ResourceAlreadyExistsException("User already exists with email: " + user.getEmail());
+			}
+			User saved = userRepository.save(user);
+			log.info("User entity created: {}", saved.getEmail());
+			return saved;
+		} catch (Exception ex) {
+			log.error("Error creating user entity: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to create user entity", ex);
+		}
+	}
+
+	@Transactional
 	public UserResponse updateUser(UUID userId, UserUpdateRequest request) {
 		User user = getUserEntityById(userId);
 
-		// Check email uniqueness if changed
 		if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
 			if (userRepository.existsByEmail(request.getEmail())) {
-				throw new ResourceAlreadyExistsException("User", "email", request.getEmail());
+				throw new ResourceAlreadyExistsException("Email already in use: " + request.getEmail());
 			}
 		}
 
@@ -121,7 +221,6 @@ public class UserService {
 
 			log.info("User updated successfully: {} ({})", updated.getEmail(), updated.getId());
 
-			// Audit log
 			auditLogService.logAction(
 					"USER_UPDATED",
 					"User",
@@ -137,54 +236,38 @@ public class UserService {
 	}
 
 	@Transactional
-	public void deactivateUser(UUID userId) {
-		User user = getUserEntityById(userId);
-
-		if (!user.getIsActive()) {
-			throw new ValidationException("User is already deactivated");
-		}
-
+	public User updateUserEntity(User user) {
 		try {
-			user.setIsActive(false);
-			userRepository.save(user);
-			log.info("User deactivated successfully: {} ({})", user.getEmail(), userId);
-
-			// Audit log
-			auditLogService.logAction(
-					"USER_DEACTIVATED",
-					"User",
-					userId,
-					"User " + user.getEmail() + " deactivated"
-			);
+			User updated = userRepository.save(user);
+			log.info("User entity updated: {}", updated.getEmail());
+			return updated;
 		} catch (Exception ex) {
-			log.error("Error deactivating user: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to deactivate user", ex);
+			log.error("Error updating user entity: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to update user entity", ex);
 		}
 	}
 
 	@Transactional
-	public void activateUser(UUID userId) {
-		User user = getUserEntityById(userId);
-
-		if (user.getIsActive()) {
-			throw new ValidationException("User is already active");
-		}
-
+	public void updateLastLogin(UUID userId) {
 		try {
-			user.setIsActive(true);
+			User user = getUserEntityById(userId);
+			user.setLastLogin(LocalDateTime.now());
 			userRepository.save(user);
-			log.info("User activated successfully: {} ({})", user.getEmail(), userId);
-
-			// Audit log
-			auditLogService.logAction(
-					"USER_ACTIVATED",
-					"User",
-					userId,
-					"User " + user.getEmail() + " activated"
-			);
 		} catch (Exception ex) {
-			log.error("Error activating user: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to activate user", ex);
+			log.error(" Error updating last login for user {}: {}", userId, ex.getMessage());
+			throw new DatabaseException("Failed to update last login", ex);
+		}
+	}
+
+	@Transactional
+	public User updateLastLogin(String email) {
+		try {
+			User user = getUserEntityByEmail(email);
+			user.setLastLogin(LocalDateTime.now());
+			return userRepository.save(user);
+		} catch (Exception ex) {
+			log.error("Error updating last login for user {}: {}", email, ex.getMessage());
+			throw new DatabaseException("Failed to update last login", ex);
 		}
 	}
 
@@ -192,12 +275,10 @@ public class UserService {
 	public void changePassword(UUID userId, String currentPassword, String newPassword) {
 		User user = getUserEntityById(userId);
 
-		// Verify current password
 		if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
 			throw new InvalidCredentialsException("Current password is incorrect");
 		}
 
-		// Validate new password
 		if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
 			throw new ValidationException("New password must be different from current password");
 		}
@@ -205,9 +286,8 @@ public class UserService {
 		try {
 			user.setPasswordHash(passwordEncoder.encode(newPassword));
 			userRepository.save(user);
-			log.info("Password changed successfully for user: {}", userId);
+			log.info("Password  changed for user: {}", userId);
 
-			// Audit log
 			auditLogService.logAction(
 					"PASSWORD_CHANGED",
 					"User",
@@ -221,18 +301,106 @@ public class UserService {
 	}
 
 	@Transactional
-	public void updateLastLogin(UUID userId) {
+	public void changePassword(UUID userId, String newPassword) {
+		User user = getUserEntityById(userId);
+
+		if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+			throw new ValidationException("New password must be different from current password");
+		}
+
 		try {
-			User user = getUserEntityById(userId);
-			user.setLastLogin(LocalDateTime.now());
+			user.setPasswordHash(passwordEncoder.encode(newPassword));
 			userRepository.save(user);
+			log.info("Password changed for user: {}", userId);
+
+			auditLogService.logAction(
+					"PASSWORD_CHANGED",
+					"User",
+					userId,
+					"Password changed for user " + user.getEmail() + " by admin"
+			);
 		} catch (Exception ex) {
-			log.error("Error updating last login for user {}: {}", userId, ex.getMessage());
-			// Non-critical error, log but don't throw
+			log.error("Error changing password: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to change password", ex);
 		}
 	}
 
-	// ==================== Search Operations ====================
+	@Transactional
+	public void deactivateUser(UUID userId) {
+		User user = getUserEntityById(userId);
+
+		if (!user.getIsActive()) {
+			throw new ValidationException("User is already deactivated");
+		}
+
+		try {
+			user.setIsActive(false);
+			userRepository.save(user);
+			log.info("User deactivated: {} ({})", user.getEmail(), userId);
+
+			auditLogService.logAction(
+					"USER_DEACTIVATED",
+					"User",
+					userId,
+					"User " + user.getEmail() + " deactivated"
+			);
+		} catch (Exception ex) {
+			log.error("Error deactivating user: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to deactivate user", ex);
+		}
+	}
+
+	@Transactional
+	public UserResponse activateUser(UUID userId) {
+		User user = getUserEntityById(userId);
+
+		if (user.getIsActive()) {
+			throw new ValidationException("User is already active");
+		}
+
+		try {
+			user.setIsActive(true);
+			User updated = userRepository.save(user);
+			log.info("User activated: {} ({})", user.getEmail(), userId);
+
+			auditLogService.logAction(
+					"USER_ACTIVATED",
+					"User",
+					userId,
+					"User " + user.getEmail() + " activated"
+			);
+
+			return userMapper.toResponse(updated);
+		} catch (Exception ex) {
+			log.error("Error activating user: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to activate user", ex);
+		}
+	}
+
+	@Transactional
+	public void deleteUser(UUID userId) {
+		User user = getUserEntityById(userId);
+
+		try {
+			userRepository.delete(user);
+			log.info("User deleted: {} ({})", user.getEmail(), userId);
+
+			auditLogService.logAction(
+					"USER_DELETED",
+					"User",
+					userId,
+					"User " + user.getEmail() + " deleted"
+			);
+		} catch (Exception ex) {
+			log.error("Error deleting user: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to delete user", ex);
+		}
+	}
+
+	@Transactional
+	public void hardDeleteUser(UUID userId) {
+		deleteUser(userId);
+	}
 
 	public Page<UserResponse> searchUsers(String searchTerm, Pageable pageable) {
 		try {
@@ -244,17 +412,47 @@ public class UserService {
 		}
 	}
 
-	public Page<UserResponse> getUsersByCategory(UUID categoryId, Pageable pageable) {
+	public List<UserResponse> searchUsers(String searchTerm) {
 		try {
-			Page<User> users = userRepository.findByCategoryCategoryId(categoryId, pageable);
-			return users.map(userMapper::toResponse);
+			List<User> users = userRepository.searchUsers(searchTerm);
+			return users.stream().map(userMapper::toResponse).toList();
 		} catch (Exception ex) {
-			log.error("Error retrieving users by category: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to retrieve users by category", ex);
+			log.error("Error searching users: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to search users", ex);
 		}
 	}
 
-	// ==================== Statistics Operations ====================
+	public long countUsers() {
+		return userRepository.count();
+	}
+
+	public long countActiveUsers() {
+		return userRepository.countByIsActiveTrue();
+	}
+
+	public long countInactiveUsers() {
+		return userRepository.countByIsActiveFalse();
+	}
+
+	public long countUsersByCategory(UUID categoryId) {
+		return userRepository.countByCategoryId(categoryId);
+	}
+
+	public long countUsersByCategoryLabel(String categoryLabel) {
+		return userRepository.countByCategoryLabel(categoryLabel);
+	}
+
+	public long countUsersCreatedBetween(LocalDateTime startDate, LocalDateTime endDate) {
+		return userRepository.countByCreatedAtBetween(startDate, endDate);
+	}
+
+	public long countUsersCreatedAfter(LocalDateTime date) {
+		return userRepository.countByCreatedAtAfter(date);
+	}
+
+	public long countUsersCreatedBefore(LocalDateTime date) {
+		return userRepository.countByCreatedAtBefore(date);
+	}
 
 	public UserStatisticsResponse getUserStatistics() {
 		try {
@@ -265,15 +463,41 @@ public class UserService {
 		}
 	}
 
-	public long countActiveUsers() {
-		return userRepository.countByIsActiveTrue();
+	public UserStatisticsResponse getUserStatisticsByCategory(UUID categoryId) {
+		try {
+			return customUserRepository.getUserStatisticsByCategoryId(categoryId);
+		} catch (Exception ex) {
+			log.error("Error retrieving user statistics by category: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve user statistics by category", ex);
+		}
 	}
 
-	public long countUsersByCategory(UUID categoryId) {
-		return userRepository.countByCategoryCategoryId(categoryId);
+	public List<Object[]> getUsersGroupedByCategory() {
+		try {
+			return customUserRepository.countGroupByCategory();
+		} catch (Exception ex) {
+			log.error("Error getting users grouped by category: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to get users grouped by category", ex);
+		}
 	}
 
-	// ==================== Validation Methods ====================
+	public List<Object[]> getUsersGroupedByMonth(int year) {
+		try {
+			return customUserRepository.countByMonth(year);
+		} catch (Exception ex) {
+			log.error("Error getting users grouped by month: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to get users grouped by month", ex);
+		}
+	}
+
+	public List<Object[]> getUsersGroupedByYear() {
+		try {
+			return customUserRepository.countByYear();
+		} catch (Exception ex) {
+			log.error("Error getting users grouped by year: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to get users grouped by year", ex);
+		}
+	}
 
 	public boolean existsByEmail(String email) {
 		return userRepository.existsByEmail(email);
@@ -281,5 +505,113 @@ public class UserService {
 
 	public boolean existsActiveByEmail(String email) {
 		return userRepository.existsByEmailAndIsActiveTrue(email);
+	}
+
+	public boolean existsById(UUID userId) {
+		return userRepository.existsById(userId);
+	}
+
+	public boolean isUserActive(UUID userId) {
+		User user = getUserEntityById(userId);
+		return user.getIsActive();
+	}
+
+	@Transactional
+	public void deactivateUsersBulk(List<UUID> userIds) {
+		try {
+			for (UUID userId : userIds) {
+				deactivateUser(userId);
+			}
+			log.info("Deactivated {} users in bulk", userIds.size());
+		} catch (Exception ex) {
+			log.error("Error deactivating users in bulk: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to deactivate users in bulk", ex);
+		}
+	}
+
+	@Transactional
+	public void activateUsersBulk(List<UUID> userIds) {
+		try {
+			for (UUID userId : userIds) {
+				activateUser(userId);
+			}
+			log.info("Activated {} users in bulk", userIds.size());
+		} catch (Exception ex) {
+			log.error("Error activating users in bulk: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to activate users in bulk", ex);
+		}
+	}
+
+	@Transactional
+	public void deleteUsersBulk(List<UUID> userIds) {
+		try {
+			for (UUID userId : userIds) {
+				deleteUser(userId);
+			}
+			log.info("Deleted {} users in bulk", userIds.size());
+		} catch (Exception ex) {
+			log.error("Error deleting users in bulk: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to delete users in bulk", ex);
+		}
+	}
+
+	@Transactional
+	public UserResponse createAdminUser(UserCreationRequest request) {
+		if (userRepository.existsByEmail(request.getEmail())) {
+			throw new ResourceAlreadyExistsException("User already exists with email: " + request.getEmail());
+		}
+
+		try {
+			UserCategory adminCategory = categoryService.getCategoryEntityByLabel("ADMIN");
+			User user = userMapper.toEntity(request, adminCategory);
+			User saved = userRepository.save(user);
+
+			log.info("Admin user created: {}", saved.getEmail());
+
+			auditLogService.logAction(
+					"ADMIN_USER_CREATED",
+					"User",
+					saved.getId(),
+					"Admin user " + saved.getEmail() + " created"
+			);
+
+			return userMapper.toResponse(saved);
+		} catch (Exception ex) {
+			log.error("Error creating admin user: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to create admin user", ex);
+		}
+	}
+
+	@Transactional
+	public void resetPasswordByAdmin(UUID userId, String newPassword) {
+		User user = getUserEntityById(userId);
+
+		try {
+			user.setPasswordHash(passwordEncoder.encode(newPassword));
+			userRepository.save(user);
+			log.info("Password reset by admin for user: {}", userId);
+
+			auditLogService.logAction(
+					"PASSWORD_RESET_BY_ADMIN",
+					"User",
+					userId,
+					"Password reset by admin for user " + user.getEmail()
+			);
+		} catch (Exception ex) {
+			log.error("Error resetting password: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to reset password", ex);
+		}
+	}
+
+	public String getCurrentUserEmail() {
+		return null;
+	}
+
+	public User getCurrentUser() {
+		return null;
+	}
+
+	public UUID getCurrentUserId() {
+		return null;
 	}
 }
