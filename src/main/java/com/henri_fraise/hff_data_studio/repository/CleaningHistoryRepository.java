@@ -19,6 +19,8 @@ public interface CleaningHistoryRepository extends JpaRepository<CleaningHistory
 
   List<CleaningHistory> findByDatasetIdOrderByExecutedAtDesc(UUID datasetId);
 
+  List<CleaningHistory> findByDatasetIdAndStatus(UUID datasetId, CleaningHistoryStatus status);
+  
   long countByDatasetId(UUID datasetId);
 
   long countByDatasetIdAndStatus(UUID datasetId, CleaningHistoryStatus status);
