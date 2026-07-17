@@ -1,6 +1,6 @@
 package com.henri_fraise.hff_data_studio.entity;
 
-import com.henri_fraise.hff_data_studio.enums.FileFormat;
+import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.enums.FileProcessingStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -28,7 +28,7 @@ public class SourceFile {
 
   @Column(name = "file_type", nullable = false)
   @Enumerated(EnumType.STRING)
-  private FileFormat fileFormat;
+  private FileType fileFormat;
 
   @Column(name = "storage_path", nullable = false)
   private String storagePath;
