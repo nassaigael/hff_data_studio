@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
-
   Optional<User> findByEmail(String email);
 
   Optional<User> findByEmailIsAndIsActiveTrue(String email);
@@ -37,6 +36,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   boolean existsByEmailAndIsActiveTrue(String email);
 
   boolean existsByEmailAndIdNot(String email, UUID id);
+
+  long countByCategoryId(UUID categoryId);
 
   long countByIsActiveTrue();
 
