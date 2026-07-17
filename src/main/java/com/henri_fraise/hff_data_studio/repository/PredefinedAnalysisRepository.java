@@ -41,10 +41,6 @@ public interface PredefinedAnalysisRepository extends JpaRepository<PredefinedAn
 			Pageable pageable
 	);
 
-	@Query("SELECT a FROM PredefinedAnalysis a WHERE a.requiredParametersJson IS NULL OR a.requiredParametersJson = ''")
-	List<PredefinedAnalysis> findAnalysesWithoutParameters();
-
-	@Query("SELECT a FROM PredefinedAnalysis  a WHERE a.requiredParametersJson IS NOT NULL AND a.requiredParametersJson != ''")
-	List<PredefinedAnalysis> findAnalysesWithParameters();
-
+	@Query("SELECT DISTINCT a.category FROM PredefinedAnalysis  a")
+	List<AnalysisCategory> findDistinctCategories();
 }
