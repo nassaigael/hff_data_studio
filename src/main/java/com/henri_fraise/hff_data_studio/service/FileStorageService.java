@@ -26,13 +26,11 @@ public class FileStorageService {
 	private String uploadDir;
 
 	public String saveFile(MultipartFile file, UUID projectId, UUID userId) throws IOException {
-		// Create directory structure
 		Path projectDir = Paths.get(uploadDir, projectId.toString(), userId.toString());
 		if (!Files.exists(projectDir)) {
 			Files.createDirectories(projectDir);
 		}
 
-		// Generate unique filename
 		String originalFilename = file.getOriginalFilename();
 		String extension = originalFilename != null ?
 				originalFilename.substring(originalFilename.lastIndexOf('.')) : "";
@@ -53,13 +51,9 @@ public class FileStorageService {
 	}
 
 	public List<Dataset> extractDatasets(SourceFile sourceFile) {
-		// This would typically use Apache POI for Excel, OpenCSV for CSV, etc.
-		// For now, we'll return a placeholder
 		List<Dataset> datasets = new ArrayList<>();
 
 		try {
-			// In production, this would parse the file and extract datasets
-			// For now, create a placeholder dataset
 			Dataset dataset = Dataset.builder()
 					.sourceFile(sourceFile)
 					.datasetName("Dataset from " + sourceFile.getFileName())
