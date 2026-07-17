@@ -1,6 +1,6 @@
 package com.henri_fraise.hff_data_studio.enums;
 
-public enum FileFormat {
+public enum FileType {
   CSV,
   XLSX,
   PNG,
