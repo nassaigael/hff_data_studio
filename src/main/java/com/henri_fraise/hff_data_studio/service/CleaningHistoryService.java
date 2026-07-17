@@ -45,10 +45,13 @@ public class CleaningHistoryService {
 		log.info("Cleaning history created: {} for dataset: {}", saved.getId(), dataset.getDatasetName());
 	}
 
-//
-public long countByColumn(UUID columnId) {
-	return historyRepository.countByColumnId(columnId);
-}
+	public long countAllOperations() {
+		return historyRepository.count();
+	}
+
+	public long countByColumn(UUID columnId) {
+		return historyRepository.countByColumnId(columnId);
+	}
 
 
 	public CleaningHistory getHistoryEntityById(UUID historyId) {
@@ -184,5 +187,9 @@ public long countByColumn(UUID columnId) {
 		List<CleaningHistory> histories = historyRepository.findByDatasetIdOrderByExecutedAtDesc(datasetId);
 		historyRepository.deleteAll(histories);
 		log.info("Deleted {} cleaning history records for dataset: {}", histories.size(), datasetId);
+	}
+
+	public long countByUser(UUID userId) {
+		return historyRepository.countByUserId(userId);
 	}
 }
