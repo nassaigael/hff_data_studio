@@ -16,8 +16,6 @@ import java.util.UUID;
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
 
-  // ===== FIND METHODS =====
-
   Optional<User> findByEmail(String email);
 
   Page<User> findAllByIsActiveTrue(Pageable pageable);
@@ -38,8 +36,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   List<User> findByCreatedAtAfter(LocalDateTime date);
 
-  // ===== COUNT METHODS =====
-
   long countByIsActiveTrue();
 
   long countByIsActiveFalse();
@@ -54,13 +50,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   long countByCreatedAtBefore(LocalDateTime date);
 
-  // ===== EXISTS METHODS =====
-
   boolean existsByEmail(String email);
 
   boolean existsByEmailAndIsActiveTrue(String email);
-
-  // ===== SEARCH METHODS =====
 
   @Query("SELECT u FROM User u WHERE " +
           "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
@@ -73,8 +65,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
           "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
           "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   List<User> searchUsers(@Param("searchTerm") String searchTerm);
-
-  // ===== RECENT METHODS =====
 
   @Query("SELECT u FROM User u ORDER BY u.createdAt DESC")
   List<User> findRecentUsers(@Param("limit") int limit);
