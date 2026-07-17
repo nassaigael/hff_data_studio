@@ -5,6 +5,7 @@ import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.henri_fraise.hff_data_studio.enums.ExportFormat;
 import com.henri_fraise.hff_data_studio.enums.FileType;
 import lombok.*;
 
@@ -15,7 +16,7 @@ import lombok.*;
 @NoArgsConstructor
 public class ExportResponse {
   private UUID exportId;
-  private FileType exportFormat;
+  private ExportFormat exportFormat;
   private String formatLabel;
   private LocalDateTime exportedAt;
   private String filePath;
