@@ -1,9 +1,10 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
-import com.henri_fraise.hff_data_studio.enums.FileFormat;
+import com.henri_fraise.hff_data_studio.enums.FileType;
 
 import java.util.UUID;
 import javax.validation.constraints.NotNull;
+
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,5 +22,5 @@ public class FileUploadRequest {
   private UUID projectId;
 
   @NotNull(message = "File type is required")
-  private FileFormat fileFormat;
+  private FileType fileFormat;
 }
