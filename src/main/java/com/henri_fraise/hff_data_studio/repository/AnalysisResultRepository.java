@@ -1,5 +1,6 @@
 package com.henri_fraise.hff_data_studio.repository;
 
+import com.henri_fraise.hff_data_studio.entity.AnalysisExecution;
 import com.henri_fraise.hff_data_studio.entity.AnalysisResult;
 import com.henri_fraise.hff_data_studio.enums.ResultType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +16,10 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
 
 	List<AnalysisResult> findByExecutionIdOrderByDisplayOrderAsc(UUID executionId);
 
+	List<AnalysisResult> findByExecutionOrderByDisplayOrderAsc(AnalysisExecution execution);
+
+	List<AnalysisResult> findByResultType(ResultType resultType);
+	
 	List<AnalysisResult> findByExecutionIdAndResultType(UUID executionId, ResultType resultType);
 
 	List<AnalysisResult> findByExecutionIdAndResultTypeIn(UUID executionId, List<ResultType> resultTypes);
