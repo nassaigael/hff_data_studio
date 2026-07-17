@@ -1,6 +1,7 @@
 package com.henri_fraise.hff_data_studio.mapper;
 
 import com.henri_fraise.hff_data_studio.dto.request.ProjectCreationRequest;
+import com.henri_fraise.hff_data_studio.dto.request.ProjectUpdateRequest;
 import com.henri_fraise.hff_data_studio.dto.response.ProjectResponse;
 import com.henri_fraise.hff_data_studio.entity.Project;
 import com.henri_fraise.hff_data_studio.entity.User;
@@ -44,7 +45,7 @@ public class ProjectMapper {
         .build();
   }
 
-  public void updateEntity(Project project, ProjectCreationRequest request) {
+  public void updateEntity(Project project, ProjectUpdateRequest request) {
     if (request == null || project == null) return;
     if (request.getProjectName() != null) project.setProjectName(request.getProjectName());
     if (request.getDescription() != null) project.setDescription(request.getDescription());
