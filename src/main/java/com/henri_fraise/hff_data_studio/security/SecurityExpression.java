@@ -1,8 +1,7 @@
 package com.henri_fraise.hff_data_studio.security;
 
 import com.henri_fraise.hff_data_studio.entity.User;
-import com.henri_fraise.hff_data_studio.exception.ForbiddenException;
-import com.henri_fraise.hff_data_studio.service.UserService;
+import com.henri_fraise.hff_data_studio.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,21 +10,31 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 public class SecurityExpression {
 
-	private final UserService userService;
+	private final UserRepository userRepository;
 
-	public boolean isOwner(UUID resourceUserId) {
+	public SecurityExpression() {
+		this.userRepository = null;
+	}
+
+	public SecurityExpression(UserRepository userRepository) {
+		this.userRepository = userRepository;
+	}
+
+	public boolean isCurrentUser(UUID userId) {
+		if (userRepository == null) {
+			return false;
+		}
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
-
 		String email = authentication.getName();
-		User currentUser = userService.getUserEntityByEmail(email);
-
-		return currentUser.getId().equals(resourceUserId);
+		return userRepository.findByEmail(email)
+				.map(User::getId)
+				.map(id -> id.equals(userId))
+				.orElse(false);
 	}
 
 	public boolean isAdmin() {
@@ -33,9 +42,8 @@ public class SecurityExpression {
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
-
 		return authentication.getAuthorities().stream()
-				.anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+				.anyMatch(authority -> authority.getAuthority().equals("ADMIN"));
 	}
 
 	public boolean hasPermission(String permission) {
@@ -43,22 +51,7 @@ public class SecurityExpression {
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
-
 		return authentication.getAuthorities().stream()
-				.anyMatch(a -> a.getAuthority().equals(permission));
-	}
-
-	public boolean isOwnerOrAdmin(UUID resourceUserId) {
-		return isOwner(resourceUserId) || isAdmin();
-	}
-
-	public User getCurrentUser() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null || !authentication.isAuthenticated()) {
-			throw new ForbiddenException("Authentication required");
-		}
-
-		String email = authentication.getName();
-		return userService.getUserEntityByEmail(email);
+				.anyMatch(authority -> authority.getAuthority().equals(permission));
 	}
 }
