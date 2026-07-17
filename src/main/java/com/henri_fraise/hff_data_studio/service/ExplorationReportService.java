@@ -118,4 +118,10 @@ public class ExplorationReportService {
 	public long countReportsWithQualityScoreBelow(BigDecimal threshold) {
 		return reportRepository.countByQualityScoreLessThan(threshold);
 	}
+
+	public Double getAverageQualityScoreForDataset(UUID datasetId) {
+		ExplorationReport report = reportRepository.findByDatasetId(datasetId)
+					.orElseThrow(() -> new ResourceNotFoundException("ExplorationReport", "dataset", datasetId));
+			return report.getQualityScore().doubleValue();
+	}
 }
