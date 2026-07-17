@@ -32,7 +32,6 @@ public class AuthService {
 	@Transactional
 	public TokenResponse login(LoginRequest request) {
 		try {
-			// Authenticate user
 			Authentication authentication = authenticationManager.authenticate(
 					new UsernamePasswordAuthenticationToken(
 							request.getEmail(),
@@ -40,19 +39,14 @@ public class AuthService {
 					)
 			);
 
-			// Get user details
 			UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 			User user = userService.getUserEntityByEmail(request.getEmail());
 
-			// Check if user is active
-			if (!user.getIsActive()) {
+			if (!user.getIsActive())
 				throw new UserDisabledException("Account is disabled");
-			}
 
-			// Update last login
 			userService.updateLastLogin(user.getId());
 
-			// Generate tokens
 			String accessToken = jwtService.generateToken(userDetails);
 			String refreshToken = jwtService.generateRefreshToken(userDetails);
 
@@ -75,16 +69,12 @@ public class AuthService {
 		try {
 			String refreshToken = request.getRefreshToken();
 
-			// Validate refresh token
-			if (!jwtService.isTokenValid(refreshToken)) {
+			if (!jwtService.isTokenValid(refreshToken))
 				throw new TokenInvalidException("Invalid refresh token");
-			}
 
-			// Extract username
 			String username = jwtService.extractUsername(refreshToken);
 			UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-			// Generate new access token
 			String newAccessToken = jwtService.generateToken(userDetails);
 
 			log.info("Token refreshed for user: {}", username);
