@@ -1,6 +1,6 @@
 package com.henri_fraise.hff_data_studio.entity;
 
-import com.henri_fraise.hff_data_studio.enums.FileFormat;
+import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.enums.ResultType;
 import jakarta.persistence.*;
 import java.util.UUID;
@@ -32,7 +32,7 @@ public class AnalysisResult {
 
   @Column(name = "file_format", nullable = false)
   @Enumerated(EnumType.STRING)
-  private FileFormat fileFormat;
+  private FileType fileFormat;
 
   @Column(name = "display_order", nullable = false)
   @Builder.Default
