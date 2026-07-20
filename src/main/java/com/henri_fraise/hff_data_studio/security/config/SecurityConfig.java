@@ -4,11 +4,11 @@ import com.henri_fraise.hff_data_studio.security.filter.JwtAuthenticationFilter;
 import com.henri_fraise.hff_data_studio.security.handler.CustomAccessDeniedHandler;
 import com.henri_fraise.hff_data_studio.security.handler.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -38,7 +38,7 @@ public class SecurityConfig {
 	private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 	private final CustomAccessDeniedHandler accessDeniedHandler;
 
-	private static final String[] PUBLICS_ENDPOINTS = {
+	private static final String[] PUBLIC_ENDPOINTS = {
 			"/api/v1/auth/**",
 			"/api/v1/health",
 			"/api/v1/actuator/health",
@@ -49,7 +49,7 @@ public class SecurityConfig {
 			"/api/v1/actuator/info"
 	};
 
-	private static  final String[] ADMIN_ENDPOINTS = {
+	private static final String[] ADMIN_ENDPOINTS = {
 			"/api/v1/admin/**",
 			"/api/v1/users/**",
 			"/api/v1/categories/**",
@@ -69,36 +69,37 @@ public class SecurityConfig {
 			"/api/v1/results/**"
 	};
 
-
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http
+		return http
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.csrf(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint(authenticationEntryPoint)
-						.accessDeniedHandler(accessDeniedHandler))
+						.accessDeniedHandler(accessDeniedHandler)
+				)
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers(PUBLICS_ENDPOINTS).permitAll()
-						.requestMatchers(ADMIN_ENDPOINTS).hasRole("ADMIN")
+						.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+						.requestMatchers(ADMIN_ENDPOINTS).hasAuthority("ADMIN")
 						.requestMatchers(USER_ENDPOINTS).authenticated()
 						.anyRequest().authenticated()
-						)
-				.authenticationProvider(authenticationProvider())
-				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-		return http.build();
+				)
+				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+				.build();
 	}
 
 	@Bean
-	public AuthenticationProvider authenticationProvider(){
-		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-		authProvider.setUserDetailsService(userDetailsService);
-		authProvider.setPasswordEncoder(passwordEncoder());
-		return authProvider;
+	public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+		AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+		authBuilder
+				.userDetailsService(userDetailsService)
+				.passwordEncoder(passwordEncoder());
+		return authBuilder.build();
 	}
 
 	@Bean
+	@Qualifier("authenticationManagerBean")
 	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
 		return config.getAuthenticationManager();
 	}
@@ -107,7 +108,6 @@ public class SecurityConfig {
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
-
 
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
@@ -136,5 +136,4 @@ public class SecurityConfig {
 		source.registerCorsConfiguration("/api/**", configuration);
 		return source;
 	}
-
 }
