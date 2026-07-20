@@ -72,7 +72,7 @@ public class CustomProjectRepositoryImpl implements CustomProjectRepository {
 	}
 
 	@Override
-	public void archiveProjectByUserId(UUID userId) {
+	public void archiveProjectsByUser(UUID userId) {
 		Query query = entityManager.createQuery(
 				"UPDATE Project p SET p.status = 'ARCHIVED' " +
 						"WHERE p.creator.id = : user_id"
