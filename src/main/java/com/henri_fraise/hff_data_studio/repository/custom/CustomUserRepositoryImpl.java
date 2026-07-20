@@ -385,7 +385,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 	public List<Object[]> countByMonth(int year) {
 		try {
 			String sql = """
-                    SELECT 
+                    SELECT\s
                         EXTRACT(MONTH FROM created_at) AS month,
                         COUNT(user_id) AS total,
                         SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) AS active,
@@ -396,7 +396,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                     WHERE EXTRACT(YEAR FROM created_at) = :year
                     GROUP BY EXTRACT(MONTH FROM created_at)
                     ORDER BY month
-                    """;
+                   \s""";
 
 			Query query = entityManager.createNativeQuery(sql);
 			query.setParameter("year", year);
