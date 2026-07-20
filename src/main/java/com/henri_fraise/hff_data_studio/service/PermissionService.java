@@ -22,7 +22,7 @@ public class PermissionService {
 	private final PermissionRepository permissionRepository;
 	private final PermissionMapper permissionMapper;
 
-	public List<PermissionResponse> getAllPermissions() {
+	public List<PermissionResponse>  getAllPermissions() {
 		try {
 			return permissionRepository.findAll().stream()
 					.map(permissionMapper::toResponse)
