@@ -70,4 +70,15 @@ public class CustomProjectRepositoryImpl implements CustomProjectRepository {
 		query.setParameter("olderThan", olderThan);
 		query.executeUpdate();
 	}
+
+	@Override
+	public void archiveProjectByUserId(UUID userId) {
+		Query query = entityManager.createQuery(
+				"UPDATE Project p SET p.status = 'ARCHIVED' " +
+						"WHERE p.creator.id = : user_id"
+		);
+
+		query.setParameter("user_id", userId);
+		query.executeUpdate();
+	}
 }
