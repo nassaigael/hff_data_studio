@@ -481,16 +481,16 @@ public class UserService {
 		}
 	}
 
-	public List<Object[]> getUsersGroupedByMonth() {
+	public List<Object[]> getUsersGroupedByMonth(int year) {
 		try {
-			return customUserRepository.countByMonth();
+			return customUserRepository.countByMonth(year);
 		} catch (Exception ex) {
 			log.error("Error getting users grouped by month: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to get users grouped by month", ex);
 		}
 	}
 
-	public List<Object[]> getUsersGroupedByYear(int year) {
+	public List<Object[]> getUsersGroupedByYear() {
 		try {
 			return customUserRepository.countByYear();
 		} catch (Exception ex) {
