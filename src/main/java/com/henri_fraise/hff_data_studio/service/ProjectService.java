@@ -36,9 +36,63 @@ public class ProjectService {
 		return projectRepository.count();
 	}
 
-	public Page<ProjectResponse> getAllProjects(Pageable pageable) {
+	public long countProjectsByStatus(ProjectStatus status) {
+		return projectRepository.countByStatus(status);
+	}
+
+	public long countProjectsByUser(UUID userId) {
+		return projectRepository.countByCreatorId(userId);
+	}
+
+	public long countProjectsByUserAndStatus(UUID userId, ProjectStatus status) {
+		return projectRepository.countByCreatorIdAndStatus(userId, status);
+	}
+
+	public long countProjectsCreatedBetween(LocalDateTime startDate, LocalDateTime endDate) {
+		return projectRepository.countProjectsCreatedBetween(startDate, endDate);
+	}
+
+	public long countProjectsByUserAndStatus(String status) {
 		try {
-			Page<Project> projects = projectRepository.findAll(pageable);
+			ProjectStatus projectStatus = ProjectStatus.valueOf(status.toUpperCase());
+			return projectRepository.countByStatus(projectStatus);
+		} catch (IllegalArgumentException e) {
+			log.warn("Invalid status: {}", status);
+			return 0L;
+		}
+	}
+
+	public Project getProjectEntityById(UUID projectId) {
+		return projectRepository.findById(projectId)
+				.orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+	}
+
+	public Project getProjectEntityByIdAndUser(UUID projectId, UUID userId) {
+		Project project = getProjectEntityById(projectId);
+		if (!project.getCreator().getId().equals(userId)) {
+			throw new ForbiddenException("You don't have permission to access this project");
+		}
+		return project;
+	}
+
+	public ProjectResponse getProjectById(UUID projectId) {
+		Project project = getProjectEntityById(projectId);
+		return projectMapper.toResponse(project);
+	}
+
+	public ProjectResponse getProjectById(UUID projectId, UUID userId) {
+		Project project = getProjectEntityByIdAndUser(projectId, userId);
+		return projectMapper.toResponse(project);
+	}
+
+	public Page<ProjectResponse> getAllProjects(Pageable pageable, ProjectStatus status) {
+		try {
+			Page<Project> projects;
+			if (status != null) {
+				projects = projectRepository.findByStatus(status, pageable);
+			} else {
+				projects = projectRepository.findAll(pageable);
+			}
 			return projects.map(projectMapper::toResponse);
 		} catch (Exception ex) {
 			log.error("Error retrieving projects: {}", ex.getMessage(), ex);
@@ -46,11 +100,15 @@ public class ProjectService {
 		}
 	}
 
-	public Page<ProjectResponse> getUserProjects(UUID userId, Pageable pageable) {
+	public Page<ProjectResponse> getUserProjects(UUID userId, Pageable pageable, ProjectStatus status) {
 		try {
 			userService.getUserEntityById(userId);
-
-			Page<Project> projects = projectRepository.findByCreatorId(userId, pageable);
+			Page<Project> projects;
+			if (status != null) {
+				projects = projectRepository.findByCreatorIdAndStatus(userId, status, pageable);
+			} else {
+				projects = projectRepository.findByCreatorId(userId, pageable);
+			}
 			return projects.map(projectMapper::toResponse);
 		} catch (ResourceNotFoundException ex) {
 			throw ex;
@@ -73,14 +131,14 @@ public class ProjectService {
 		}
 	}
 
-	public ProjectResponse getProjectById(UUID projectId) {
-		Project project = getProjectEntityById(projectId);
-		return projectMapper.toResponse(project);
-	}
-
-	public Project getProjectEntityById(UUID projectId) {
-		return projectRepository.findById(projectId)
-				.orElseThrow(() -> new ResourceNotFoundException("Project", projectId));
+	public Page<ProjectResponse> getProjectsByStatus(ProjectStatus status, Pageable pageable) {
+		try {
+			Page<Project> projects = projectRepository.findByStatus(status, pageable);
+			return projects.map(projectMapper::toResponse);
+		} catch (Exception ex) {
+			log.error("Error retrieving projects by status: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve projects by status", ex);
+		}
 	}
 
 	@Transactional
@@ -88,7 +146,7 @@ public class ProjectService {
 		User user = userService.getUserEntityById(userId);
 
 		if (projectRepository.existsByProjectNameAndCreatorId(request.getProjectName(), userId)) {
-			throw new ResourceAlreadyExistsException("Project", "name", request.getProjectName());
+			throw new ResourceAlreadyExistsException("Project already exists with name: " + request.getProjectName());
 		}
 
 		try {
@@ -122,7 +180,7 @@ public class ProjectService {
 
 		if (request.getProjectName() != null && !request.getProjectName().equals(project.getProjectName())) {
 			if (projectRepository.existsByProjectNameAndCreatorId(request.getProjectName(), userId)) {
-				throw new ResourceAlreadyExistsException("Project", "name", request.getProjectName());
+				throw new ResourceAlreadyExistsException("Project already exists with name: " + request.getProjectName());
 			}
 		}
 
@@ -143,6 +201,35 @@ public class ProjectService {
 		} catch (Exception ex) {
 			log.error("Error updating project: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to update project", ex);
+		}
+	}
+
+	@Transactional
+	public ProjectResponse updateProjectStatus(UUID projectId, ProjectStatus status, UUID userId) {
+		Project project = getProjectEntityById(projectId);
+
+		if (!project.getCreator().getId().equals(userId)) {
+			throw new ForbiddenException("You don't have permission to update this project status");
+		}
+
+		try {
+			project.setStatus(status);
+			Project updated = projectRepository.save(project);
+
+			log.info("Project status updated: {} -> {} ({})",
+					projectId, status, updated.getProjectName());
+
+			auditLogService.logAction(
+					"PROJECT_STATUS_UPDATED",
+					"Project",
+					projectId,
+					"Project " + updated.getProjectName() + " status changed to " + status
+			);
+
+			return projectMapper.toResponse(updated);
+		} catch (Exception ex) {
+			log.error("Error updating project status: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to update project status", ex);
 		}
 	}
 
@@ -177,7 +264,7 @@ public class ProjectService {
 	}
 
 	@Transactional
-	public void restoreProject(UUID projectId, UUID userId) {
+	public ProjectResponse restoreProject(UUID projectId, UUID userId) {
 		Project project = getProjectEntityById(projectId);
 
 		if (!project.getCreator().getId().equals(userId)) {
@@ -190,15 +277,18 @@ public class ProjectService {
 
 		try {
 			project.setStatus(ProjectStatus.IN_PROGRESS);
-			projectRepository.save(project);
+			Project restored = projectRepository.save(project);
 
 			log.info("Project restored successfully: {} ({})", project.getProjectName(), projectId);
+
 			auditLogService.logAction(
 					"PROJECT_RESTORED",
 					"Project",
 					projectId,
 					"Project " + project.getProjectName() + " restored by " + userId
 			);
+
+			return projectMapper.toResponse(restored);
 		} catch (Exception ex) {
 			log.error("Error restoring project: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to restore project", ex);
@@ -208,15 +298,19 @@ public class ProjectService {
 	@Transactional
 	public void deleteProject(UUID projectId, UUID userId) {
 		Project project = getProjectEntityById(projectId);
-		if (!project.getCreator().getId().equals(userId))
-			throw new ForbiddenException("You don't have permission to delete this project");
 
-		if (!project.getSourceFiles().isEmpty())
+		if (!project.getCreator().getId().equals(userId)) {
+			throw new ForbiddenException("You don't have permission to delete this project");
+		}
+
+		if (project.getSourceFiles() != null && !project.getSourceFiles().isEmpty()) {
 			throw new ValidationException("Cannot delete project with existing files. Please delete files first.");
+		}
 
 		try {
 			projectRepository.delete(project);
 			log.info("Project deleted successfully: {} ({})", project.getProjectName(), projectId);
+
 			auditLogService.logAction(
 					"PROJECT_DELETED",
 					"Project",
@@ -242,16 +336,6 @@ public class ProjectService {
 		}
 	}
 
-	public Page<ProjectResponse> getProjectsByStatus(ProjectStatus status, Pageable pageable) {
-		try {
-			Page<Project> projects = projectRepository.findByStatus(status, pageable);
-			return projects.map(projectMapper::toResponse);
-		} catch (Exception ex) {
-			log.error("Error retrieving projects by status: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to retrieve projects by status", ex);
-		}
-	}
-
 	public ProjectStatisticsResponse getProjectStatistics() {
 		try {
 			return customProjectRepository.getProjectStatistics();
@@ -259,18 +343,6 @@ public class ProjectService {
 			log.error("Error retrieving project statistics: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to retrieve project statistics", ex);
 		}
-	}
-
-	public long countProjectsByUser(UUID userId) {
-		return projectRepository.countByCreatorId(userId);
-	}
-
-	public long countProjectsByUserAndStatus(UUID userId, ProjectStatus status) {
-		return projectRepository.countByCreatorIdAndStatus(userId, status);
-	}
-
-	long countProjectsByStatus(ProjectStatus status) {
-		return projectRepository.countByStatus(status);
 	}
 
 	public boolean existsByProjectName(String projectName) {
@@ -293,7 +365,14 @@ public class ProjectService {
 		}
 	}
 
-	public long countProjectsCreatedBetween(LocalDateTime startDate, LocalDateTime endDate) {
-		return projectRepository.countProjectsCreatedBetween(startDate, endDate);
+	@Transactional
+	public void archiveProjectsByUser(UUID userId) {
+		try {
+			customProjectRepository.archiveProjectsByUser(userId);
+			log.info("Archived all projects for user: {}", userId);
+		} catch (Exception ex) {
+			log.error("Error archiving projects by user: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to archive projects by user", ex);
+		}
 	}
 }
