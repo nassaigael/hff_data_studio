@@ -14,4 +14,6 @@ public interface CustomProjectRepository {
 	long countActiveProjectsByUser(UUID userId);
 
 	void archiveInactiveProjects(LocalDateTime olderThan);
+
+	void archiveProjectByUserId(UUID userId);
 }
