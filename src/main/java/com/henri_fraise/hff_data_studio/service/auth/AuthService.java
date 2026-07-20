@@ -11,7 +11,6 @@ import com.henri_fraise.hff_data_studio.exception.UserDisabledException;
 import com.henri_fraise.hff_data_studio.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -98,7 +97,7 @@ public class AuthService {
 	}
 
 	@Transactional
-	public void logout(String token) {
+	public void logout() {
 		try {
 			log.info("User logged out");
 		} catch (Exception ex) {
