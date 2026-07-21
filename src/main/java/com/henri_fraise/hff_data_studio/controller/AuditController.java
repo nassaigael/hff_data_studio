@@ -4,7 +4,6 @@ import com.henri_fraise.hff_data_studio.dto.response.AuditLogResponse;
 import com.henri_fraise.hff_data_studio.dto.response.PageResponse;
 import com.henri_fraise.hff_data_studio.mapper.PageMapper;
 import com.henri_fraise.hff_data_studio.service.AuditLogService;
-import com.henri_fraise.hff_data_studio.service.AuditService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -24,6 +24,7 @@ import java.util.UUID;
 public class AuditController {
 
 	private final AuditLogService auditService;
+
 	private final PageMapper pageMapper;
 
 	@GetMapping
