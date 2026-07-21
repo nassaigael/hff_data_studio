@@ -99,12 +99,10 @@ public class ExplorationReportService {
 		}
 	}
 
-	// ==================== Statistics Operations ====================
-
 	public double getAverageQualityScore() {
 		try {
-			BigDecimal avg = reportRepository.averageQualityScore();
-			return avg != null ? avg.doubleValue() : 0.0;
+			BigDecimal avg = BigDecimal.valueOf(reportRepository.averageQualityScore());
+			return avg.doubleValue();
 		} catch (Exception ex) {
 			log.error("Error getting average quality score: {}", ex.getMessage(), ex);
 			return 0.0;
