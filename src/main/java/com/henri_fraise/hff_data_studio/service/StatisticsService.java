@@ -29,6 +29,7 @@ public class StatisticsService {
 	private final CleaningHistoryService cleaningHistoryService;
 	private final CleaningRuleService cleaningRuleService;
 	private final ExplorationReportService explorationReportService;
+	private final ExplorationService explorationService;
 	private final UserService userService;
 	private final ProjectService projectService;
 	private final FileService fileService;
@@ -159,12 +160,7 @@ public class StatisticsService {
 
 		Map<String, Object> stats = new HashMap<>();
 		stats.put("columnId", columnId);
-		stats.put("originalName", column.getOriginalName());
-		stats.put("normalizedName", column.getNormalizedName());
-		stats.put("detectedType", column.getDetectedType());
-		stats.put("targetType", column.getTargetType());
-		stats.put("nullCount", column.getNullCount());
-		stats.put("uniqueCount", column.getUniqueCount());
+		ExplorationService.get(column, stats);
 
 		Dataset dataset = column.getDataset();
 		if (dataset != null) {
@@ -173,7 +169,7 @@ public class StatisticsService {
 			stats.put("rowCount", dataset.getRowCount());
 
 			if (dataset.getRowCount() > 0) {
-				DataExplorationService.calculateNullPercentage(column, stats, dataset);
+				explorationService.calculateNullPercentage(column, stats, dataset);
 			}
 		}
 
