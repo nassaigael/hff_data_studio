@@ -43,7 +43,12 @@
             <scope>compile</scope>
         </dependency>
 
-        <!-- Source: https://mvnrepository.com/artifact/tools.jackson.datatype/jackson-datatype-jsr310 -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-access</artifactId>
+            <version>7.1.0</version>
+        </dependency>
+
         <dependency>
             <groupId>tools.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
