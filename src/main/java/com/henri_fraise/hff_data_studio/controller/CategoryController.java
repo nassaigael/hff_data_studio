@@ -4,6 +4,7 @@ import com.henri_fraise.hff_data_studio.dto.request.CategoryCreationRequest;
 import com.henri_fraise.hff_data_studio.dto.request.PermissionUpdateRequest;
 import com.henri_fraise.hff_data_studio.dto.response.PermissionResponse;
 import com.henri_fraise.hff_data_studio.dto.response.UserCategoryResponse;
+import com.henri_fraise.hff_data_studio.mapper.PermissionMapper;
 import com.henri_fraise.hff_data_studio.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class CategoryController {
 
 	private final CategoryService categoryService;
+	private final PermissionMapper permissionMapper;
 
 	@GetMapping
 	@PreAuthorize("hasAuthority('CATEGORY_VIEW')")
@@ -76,6 +78,6 @@ public class CategoryController {
 	@GetMapping("/permissions")
 	@PreAuthorize("hasAuthority('PERMISSION_VIEW')")
 	public ResponseEntity<List<PermissionResponse>> getAllPermissions() {
-		return ResponseEntity.ok(categoryService.getAllPermissions());
+		return ResponseEntity.ok(permissionMapper.toResponseList(categoryService.getAllPermissions()));
 	}
 }
