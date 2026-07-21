@@ -193,4 +193,6 @@ public interface ExplorationReportRepository extends JpaRepository<ExplorationRe
 	@Transactional
 	@Query("UPDATE ExplorationReport r SET r.qualityScore = :score WHERE r.dataset.id IN :datasetIds")
 	void updateQualityScoreByDatasetIds(@Param("datasetIds") List<UUID> datasetIds, @Param("score") BigDecimal score);
+
+	long countByQualityScoreLessThan(BigDecimal threshold);
 }
