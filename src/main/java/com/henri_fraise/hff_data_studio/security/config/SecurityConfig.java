@@ -4,11 +4,9 @@ import com.henri_fraise.hff_data_studio.security.filter.JwtAuthenticationFilter;
 import com.henri_fraise.hff_data_studio.security.handler.CustomAccessDeniedHandler;
 import com.henri_fraise.hff_data_studio.security.handler.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -85,27 +83,23 @@ public class SecurityConfig {
 						.requestMatchers(USER_ENDPOINTS).authenticated()
 						.anyRequest().authenticated()
 				)
+				.userDetailsService(userDetailsService)
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
 				.build();
 	}
 
 	@Bean
-	public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-		AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-		authBuilder
-				.userDetailsService(userDetailsService)
-				.passwordEncoder(passwordEncoder());
-		return authBuilder.build();
-	}
-
-	@Bean
-	@Qualifier("authenticationManagerBean")
 	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
 		return config.getAuthenticationManager();
 	}
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
+
+	@Bean
+	public BCryptPasswordEncoder bCryptPasswordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
