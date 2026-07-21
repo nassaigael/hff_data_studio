@@ -79,7 +79,7 @@ public class FileService {
 
 			SourceFile sourceFile = SourceFile.builder()
 					.fileName(originalFilename)
-					.fileFormat(detectedType)
+					.fileType(detectedType)
 					.storagePath(storagePath.toString())
 					.sizeBytes(file.getSize())
 					.uploadedAt(LocalDateTime.now())
@@ -255,7 +255,7 @@ public class FileService {
 				throw new RuntimeException("File not found: " + file.getStoragePath());
 			}
 
-			String contentType = getContentType(file.getFileFormat());
+			String contentType = getContentType(file.getFileType());
 			byte[] content = resource.getContentAsByteArray();
 
 			return ResponseEntity.ok()
@@ -361,11 +361,11 @@ public class FileService {
 	}
 
 	public List<SourceFile> getFilesByType(FileType fileType) {
-		return fileRepository.findByFileFormat(fileType);
+		return fileRepository.findByFileType(fileType);
 	}
 
 	public long countFilesByType(FileType fileType) {
-		return fileRepository.countByFileFormat(fileType);
+		return fileRepository.countByFileType(fileType);
 	}
 
 	public Page<SourceFileResponse> getAllFiles(Pageable pageable) {
@@ -387,7 +387,7 @@ public class FileService {
 
 		if (fileType != null) {
 			try {
-				file.setFileFormat(FileType.valueOf(fileType.toUpperCase()));
+				file.setFileType(FileType.valueOf(fileType.toUpperCase()));
 			} catch (IllegalArgumentException e) {
 				log.warn("Invalid file type: {}", fileType);
 			}
@@ -417,7 +417,7 @@ public class FileService {
 		Map<String, Object> stats = new HashMap<>();
 		stats.put("fileId", file.getId());
 		stats.put("fileName", file.getFileName());
-		stats.put("fileType", file.getFileFormat());
+		stats.put("fileType", file.getFileType());
 		stats.put("sizeBytes", file.getSizeBytes());
 		stats.put("sizeFormatted", formatFileSize(file.getSizeBytes()));
 		stats.put("uploadedAt", file.getUploadedAt());

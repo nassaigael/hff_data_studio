@@ -28,7 +28,7 @@ public class SourceFile {
 
   @Column(name = "file_type", nullable = false)
   @Enumerated(EnumType.STRING)
-  private FileType fileFormat;
+  private FileType fileType;
 
   @Column(name = "storage_path", nullable = false)
   private String storagePath;
