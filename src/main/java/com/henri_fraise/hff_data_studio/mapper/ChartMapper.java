@@ -14,15 +14,18 @@ public class ChartMapper {
     }
 
     return ChartResponse.builder()
-            .chartId(chart.getId())
-            .chartType(chart.getChartType())
-            .chartTypeLabel(getChartTypeLabel(chart.getChartType()))
-            .configJson(chart.getConfigJson())
-            .resultId(chart.getResult() != null ? chart.getResult().getId() : null)
-            .resultTitle(chart.getResult() != null ? chart.getResult().getTitle() : null)
-            .resultType(chart.getResult() != null ? chart.getResult().getResultType().name() : null)
-            .imageUrl(chart.getResult() != null ? "/api/v1/results/" + chart.getResult().getId() + "/download" : null)
-            .build();
+        .chartId(chart.getId())
+        .chartType(chart.getChartType())
+        .chartTypeLabel(getChartTypeLabel(chart.getChartType()))
+        .configJson(chart.getConfigJson())
+        .resultId(chart.getResult() != null ? chart.getResult().getId() : null)
+        .resultTitle(chart.getResult() != null ? chart.getResult().getTitle() : null)
+        .resultType(chart.getResult() != null ? chart.getResult().getResultType().name() : null)
+        .imageUrl(
+            chart.getResult() != null
+                ? "/api/v1/results/" + chart.getResult().getId() + "/download"
+                : null)
+        .build();
   }
 
   private String getChartTypeLabel(ChartType chartType) {

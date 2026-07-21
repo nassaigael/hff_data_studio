@@ -1,7 +1,7 @@
 package com.henri_fraise.hff_data_studio.entity;
 
-import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.enums.FileProcessingStatus;
+import com.henri_fraise.hff_data_studio.enums.FileType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;

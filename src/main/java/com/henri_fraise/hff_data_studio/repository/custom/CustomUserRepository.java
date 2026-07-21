@@ -1,7 +1,6 @@
 package com.henri_fraise.hff_data_studio.repository.custom;
 
 import com.henri_fraise.hff_data_studio.dto.response.UserStatisticsResponse;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -9,87 +8,87 @@ import java.util.UUID;
 
 public interface CustomUserRepository {
 
-	UserStatisticsResponse getUserStatistics();
+  UserStatisticsResponse getUserStatistics();
 
-	UserStatisticsResponse getUserStatisticsByCategoryId(UUID categoryId);
+  UserStatisticsResponse getUserStatisticsByCategoryId(UUID categoryId);
 
-	Map<String, Object> getUserStatisticsMap();
+  Map<String, Object> getUserStatisticsMap();
 
-	long countActiveUsersByDateRange(LocalDateTime startDate, LocalDateTime endDate);
+  long countActiveUsersByDateRange(LocalDateTime startDate, LocalDateTime endDate);
 
-	long countNewUsersByDateRange(LocalDateTime startDate, LocalDateTime endDate);
+  long countNewUsersByDateRange(LocalDateTime startDate, LocalDateTime endDate);
 
-	long countUsersByCategoryId(UUID categoryId);
+  long countUsersByCategoryId(UUID categoryId);
 
-	long countUsersByCategoryLabel(String categoryLabel);
+  long countUsersByCategoryLabel(String categoryLabel);
 
-	long countUsersCreatedAfter(LocalDateTime date);
+  long countUsersCreatedAfter(LocalDateTime date);
 
-	long countUsersCreatedBefore(LocalDateTime date);
+  long countUsersCreatedBefore(LocalDateTime date);
 
-	long countUsersCreatedBetween(LocalDateTime startDate, LocalDateTime endDate);
+  long countUsersCreatedBetween(LocalDateTime startDate, LocalDateTime endDate);
 
-	long countUsersWithLastLoginAfter(LocalDateTime date);
+  long countUsersWithLastLoginAfter(LocalDateTime date);
 
-	long countUsersWithLastLoginBefore(LocalDateTime date);
+  long countUsersWithLastLoginBefore(LocalDateTime date);
 
-	// ==================== GROUP BY METHODS ====================
+  // ==================== GROUP BY METHODS ====================
 
-	List<Object[]> countGroupByCategory();
+  List<Object[]> countGroupByCategory();
 
-	List<Object[]> countGroupByCategoryWithDetails();
+  List<Object[]> countGroupByCategoryWithDetails();
 
-	List<Object[]> countByMonth(int year);
+  List<Object[]> countByMonth(int year);
 
-	List<Object[]> countByMonth();
+  List<Object[]> countByMonth();
 
-	List<Object[]> countByYear();
+  List<Object[]> countByYear();
 
-	List<Object[]> countGroupByMonth(int year);
+  List<Object[]> countGroupByMonth(int year);
 
-	List<Object[]> countGroupByYear();
+  List<Object[]> countGroupByYear();
 
-	List<Object[]> countGroupByDay(LocalDateTime startDate, LocalDateTime endDate);
+  List<Object[]> countGroupByDay(LocalDateTime startDate, LocalDateTime endDate);
 
-	List<Object[]> countGroupByStatus();
+  List<Object[]> countGroupByStatus();
 
-	void updateUserActivity(UUID userId, String activity);
+  void updateUserActivity(UUID userId, String activity);
 
-	void updateUserLastLogin(UUID userId, LocalDateTime lastLogin);
+  void updateUserLastLogin(UUID userId, LocalDateTime lastLogin);
 
-	void updateUserActivityBulk(List<UUID> userIds, String activity);
+  void updateUserActivityBulk(List<UUID> userIds, String activity);
 
-	Map<String, Object> getStatisticsByPeriod(LocalDateTime startDate, LocalDateTime endDate);
+  Map<String, Object> getStatisticsByPeriod(LocalDateTime startDate, LocalDateTime endDate);
 
-	Map<String, Object> getMonthlyStatistics(int year, int month);
+  Map<String, Object> getMonthlyStatistics(int year, int month);
 
-	Map<String, Object> getYearlyStatistics(int year);
+  Map<String, Object> getYearlyStatistics(int year);
 
-	Map<String, Object> getUserActivityStatistics();
+  Map<String, Object> getUserActivityStatistics();
 
-	List<Object[]> getMostActiveUsers(int limit);
+  List<Object[]> getMostActiveUsers(int limit);
 
-	List<Object[]> getLeastActiveUsers(int limit);
+  List<Object[]> getLeastActiveUsers(int limit);
 
-	double getAverageLoginFrequency();
+  double getAverageLoginFrequency();
 
-	Map<String, Object> getCategoryStatistics();
+  Map<String, Object> getCategoryStatistics();
 
-	List<Object[]> getUsersByCategoryWithCounts();
+  List<Object[]> getUsersByCategoryWithCounts();
 
-	void deactivateInactiveUsers(LocalDateTime thresholdDate);
+  void deactivateInactiveUsers(LocalDateTime thresholdDate);
 
-	void activateUsersBulk(List<UUID> userIds);
+  void activateUsersBulk(List<UUID> userIds);
 
-	void deactivateUsersBulk(List<UUID> userIds);
+  void deactivateUsersBulk(List<UUID> userIds);
 
-	void deleteUsersBulk(List<UUID> userIds);
+  void deleteUsersBulk(List<UUID> userIds);
 
-	List<Object[]> findUsersWithNoActivity();
+  List<Object[]> findUsersWithNoActivity();
 
-	List<Object[]> findUsersWithRecentActivity(int days);
+  List<Object[]> findUsersWithRecentActivity(int days);
 
-	long countUsersWithNoLogin();
+  long countUsersWithNoLogin();
 
-	long countUsersWithLoginInLastDays(int days);
+  long countUsersWithLoginInLastDays(int days);
 }

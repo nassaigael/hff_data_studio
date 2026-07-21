@@ -2,7 +2,6 @@ package com.henri_fraise.hff_data_studio.repository;
 
 import com.henri_fraise.hff_data_studio.entity.Project;
 import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -41,10 +40,9 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
       @Param("user_Id") UUID userId, @Param("status") ProjectStatus status);
 
   @Query(
-      "SELECT p FROM Project  p WHERE p.creator.id = :user_id AND" +
-              ":searchTerm IS NULL OR"
-          + " LOWER(p.projectName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(p.description)"
-          + " LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+      "SELECT p FROM Project  p WHERE p.creator.id = :user_id AND:searchTerm IS NULL OR"
+          + " LOWER(p.projectName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR"
+          + " LOWER(p.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   Page<Project> searchUserProjects(
       @Param("user_id") UUID userId, @Param("searchTerm") String searchTerm, Pageable pageable);
 
@@ -58,7 +56,6 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
   boolean existsByProjectNameAndCreatorId(String projectName, UUID creatorId);
 
-
   long countByCreatorIdAndStatus(UUID creatorId, ProjectStatus status);
 
   long countByCreatorId(UUID userId);
@@ -68,6 +65,6 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
   Page<Project> findByCreatorIdAndStatus(UUID userId, ProjectStatus status, Pageable pageable);
 
   @Query("SELECT COUNT(p) FROM Project p WHERE p.createdAt BETWEEN :start_date AND :end_date")
-  long countProjectsCreatedBetween(@Param("start_date") LocalDateTime startDate, @Param("end_date") LocalDateTime endDate);
-
+  long countProjectsCreatedBetween(
+      @Param("start_date") LocalDateTime startDate, @Param("end_date") LocalDateTime endDate);
 }

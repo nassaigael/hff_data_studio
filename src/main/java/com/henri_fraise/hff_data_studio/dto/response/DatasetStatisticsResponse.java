@@ -10,11 +10,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DatasetStatisticsResponse {
-	private Long totalDatasets;
-	private Long totalRows;
-	private Long totalColumns;
-	private Long cleanedDatasets;
-	private Long uncleanedDatasets;
-	private Double averageQualityScore;
-	private Long newDatasetsLast30Days;
+  private Long totalDatasets;
+  private Long totalRows;
+  private Long totalColumns;
+  private Long cleanedDatasets;
+  private Long uncleanedDatasets;
+  private Double averageQualityScore;
+  private Long newDatasetsLast30Days;
 }

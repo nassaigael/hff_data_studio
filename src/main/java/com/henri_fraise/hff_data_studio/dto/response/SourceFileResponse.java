@@ -1,8 +1,7 @@
 package com.henri_fraise.hff_data_studio.dto.response;
 
-import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.enums.FileProcessingStatus;
-
+import com.henri_fraise.hff_data_studio.enums.FileType;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.*;

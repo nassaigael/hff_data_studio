@@ -8,10 +8,10 @@ import com.henri_fraise.hff_data_studio.exception.InvalidCredentialsException;
 import com.henri_fraise.hff_data_studio.exception.TokenExpiredException;
 import com.henri_fraise.hff_data_studio.exception.TokenInvalidException;
 import com.henri_fraise.hff_data_studio.exception.UserDisabledException;
+import com.henri_fraise.hff_data_studio.security.token.TokenBlacklistService;
 import com.henri_fraise.hff_data_studio.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,88 +25,111 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class AuthService {
 
-	@Qualifier("authenticationManagerBean")
-	private final AuthenticationManager authenticationManager;
-	private final UserDetailsService userDetailsService;
-	private final JwtService jwtService;
-	private final UserService userService;
+  private final AuthenticationManager authenticationManager;
+  private final UserDetailsService userDetailsService;
+  private final JwtService jwtService;
+  private final UserService userService;
+  private final TokenBlacklistService tokenBlacklistService;
 
-	@Transactional
-	public TokenResponse login(LoginRequest request) {
-		try {
-			Authentication authentication = authenticationManager.authenticate(
-					new UsernamePasswordAuthenticationToken(
-							request.getEmail(),
-							request.getPassword()
-					)
-			);
+  @Transactional
+  public TokenResponse login(LoginRequest request) {
+    try {
+      Authentication authentication = authenticationManager.authenticate(
+              new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+      );
 
-			UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-			User user = userService.getUserEntityByEmail(request.getEmail());
+      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+      User user = userService.getUserEntityByEmail(request.getEmail());
 
-			if (!user.getIsActive())
-				throw new UserDisabledException("Account is disabled");
+      if (!user.getIsActive()) {
+        throw new UserDisabledException("Account is disabled");
+      }
 
-			userService.updateLastLogin(user.getId());
+      userService.updateLastLogin(user.getId());
 
-			String accessToken = jwtService.generateToken(userDetails);
-			String refreshToken = jwtService.generateRefreshToken(userDetails);
+      String accessToken = jwtService.generateToken(userDetails);
+      String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-			log.info("User logged in successfully: {}", request.getEmail());
+      log.info("User logged in successfully: {}", request.getEmail());
 
-			return TokenResponse.builder()
-					.accessToken(accessToken)
-					.refreshToken(refreshToken)
-					.expiresIn(jwtService.getAccessTokenExpiration())
-					.tokenType("Bearer")
-					.build();
+      return TokenResponse.builder()
+              .accessToken(accessToken)
+              .refreshToken(refreshToken)
+              .expiresIn(jwtService.getAccessTokenExpiration())
+              .tokenType("Bearer")
+              .build();
 
-		} catch (Exception ex) {
-			log.warn("Login failed for {}: {}", request.getEmail(), ex.getMessage());
-			throw new InvalidCredentialsException("Invalid email or password");
-		}
-	}
+    } catch (UserDisabledException ex) {
+      log.warn("Login failed - account disabled: {}", request.getEmail());
+      throw ex;
+    } catch (Exception ex) {
+      log.warn("Login failed for {}: {}", request.getEmail(), ex.getMessage());
+      throw new InvalidCredentialsException("Invalid email or password");
+    }
+  }
 
-	public TokenResponse refreshToken(RefreshTokenRequest request) {
-		try {
-			String refreshToken = request.getRefreshToken();
+  public TokenResponse refreshToken(RefreshTokenRequest request) {
+    try {
+      String refreshToken = request.getRefreshToken();
 
-			if (!jwtService.isTokenValid(refreshToken))
-				throw new TokenInvalidException("Invalid refresh token");
+      if (tokenBlacklistService.isBlacklisted(refreshToken)) {
+        throw new TokenInvalidException("Token has been revoked");
+      }
 
-			String username = jwtService.extractUsername(refreshToken);
-			UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+      if (!jwtService.isTokenValid(refreshToken)) {
+        throw new TokenInvalidException("Invalid refresh token");
+      }
 
-			String newAccessToken = jwtService.generateToken(userDetails);
+      String username = jwtService.extractUsername(refreshToken);
+      UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-			log.info("Token refreshed for user: {}", username);
+      User user = userService.getUserEntityByEmail(username);
+      if (!user.getIsActive()) {
+        throw new UserDisabledException("Account is disabled");
+      }
 
-			return TokenResponse.builder()
-					.accessToken(newAccessToken)
-					.refreshToken(refreshToken)
-					.expiresIn(jwtService.getAccessTokenExpiration())
-					.tokenType("Bearer")
-					.build();
+      String newAccessToken = jwtService.generateToken(userDetails);
 
-		} catch (TokenInvalidException | TokenExpiredException ex) {
-			throw ex;
-		} catch (Exception ex) {
-			log.error("Error refreshing token: {}", ex.getMessage(), ex);
-			throw new TokenInvalidException("Failed to refresh token");
-		}
-	}
+      log.info("Token refreshed for user: {}", username);
 
-	@Transactional
-	public void logout() {
-		try {
-			log.info("User logged out");
-		} catch (Exception ex) {
-			log.error("Error during logout: {}", ex.getMessage(), ex);
-		}
-	}
+      return TokenResponse.builder()
+              .accessToken(newAccessToken)
+              .refreshToken(refreshToken)
+              .expiresIn(jwtService.getAccessTokenExpiration())
+              .tokenType("Bearer")
+              .build();
 
-	public User getCurrentUser(Authentication authentication) {
-		String email = authentication.getName();
-		return userService.getUserEntityByEmail(email);
-	}
+    } catch (TokenInvalidException | TokenExpiredException | UserDisabledException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      log.error("Error refreshing token: {}", ex.getMessage(), ex);
+      throw new TokenInvalidException("Failed to refresh token");
+    }
+  }
+
+  @Transactional
+  public void logout(String token) {
+    try {
+      if (token != null && token.startsWith("Bearer ")) {
+        token = token.substring(7);
+      }
+      tokenBlacklistService.blacklistToken(token);
+      log.info("User logged out successfully");
+    } catch (Exception ex) {
+      log.error("Error during logout: {}", ex.getMessage(), ex);
+    }
+  }
+
+  public void logout() {
+    try {
+      log.info("User logged out");
+    } catch (Exception ex) {
+      log.error("Error during logout: {}", ex.getMessage(), ex);
+    }
+  }
+
+  public User getCurrentUser(Authentication authentication) {
+    String email = authentication.getName();
+    return userService.getUserEntityByEmail(email);
+  }
 }

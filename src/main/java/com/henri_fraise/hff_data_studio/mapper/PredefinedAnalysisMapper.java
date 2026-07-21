@@ -15,19 +15,18 @@ public class PredefinedAnalysisMapper {
     }
 
     return PredefinedAnalysisResponse.builder()
-            .analysisId(analysis.getId())
-            .analysisName(analysis.getAnalysisName())
-            .description(analysis.getDescription())
-            .category(String.valueOf(analysis.getCategory()))
-            .categoryLabel(getCategoryLabel(String.valueOf(analysis.getCategory())))
-            .referenceScript(analysis.getReferenceScript())
-            .requiredParametersJson(analysis.getRequiredParametersJson())
-            .executionCount(
-                    analysis.getAnalysisExecutions() != null
-                            ? (long) analysis.getAnalysisExecutions().size()
-                            : 0L
-            )
-            .build();
+        .analysisId(analysis.getId())
+        .analysisName(analysis.getAnalysisName())
+        .description(analysis.getDescription())
+        .category(String.valueOf(analysis.getCategory()))
+        .categoryLabel(getCategoryLabel(String.valueOf(analysis.getCategory())))
+        .referenceScript(analysis.getReferenceScript())
+        .requiredParametersJson(analysis.getRequiredParametersJson())
+        .executionCount(
+            analysis.getAnalysisExecutions() != null
+                ? (long) analysis.getAnalysisExecutions().size()
+                : 0L)
+        .build();
   }
 
   public PredefinedAnalysis toEntity(PredefinedAnalysisRequest request) {
@@ -36,12 +35,12 @@ public class PredefinedAnalysisMapper {
     }
 
     return PredefinedAnalysis.builder()
-            .analysisName(request.getAnalysisName())
-            .description(request.getDescription())
-            .category(request.getCategory() != null ? request.getCategory() : null)
-            .referenceScript(request.getReferenceScript())
-            .requiredParametersJson(request.getRequiredParametersJson())
-            .build();
+        .analysisName(request.getAnalysisName())
+        .description(request.getDescription())
+        .category(request.getCategory() != null ? request.getCategory() : null)
+        .referenceScript(request.getReferenceScript())
+        .requiredParametersJson(request.getRequiredParametersJson())
+        .build();
   }
 
   public void updateEntity(PredefinedAnalysis analysis, PredefinedAnalysisRequest request) {

@@ -3,7 +3,6 @@ package com.henri_fraise.hff_data_studio.validation.Validator;
 import com.henri_fraise.hff_data_studio.validation.Annotation.ValidFilePath;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,25 +34,30 @@ public class FilePathValidator implements ConstraintValidator<ValidFilePath, Str
 
       if (mustExist && !Files.exists(path)) {
         context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate("File does not exist: " + trimmed)
-                .addConstraintViolation();
+        context
+            .buildConstraintViolationWithTemplate("File does not exist: " + trimmed)
+            .addConstraintViolation();
         return false;
       }
 
-      boolean extensionAllowed = Arrays.stream(allowedExtensions)
+      boolean extensionAllowed =
+          Arrays.stream(allowedExtensions)
               .anyMatch(ext -> trimmed.toLowerCase().endsWith("." + ext.toLowerCase()));
       if (!extensionAllowed) {
         context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate(
-                        "File extension not allowed. Allowed extensions: " + String.join(", ", allowedExtensions))
-                .addConstraintViolation();
+        context
+            .buildConstraintViolationWithTemplate(
+                "File extension not allowed. Allowed extensions: "
+                    + String.join(", ", allowedExtensions))
+            .addConstraintViolation();
         return false;
       }
 
       if (trimmed.contains("..")) {
         context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate("Path cannot contain '..'")
-                .addConstraintViolation();
+        context
+            .buildConstraintViolationWithTemplate("Path cannot contain '..'")
+            .addConstraintViolation();
         return false;
       }
 
@@ -61,8 +65,9 @@ public class FilePathValidator implements ConstraintValidator<ValidFilePath, Str
 
     } catch (Exception e) {
       context.disableDefaultConstraintViolation();
-      context.buildConstraintViolationWithTemplate("Invalid file path: " + trimmed)
-              .addConstraintViolation();
+      context
+          .buildConstraintViolationWithTemplate("Invalid file path: " + trimmed)
+          .addConstraintViolation();
       return false;
     }
   }

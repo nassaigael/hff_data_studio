@@ -1,8 +1,7 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
-import lombok.*;
-
 import javax.validation.constraints.NotNull;
+import lombok.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -10,6 +9,6 @@ import javax.validation.constraints.NotNull;
 @Setter
 @Builder
 public class ChangePasswordRequest {
-	@NotNull(message = "Old password is required")
-	private String newPassword;
+  @NotNull(message = "Old password is required")
+  private String newPassword;
 }

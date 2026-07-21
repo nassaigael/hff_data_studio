@@ -2,12 +2,11 @@ package com.henri_fraise.hff_data_studio.entity;
 
 import com.henri_fraise.hff_data_studio.enums.ChartType;
 import jakarta.persistence.*;
+import java.util.Map;
+import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-
-import java.util.Map;
-import java.util.UUID;
 
 @Getter
 @Setter

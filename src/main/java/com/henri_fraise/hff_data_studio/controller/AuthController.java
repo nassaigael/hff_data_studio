@@ -17,21 +17,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-	private final AuthService authService;
+  private final AuthService authService;
 
-	@PostMapping("/login")
-	public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-		return ResponseEntity.ok(authService.login(request));
-	}
+  @PostMapping("/login")
+  public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
+    return ResponseEntity.ok(authService.login(request));
+  }
 
-	@PostMapping("/refresh")
-	public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-		return ResponseEntity.ok(authService.refreshToken(request));
-	}
+  @PostMapping("/refresh")
+  public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+    return ResponseEntity.ok(authService.refreshToken(request));
+  }
 
-	@PostMapping("/logout")
-	public ResponseEntity<Void> logout() {
-		authService.logout();
-		return ResponseEntity.noContent().build();
-	}
+  @PostMapping("/logout")
+  public ResponseEntity<Void> logout() {
+    authService.logout();
+    return ResponseEntity.noContent().build();
+  }
 }

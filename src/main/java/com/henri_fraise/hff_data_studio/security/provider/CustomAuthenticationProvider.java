@@ -18,30 +18,26 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class CustomAuthenticationProvider implements AuthenticationProvider {
 
-	private final UserDetailsService userDetailsService;
-	private final PasswordEncoder passwordEncoder;
+  private final UserDetailsService userDetailsService;
+  private final PasswordEncoder passwordEncoder;
 
-	@Override
-	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-		String username = authentication.getName();
-		String password = authentication.getCredentials().toString();
+  @Override
+  public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+    String username = authentication.getName();
+    String password = authentication.getCredentials().toString();
 
-		UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-		if (!passwordEncoder.matches(password, userDetails.getPassword())) {
-			log.warn("Invalid password for user: {}", username);
-			throw new BadCredentialsException("Invalid credentials");
-		}
+    if (!passwordEncoder.matches(password, userDetails.getPassword())) {
+      log.warn("Invalid password for user: {}", username);
+      throw new BadCredentialsException("Invalid credentials");
+    }
 
-		return new UsernamePasswordAuthenticationToken(
-				userDetails,
-				null,
-				userDetails.getAuthorities()
-		);
-	}
+    return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+  }
 
-	@Override
-	public boolean supports(@NonNull Class<?> authentication) {
-		return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
-	}
+  @Override
+  public boolean supports(@NonNull Class<?> authentication) {
+    return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
+  }
 }

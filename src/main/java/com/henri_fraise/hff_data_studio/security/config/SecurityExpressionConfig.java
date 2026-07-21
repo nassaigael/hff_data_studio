@@ -11,8 +11,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @AllArgsConstructor
 public class SecurityExpressionConfig {
 
-	@Bean
-	public SecurityExpression securityExpression() {
-		return new SecurityExpression();
-	}
+  @Bean
+  public SecurityExpression securityExpression() {
+    return new SecurityExpression();
+  }
 }

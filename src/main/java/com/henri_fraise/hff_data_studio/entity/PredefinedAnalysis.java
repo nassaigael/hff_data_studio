@@ -2,13 +2,12 @@ package com.henri_fraise.hff_data_studio.entity;
 
 import com.henri_fraise.hff_data_studio.enums.AnalysisCategory;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter

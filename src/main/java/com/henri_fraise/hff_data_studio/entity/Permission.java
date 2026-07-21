@@ -1,10 +1,9 @@
 package com.henri_fraise.hff_data_studio.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.List;
 import java.util.UUID;
+import lombok.*;
 
 @Getter
 @Setter

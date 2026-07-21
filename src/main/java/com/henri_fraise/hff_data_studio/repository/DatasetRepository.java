@@ -1,17 +1,16 @@
 package com.henri_fraise.hff_data_studio.repository;
 
 import com.henri_fraise.hff_data_studio.entity.Dataset;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Repository
 public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
@@ -60,15 +59,18 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
 
   List<Dataset> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
-  Page<Dataset> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+  Page<Dataset> findByCreatedAtBetween(
+      LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
 
   List<Dataset> findByCreatedAtBefore(LocalDateTime date);
 
   List<Dataset> findByCreatedAtAfter(LocalDateTime date);
 
-  List<Dataset> findByCreatedAtBetweenAndIsCleanedTrue(LocalDateTime startDate, LocalDateTime endDate);
+  List<Dataset> findByCreatedAtBetweenAndIsCleanedTrue(
+      LocalDateTime startDate, LocalDateTime endDate);
 
-  List<Dataset> findByCreatedAtBetweenAndIsCleanedFalse(LocalDateTime startDate, LocalDateTime endDate);
+  List<Dataset> findByCreatedAtBetweenAndIsCleanedFalse(
+      LocalDateTime startDate, LocalDateTime endDate);
 
   // ==================== FIND BY CLEANED STATUS ====================
 
@@ -174,20 +176,24 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
 
   // ==================== SEARCH METHODS ====================
 
-  @Query("SELECT d FROM Dataset d WHERE d.sourceFile.project.id = :projectId " +
-          "AND (LOWER(d.datasetName) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
-  Page<Dataset> searchProjectDatasets(@Param("projectId") UUID projectId,
-                                      @Param("searchTerm") String searchTerm,
-                                      Pageable pageable);
+  @Query(
+      "SELECT d FROM Dataset d WHERE d.sourceFile.project.id = :projectId "
+          + "AND (LOWER(d.datasetName) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+  Page<Dataset> searchProjectDatasets(
+      @Param("projectId") UUID projectId,
+      @Param("searchTerm") String searchTerm,
+      Pageable pageable);
 
-  @Query("SELECT d FROM Dataset d WHERE " +
-          "LOWER(d.datasetName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(d.sourceFile.fileName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+  @Query(
+      "SELECT d FROM Dataset d WHERE "
+          + "LOWER(d.datasetName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
+          + "LOWER(d.sourceFile.fileName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   List<Dataset> searchAllDatasets(@Param("searchTerm") String searchTerm);
 
-  @Query("SELECT d FROM Dataset d WHERE " +
-          "LOWER(d.datasetName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(d.sourceFile.fileName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+  @Query(
+      "SELECT d FROM Dataset d WHERE "
+          + "LOWER(d.datasetName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
+          + "LOWER(d.sourceFile.fileName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   Page<Dataset> searchAllDatasets(@Param("searchTerm") String searchTerm, Pageable pageable);
 
   // ==================== RECENT METHODS ====================
@@ -198,8 +204,11 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
   @Query(value = "SELECT * FROM dataset ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
   List<Dataset> findRecentDatasetsNative(@Param("limit") int limit);
 
-  @Query("SELECT d FROM Dataset d WHERE d.sourceFile.project.id = :projectId ORDER BY d.createdAt DESC")
-  List<Dataset> findRecentDatasetsByProjectId(@Param("projectId") UUID projectId, @Param("limit") int limit);
+  @Query(
+      "SELECT d FROM Dataset d WHERE d.sourceFile.project.id = :projectId ORDER BY d.createdAt"
+          + " DESC")
+  List<Dataset> findRecentDatasetsByProjectId(
+      @Param("projectId") UUID projectId, @Param("limit") int limit);
 
   // ==================== UNCLEANED / OLD METHODS ====================
 
@@ -207,7 +216,8 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
   List<Dataset> findUncleanedDatasetsOlderThan(@Param("threshold") LocalDateTime threshold);
 
   @Query("SELECT d FROM Dataset d WHERE d.isCleaned = false AND d.createdAt < :threshold")
-  Page<Dataset> findUncleanedDatasetsOlderThan(@Param("threshold") LocalDateTime threshold, Pageable pageable);
+  Page<Dataset> findUncleanedDatasetsOlderThan(
+      @Param("threshold") LocalDateTime threshold, Pageable pageable);
 
   @Query("SELECT d FROM Dataset d WHERE d.isCleaned = true AND d.createdAt < :threshold")
   List<Dataset> findCleanedDatasetsOlderThan(@Param("threshold") LocalDateTime threshold);
@@ -223,15 +233,22 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
   @Query("SELECT d.isCleaned, COUNT(d) FROM Dataset d GROUP BY d.isCleaned")
   List<Object[]> countGroupByCleanedStatus();
 
-  @Query("SELECT YEAR(d.createdAt), MONTH(d.createdAt), COUNT(d) FROM Dataset d GROUP BY YEAR(d.createdAt), MONTH(d.createdAt) ORDER BY YEAR(d.createdAt) DESC, MONTH(d.createdAt) DESC")
+  @Query(
+      "SELECT YEAR(d.createdAt), MONTH(d.createdAt), COUNT(d) FROM Dataset d GROUP BY"
+          + " YEAR(d.createdAt), MONTH(d.createdAt) ORDER BY YEAR(d.createdAt) DESC,"
+          + " MONTH(d.createdAt) DESC")
   List<Object[]> countGroupByYearMonth();
 
-  @Query("SELECT DATE(d.createdAt), COUNT(d) FROM Dataset d GROUP BY DATE(d.createdAt) ORDER BY DATE(d.createdAt) DESC")
+  @Query(
+      "SELECT DATE(d.createdAt), COUNT(d) FROM Dataset d GROUP BY DATE(d.createdAt) ORDER BY"
+          + " DATE(d.createdAt) DESC")
   List<Object[]> countGroupByDate();
 
   // ==================== QUALITY SCORE METHODS ====================
 
-  @Query("SELECT AVG(r.qualityScore) FROM ExplorationReport r WHERE r.dataset.id IN (SELECT d.id FROM Dataset d WHERE d.sourceFile.project.id = :projectId)")
+  @Query(
+      "SELECT AVG(r.qualityScore) FROM ExplorationReport r WHERE r.dataset.id IN (SELECT d.id FROM"
+          + " Dataset d WHERE d.sourceFile.project.id = :projectId)")
   Double averageQualityScoreByProjectId(@Param("projectId") UUID projectId);
 
   @Query("SELECT AVG(r.qualityScore) FROM ExplorationReport r WHERE r.dataset.isCleaned = true")
@@ -253,7 +270,8 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
   // ==================== CUSTOM QUERY METHODS ====================
 
   @Query("SELECT d FROM Dataset d WHERE d.rowCount > :minRows AND d.columnCount > :minColumns")
-  List<Dataset> findDatasetsWithMinimumDimensions(@Param("minRows") int minRows, @Param("minColumns") int minColumns);
+  List<Dataset> findDatasetsWithMinimumDimensions(
+      @Param("minRows") int minRows, @Param("minColumns") int minColumns);
 
   @Query("SELECT d FROM Dataset d WHERE d.rowCount < :maxRows")
   List<Dataset> findDatasetsWithMaxRows(@Param("maxRows") int maxRows);
