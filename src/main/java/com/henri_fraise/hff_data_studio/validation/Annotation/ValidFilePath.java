@@ -3,7 +3,6 @@ package com.henri_fraise.hff_data_studio.validation.Annotation;
 import com.henri_fraise.hff_data_studio.validation.Validator.FilePathValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
-
 import java.lang.annotation.*;
 
 @Documented
