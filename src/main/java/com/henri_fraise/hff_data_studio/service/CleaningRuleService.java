@@ -29,8 +29,6 @@ public class CleaningRuleService {
 	private final DatasetColumnService columnService;
 	private final AuditLogService auditLogService;
 
-	// ==================== CREATE METHODS ====================
-
 	@Transactional
 	public CleaningRule createRule(UUID columnId, CleaningRuleRequest request) {
 		try {
@@ -53,8 +51,6 @@ public class CleaningRuleService {
 			throw new DatabaseException("Failed to create cleaning rule", ex);
 		}
 	}
-
-	// ==================== GET / FIND METHODS ====================
 
 	public CleaningRule getRuleEntityById(UUID ruleId) {
 		return ruleRepository.findById(ruleId)
@@ -140,8 +136,6 @@ public class CleaningRuleService {
 			throw new DatabaseException("Failed to get active rules by dataset and type", ex);
 		}
 	}
-
-	// ==================== UPDATE METHODS ====================
 
 	@Transactional
 	public CleaningRule updateRule(UUID ruleId, CleaningRuleRequest request) {
@@ -233,8 +227,6 @@ public class CleaningRuleService {
 			throw new DatabaseException("Failed to update rule status", ex);
 		}
 	}
-
-	// ==================== DELETE METHODS ====================
 
 	@Transactional
 	public void deleteRule(UUID ruleId) {
@@ -335,8 +327,6 @@ public class CleaningRuleService {
 		}
 	}
 
-	// ==================== VALIDATION METHODS ====================
-
 	public boolean existsById(UUID ruleId) {
 		return ruleRepository.existsById(ruleId);
 	}
@@ -348,8 +338,6 @@ public class CleaningRuleService {
 	public boolean hasRulesByColumn(UUID columnId) {
 		return countRulesByColumn(columnId) > 0;
 	}
-
-	// ==================== UTILITY METHODS ====================
 
 	public Integer getMaxExecutionOrderByDataset(UUID datasetId) {
 		try {
@@ -381,8 +369,6 @@ public class CleaningRuleService {
 			return List.of();
 		}
 	}
-
-	// ==================== BATCH OPERATIONS ====================
 
 	@Transactional
 	public void activateRulesBulk(List<UUID> ruleIds) {
@@ -422,8 +408,6 @@ public class CleaningRuleService {
 			throw new DatabaseException("Failed to delete rules in bulk", ex);
 		}
 	}
-
-	// ==================== STATISTICS METHODS ====================
 
 	public Map<String, Object> getRuleStatistics(UUID datasetId) {
 		Map<String, Object> stats = new HashMap<>();
