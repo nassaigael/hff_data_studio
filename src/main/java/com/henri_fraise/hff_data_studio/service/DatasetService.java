@@ -37,7 +37,6 @@ public class DatasetService {
 	private final CustomDatasetRepository customDatasetRepository;
 	private final DatasetMapper datasetMapper;
 	private final DatasetColumnMapper datasetColumnMapper;
-	private final SourceFileService sourceFileService;
 	private final AuditLogService auditLogService;
 
 	public Dataset getDatasetEntityById(UUID datasetId) {
@@ -74,11 +73,8 @@ public class DatasetService {
 
 	public Page<DatasetResponse> getDatasetsByFile(UUID fileId, Pageable pageable) {
 		try {
-			sourceFileService.getFileEntityById(fileId);
 			Page<Dataset> datasets = datasetRepository.findBySourceFileId(fileId, pageable);
 			return datasets.map(datasetMapper::toResponse);
-		} catch (ResourceNotFoundException ex) {
-			throw ex;
 		} catch (Exception ex) {
 			log.error("Error retrieving datasets by file: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to retrieve datasets by file", ex);
@@ -166,7 +162,7 @@ public class DatasetService {
 	}
 
 	@Transactional
-	public void createDataset(SourceFile sourceFile, String datasetName, Integer rowCount, Integer columnCount) {
+	public Dataset createDataset(SourceFile sourceFile, String datasetName, Integer rowCount, Integer columnCount) {
 		try {
 			Dataset dataset = Dataset.builder()
 					.datasetName(datasetName)
@@ -186,6 +182,27 @@ public class DatasetService {
 					"Dataset " + saved.getDatasetName() + " created from file: " + sourceFile.getFileName()
 			);
 
+			return saved;
+		} catch (Exception ex) {
+			log.error("Error creating dataset: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to create dataset", ex);
+		}
+	}
+
+	@Transactional
+	public Dataset createDataset(Dataset dataset) {
+		try {
+			Dataset saved = datasetRepository.save(dataset);
+			log.info("Dataset created successfully: {} ({})", saved.getDatasetName(), saved.getId());
+
+			auditLogService.logAction(
+					"DATASET_CREATED",
+					"Dataset",
+					saved.getId(),
+					"Dataset " + saved.getDatasetName() + " created"
+			);
+
+			return saved;
 		} catch (Exception ex) {
 			log.error("Error creating dataset: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to create dataset", ex);
@@ -216,6 +233,11 @@ public class DatasetService {
 	@Transactional
 	public Dataset extractDatasetFromFile(SourceFile file) {
 		return createDatasetFromFile(file);
+	}
+
+	@Transactional
+	public Dataset createDatasetEntity(Dataset dataset) {
+		return createDataset(dataset);
 	}
 
 	// ==================== UPDATE METHODS ====================
@@ -374,7 +396,7 @@ public class DatasetService {
 
 		try {
 			datasetRepository.delete(dataset);
-			log.info(" Dataset deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
+			log.info("Dataset deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
 
 			auditLogService.logAction(
 					"DATASET_DELETED",
@@ -416,6 +438,8 @@ public class DatasetService {
 		}
 	}
 
+	// ==================== SEARCH METHODS ====================
+
 	public Page<DatasetResponse> searchProjectDatasets(UUID projectId, String searchTerm, Pageable pageable) {
 		try {
 			Page<Dataset> datasets = datasetRepository.searchProjectDatasets(projectId, searchTerm, pageable);
@@ -443,6 +467,8 @@ public class DatasetService {
 	public Page<Dataset> searchDatasets(String searchTerm, Pageable pageable) {
 		return datasetRepository.findByDatasetNameContainingIgnoreCase(searchTerm, pageable);
 	}
+
+	// ==================== COUNT METHODS ====================
 
 	public long countDatasets() {
 		return datasetRepository.count();
@@ -475,6 +501,8 @@ public class DatasetService {
 	public long countDatasetsCreatedBetween(LocalDateTime startDate, LocalDateTime endDate) {
 		return datasetRepository.countByCreatedAtBetween(startDate, endDate);
 	}
+
+	// ==================== STATISTICS METHODS ====================
 
 	public DatasetStatisticsResponse getDatasetStatistics() {
 		try {
@@ -542,6 +570,8 @@ public class DatasetService {
 		return avg != null ? avg : 0.0;
 	}
 
+	// ==================== VALIDATION METHODS ====================
+
 	public boolean existsByDatasetNameAndFile(String datasetName, UUID fileId) {
 		return datasetRepository.existsByDatasetNameAndSourceFileId(datasetName, fileId);
 	}
@@ -553,6 +583,8 @@ public class DatasetService {
 	public boolean existsByProjectId(UUID projectId) {
 		return datasetRepository.existsBySourceFileProjectId(projectId);
 	}
+
+	// ==================== UTILITY METHODS ====================
 
 	public List<Dataset> getUncleanedDatasetsOlderThan(int days) {
 		LocalDateTime threshold = LocalDateTime.now().minusDays(days);
@@ -604,6 +636,8 @@ public class DatasetService {
 		return result;
 	}
 
+	// ==================== BATCH OPERATIONS ====================
+
 	@Transactional
 	public List<Dataset> saveAll(List<Dataset> datasets) {
 		try {
@@ -638,17 +672,6 @@ public class DatasetService {
 		} catch (Exception ex) {
 			log.error("Error cleaning up old datasets: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to cleanup old datasets", ex);
-		}
-	}
-
-	@Transactional
-	public void createDataset(Dataset dataset) {
-		try {
-			Dataset saved = datasetRepository.save(dataset);
-			log.info(" Dataset created successfully: {} ({})", saved.getDatasetName(), saved.getId());
-		} catch (Exception ex) {
-			log.error("Error creating dataset: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to create dataset", ex);
 		}
 	}
 }
