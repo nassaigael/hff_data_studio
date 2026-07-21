@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Repository
 public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
-  
+
   Page<SourceFile> findByUserId(UUID userId, Pageable pageable);
 
   List<SourceFile> findByProjectIdOrderByUploadedAtDesc(UUID projectId);
@@ -33,18 +33,18 @@ public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
 
   List<SourceFile> findByUploadedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
-  List<SourceFile> findByFileFormat(FileType fileFormat);
-  
+  List<SourceFile> findByFileType(FileType fileType);
+
   long countByProjectId(UUID projectId);
 
   long countByUserId(UUID userId);
 
-  long countByFileFormat(FileType fileFormat);
-  
+  long countByFileType(FileType fileType);
+
   long countByProcessingStatus(FileProcessingStatus status);
-  
+
   boolean existsByFileNameAndProjectId(String fileName, UUID projectId);
-  
+
   @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f")
   Long sumFileSizes();
 
@@ -53,9 +53,9 @@ public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
 
   @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f WHERE f.project.id = :projectId")
   Long sumFileSizesByProjectId(@Param("projectId") UUID projectId);
-  
-  @Query("SELECT f FROM SourceFile f WHERE f.project.id = :projectId AND f.fileFormat = :fileFormat")
-  List<SourceFile> findByProjectIdAndFileType(@Param("projectId") UUID projectId, @Param("fileFormat") FileType fileFormat);
+
+  @Query("SELECT f FROM SourceFile f WHERE f.project.id = :projectId AND f.fileType = :fileType")
+  List<SourceFile> findByProjectIdAndFileType(@Param("projectId") UUID projectId, @Param("fileType") FileType fileType);
 
   @Query("SELECT f FROM SourceFile f WHERE f.processingStatus IN :statuses")
   List<SourceFile> findByProcessingStatusIn(@Param("statuses") List<FileProcessingStatus> statuses);
@@ -66,7 +66,7 @@ public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
   @Query("SELECT f FROM SourceFile f ORDER BY f.uploadedAt DESC")
   List<SourceFile> findRecentFiles(Pageable pageable);
 
-  @Query("SELECT f.fileFormat, COUNT(f) FROM SourceFile f GROUP BY f.fileFormat")
+  @Query("SELECT f.fileType, COUNT(f) FROM SourceFile f GROUP BY f.fileType")
   List<Object[]> countGroupByFileType();
 
   @Query("SELECT f.processingStatus, COUNT(f) FROM SourceFile f GROUP BY f.processingStatus")
@@ -90,21 +90,19 @@ public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
 
   @Query("SELECT f FROM SourceFile f WHERE f.project.id = :projectId AND " +
           "(LOWER(f.fileName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(f.fileFormat) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(f.processingStatus) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+          "LOWER(f.fileType) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
   Page<SourceFile> searchProjectFiles(@Param("projectId") UUID projectId,
                                       @Param("searchTerm") String searchTerm,
                                       Pageable pageable);
 
   @Query("SELECT f FROM SourceFile f WHERE " +
           "LOWER(f.fileName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(f.fileFormat) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(f.processingStatus) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+          "LOWER(f.fileType) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   List<SourceFile> searchAllFiles(@Param("searchTerm") String searchTerm);
 
   @Query("SELECT f FROM SourceFile f WHERE " +
           "LOWER(f.fileName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(f.fileFormat) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+          "LOWER(f.fileType) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   Page<SourceFile> searchAllFiles(@Param("searchTerm") String searchTerm, Pageable pageable);
 
   @Query("SELECT f FROM SourceFile f WHERE f.uploadedAt BETWEEN :startDate AND :endDate AND f.project.id = :projectId")
@@ -174,6 +172,24 @@ public interface SourceFileRepository extends JpaRepository<SourceFile, UUID> {
   @Query("SELECT YEAR(f.uploadedAt), MONTH(f.uploadedAt), COUNT(f) FROM SourceFile f GROUP BY YEAR(f.uploadedAt), MONTH(f.uploadedAt) ORDER BY YEAR(f.uploadedAt) DESC, MONTH(f.uploadedAt) DESC")
   List<Object[]> countGroupByYearMonth();
 
-  @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f WHERE f.project.id = :project_id")
-  Long sumFileSizeByProjectId(@Param("project_id") UUID projectId);
+  @Query("SELECT SUM(f.sizeBytes) FROM SourceFile f WHERE f.project.id = :projectId")
+  Long sumFileSizeByProjectId(@Param("projectId") UUID projectId);
+
+  @Query("SELECT f FROM SourceFile f WHERE f.project.id = :projectId AND " +
+          "(LOWER(f.fileName) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+  List<SourceFile> searchProjectFilesList(@Param("projectId") UUID projectId,
+                                          @Param("searchTerm") String searchTerm);
+
+  @Query("SELECT f FROM SourceFile f WHERE f.project.id = :projectId AND f.processingStatus = :status")
+  List<SourceFile> findByProjectIdAndStatus(@Param("projectId") UUID projectId,
+                                            @Param("status") FileProcessingStatus status);
+
+  @Query("SELECT f FROM SourceFile f WHERE f.project.id = :projectId AND f.fileType = :fileType AND f.processingStatus = :status")
+  List<SourceFile> findByProjectIdAndFileTypeAndStatus(@Param("projectId") UUID projectId,
+                                                       @Param("fileType") FileType fileType,
+                                                       @Param("status") FileProcessingStatus status);
+
+  @Query("SELECT f FROM SourceFile f WHERE f.project.id = :projectId AND f.sizeBytes > :minSize ORDER BY f.sizeBytes DESC")
+  List<SourceFile> findLargeFilesByProjectId(@Param("projectId") UUID projectId,
+                                             @Param("minSize") long minSize);
 }
