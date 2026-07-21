@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public interface CustomUserRepository {
-	
+
 	UserStatisticsResponse getUserStatistics();
 
 	UserStatisticsResponse getUserStatisticsByCategoryId(UUID categoryId);
