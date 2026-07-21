@@ -427,4 +427,19 @@ public class ExplorationService {
 			throw new DatabaseException("Failed to update quality score", ex);
 		}
 	}
+
+	void calculateNullPercentage(DatasetColumn column, Map<String, Object> stats, Dataset dataset) {
+		if (column == null || stats == null || dataset == null) {
+			stats.put("nullPercentage", 0.0);
+			return;
+		}
+		int totalRows = dataset.getRowCount();
+		int nullCount = column.getNullCount();
+		if (totalRows == 0) {
+			stats.put("nullPercentage", 0.0);
+			return;
+		}
+		double percentage = (double) nullCount / totalRows * 100;
+		stats.put("nullPercentage", Math.round(percentage * 100.0) / 100.0);
+	}
 }
