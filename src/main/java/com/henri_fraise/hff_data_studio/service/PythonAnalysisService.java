@@ -7,11 +7,16 @@ import com.henri_fraise.hff_data_studio.entity.PredefinedAnalysis;
 import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
 import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.enums.ResultType;
+import com.henri_fraise.hff_data_studio.service.helper.AnalysisExecutionHelper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -30,18 +35,17 @@ public class PythonAnalysisService {
 	private final RestTemplate restTemplate;
 	@Getter
 	private final ObjectMapper objectMapper;
-	private final AnalysisExecutionService executionService;
 	private final AnalysisResultService resultService;
 	private final DatasetService datasetService;
-	@Getter
 	private final PredefinedAnalysisService predefinedAnalysisService;
+	private final AnalysisExecutionHelper executionHelper;
 
 	@Value("${python.service.url:http://localhost:5000}")
 	private String pythonServiceUrl;
 
 	public void executeAnalysis(UUID executionId) {
 		try {
-			AnalysisExecution execution = executionService.getExecutionEntityById(executionId);
+			AnalysisExecution execution = executionHelper.findById(executionId);
 			Dataset dataset = execution.getDataset();
 			PredefinedAnalysis analysis = execution.getPredefinedAnalysis();
 
@@ -88,7 +92,7 @@ public class PythonAnalysisService {
 
 		} catch (Exception e) {
 			log.error("Error executing analysis: {}", e.getMessage(), e);
-			executionService.updateExecutionStatus(executionId, AnalysisExecutionStatus.ERROR, e.getMessage());
+			executionHelper.updateStatusWithMessage(executionId, AnalysisExecutionStatus.ERROR, e.getMessage());
 		}
 	}
 
@@ -105,13 +109,14 @@ public class PythonAnalysisService {
 					String fileFormat = (String) resultData.get("format");
 
 					ResultType type = ResultType.valueOf(resultType.toUpperCase());
+					FileType format = FileType.valueOf(fileFormat.toUpperCase());
 
 					UUID resultId = resultService.createResult(
 							execution,
 							type,
 							title,
 							filePath,
-							FileType.valueOf(fileFormat),
+							format,
 							(Integer) resultData.getOrDefault("displayOrder", 0)
 					).getId();
 					resultIds.add(resultId);
@@ -132,7 +137,7 @@ public class PythonAnalysisService {
 				}
 			}
 
-			executionService.updateExecutionWithResults(
+			executionHelper.updateWithResults(
 					execution.getId(),
 					AnalysisExecutionStatus.COMPLETED,
 					(int) duration,
@@ -143,12 +148,12 @@ public class PythonAnalysisService {
 
 		} catch (Exception e) {
 			log.error("Error handling successful response: {}", e.getMessage(), e);
-			executionService.updateExecutionStatus(execution.getId(), AnalysisExecutionStatus.ERROR, e.getMessage());
+			executionHelper.updateStatusWithMessage(execution.getId(), AnalysisExecutionStatus.ERROR, e.getMessage());
 		}
 	}
 
 	private void handleErrorResponse(AnalysisExecution execution, String errorMessage, long duration) {
-		executionService.updateExecutionStatus(execution.getId(), AnalysisExecutionStatus.ERROR, errorMessage);
+		executionHelper.updateStatusWithMessage(execution.getId(), AnalysisExecutionStatus.ERROR, errorMessage);
 		log.error("Analysis execution failed: {} - {}", execution.getId(), errorMessage);
 	}
 
@@ -203,7 +208,7 @@ public class PythonAnalysisService {
 					.toUriString();
 
 			restTemplate.postForEntity(url, null, Void.class);
-			executionService.updateExecutionStatus(executionId, AnalysisExecutionStatus.CANCELLED, 1);
+			executionHelper.updateStatus(executionId, AnalysisExecutionStatus.CANCELLED);
 			log.info("Execution cancelled: {}", executionId);
 
 		} catch (Exception e) {
