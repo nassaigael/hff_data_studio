@@ -5,13 +5,18 @@ import com.henri_fraise.hff_data_studio.entity.Dataset;
 import com.henri_fraise.hff_data_studio.entity.Project;
 import com.henri_fraise.hff_data_studio.entity.SourceFile;
 import com.henri_fraise.hff_data_studio.entity.User;
-import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.enums.FileProcessingStatus;
-import com.henri_fraise.hff_data_studio.exception.*;
+import com.henri_fraise.hff_data_studio.enums.FileType;
+import com.henri_fraise.hff_data_studio.exception.DatabaseException;
+import com.henri_fraise.hff_data_studio.exception.FileProcessingException;
+import com.henri_fraise.hff_data_studio.exception.ForbiddenException;
+import com.henri_fraise.hff_data_studio.exception.ResourceNotFoundException;
+import com.henri_fraise.hff_data_studio.exception.ValidationException;
 import com.henri_fraise.hff_data_studio.mapper.SourceFileMapper;
 import com.henri_fraise.hff_data_studio.repository.SourceFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,6 +39,8 @@ public class SourceFileService {
 	private final ProjectService projectService;
 	private final UserService userService;
 	private final FileStorageService fileStorageService;
+
+	@Lazy
 	private final DatasetService datasetService;
 	private final AuditLogService auditLogService;
 
@@ -70,7 +77,7 @@ public class SourceFileService {
 
 	public SourceFile getFileEntityById(UUID fileId) {
 		return sourceFileRepository.findById(fileId)
-				.orElseThrow(() -> new ResourceNotFoundException("SourceFile", fileId));
+				.orElseThrow(() -> new ResourceNotFoundException("SourceFile not found with id: " + fileId));
 	}
 
 	@Transactional
@@ -86,9 +93,10 @@ public class SourceFileService {
 			String storagePath = fileStorageService.saveFile(file, projectId, userId);
 			SourceFile sourceFile = SourceFile.builder()
 					.fileName(file.getOriginalFilename())
-					.fileFormat(detectFileFormat(file.getOriginalFilename()))
+					.fileType(detectFileFormat(file.getOriginalFilename()))
 					.storagePath(storagePath)
 					.sizeBytes(file.getSize())
+					.uploadedAt(LocalDateTime.now())
 					.processingStatus(FileProcessingStatus.RECEIVED)
 					.project(project)
 					.user(user)
@@ -111,10 +119,10 @@ public class SourceFileService {
 			return sourceFileMapper.toResponse(saved);
 		} catch (IOException ex) {
 			log.error("Error uploading file: {}", ex.getMessage(), ex);
-			throw new FileProcessingException(file.getOriginalFilename(), "Failed to save file: " + ex.getMessage());
+			throw new FileProcessingException("Failed to save file: " + ex.getMessage());
 		} catch (Exception ex) {
 			log.error("Error uploading file: {}", ex.getMessage(), ex);
-			throw new FileProcessingException(file.getOriginalFilename(), ex.getMessage());
+			throw new FileProcessingException("Failed to upload file: " + ex.getMessage());
 		}
 	}
 
@@ -141,8 +149,10 @@ public class SourceFileService {
 		try {
 			fileStorageService.deleteFile(file.getStoragePath());
 
-			for (Dataset dataset : file.getDatasets()) {
-				datasetService.deleteDataset(dataset.getId(), userId);
+			if (file.getDatasets() != null) {
+				for (Dataset dataset : file.getDatasets()) {
+					datasetService.deleteDataset(dataset.getId(), userId);
+				}
 			}
 
 			sourceFileRepository.delete(file);
@@ -157,7 +167,7 @@ public class SourceFileService {
 			);
 		} catch (IOException ex) {
 			log.error("Error deleting file: {}", ex.getMessage(), ex);
-			throw new FileProcessingException(file.getFileName(), "Failed to delete file: " + ex.getMessage());
+			throw new FileProcessingException("Failed to delete file: " + ex.getMessage());
 		} catch (Exception ex) {
 			log.error("Error deleting file: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to delete file", ex);
@@ -205,17 +215,43 @@ public class SourceFileService {
 		return sourceFileRepository.sumFileSizeByProjectId(projectId);
 	}
 
+	public boolean existsByFileNameAndProjectId(String fileName, UUID projectId) {
+		return sourceFileRepository.existsByFileNameAndProjectId(fileName, projectId);
+	}
+
+	public boolean existsById(UUID fileId) {
+		return sourceFileRepository.existsById(fileId);
+	}
+
+	public long countFiles() {
+		return sourceFileRepository.count();
+	}
+
+	public List<SourceFile> getFilesByProjectEntity(UUID projectId) {
+		return sourceFileRepository.findByProjectIdOrderByUploadedAtDesc(projectId);
+	}
+
+	public List<SourceFile> getRecentFiles(int limit) {
+		return sourceFileRepository.findRecentFiles(Pageable.ofSize(limit));
+	}
+
+	public Long getTotalFileSize() {
+		return sourceFileRepository.sumFileSizes();
+	}
 
 	@Transactional
 	protected void processFileAsync(SourceFile file) {
 		updateProcessingStatus(file.getId(), FileProcessingStatus.ANALYZING);
 		try {
 			List<Dataset> datasets = fileStorageService.extractDatasets(file);
-			for (Dataset dataset : datasets) {
-				datasetService.createDataset(dataset);
+			if (datasets != null && !datasets.isEmpty()) {
+				for (Dataset dataset : datasets) {
+					datasetService.createDataset(dataset);
+				}
 			}
 
 			updateProcessingStatus(file.getId(), FileProcessingStatus.EXPLORED);
+			log.info("File processed successfully: {}", file.getId());
 		} catch (Exception ex) {
 			log.error("Error processing file {}: {}", file.getId(), ex.getMessage(), ex);
 			updateProcessingStatus(file.getId(), FileProcessingStatus.ERROR);
@@ -224,9 +260,13 @@ public class SourceFileService {
 
 	private FileType detectFileFormat(String fileName) {
 		if (fileName == null) {
-			return null;
+			throw new ValidationException("File name cannot be null");
 		}
-		String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+		int lastDot = fileName.lastIndexOf('.');
+		if (lastDot == -1) {
+			throw new ValidationException("File has no extension: " + fileName);
+		}
+		String extension = fileName.substring(lastDot + 1).toLowerCase();
 		return switch (extension) {
 			case "csv" -> FileType.CSV;
 			case "xlsx", "xls" -> FileType.XLSX;
@@ -240,13 +280,32 @@ public class SourceFileService {
 		LocalDateTime threshold = LocalDateTime.now().minusHours(24);
 		try {
 			List<SourceFile> failedFiles = sourceFileRepository.findByProcessingStatus(FileProcessingStatus.ERROR);
+			int cleanedCount = 0;
 			for (SourceFile file : failedFiles) {
 				if (file.getUploadedAt().isBefore(threshold)) {
-					log.info("Cleaning up failed file: {} ({})", file.getFileName(), file.getId());
+					try {
+						fileStorageService.deleteFile(file.getStoragePath());
+						sourceFileRepository.delete(file);
+						cleanedCount++;
+						log.info("Cleaned up failed file: {} ({})", file.getFileName(), file.getId());
+					} catch (Exception e) {
+						log.error("Error cleaning up failed file {}: {}", file.getId(), e.getMessage());
+					}
 				}
 			}
+			log.info("Cleaned up {} failed files", cleanedCount);
 		} catch (Exception ex) {
 			log.error("Error cleaning up failed files: {}", ex.getMessage(), ex);
+		}
+	}
+
+	public Page<SourceFileResponse> getAllFiles(Pageable pageable) {
+		try {
+			Page<SourceFile> files = sourceFileRepository.findAll(pageable);
+			return files.map(sourceFileMapper::toResponse);
+		} catch (Exception ex) {
+			log.error("Error retrieving all files: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve all files", ex);
 		}
 	}
 }
