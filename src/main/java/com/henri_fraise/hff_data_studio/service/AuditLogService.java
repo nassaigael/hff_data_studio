@@ -9,8 +9,8 @@ import com.henri_fraise.hff_data_studio.mapper.AuditLogMapper;
 import com.henri_fraise.hff_data_studio.repository.AuditLogRepository;
 import com.henri_fraise.hff_data_studio.security.SecurityUtils;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,14 +23,23 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AuditLogService {
 
 	private final AuditLogRepository auditLogRepository;
 	private final AuditLogMapper auditLogMapper;
-	private final UserService userService;
 	private final SecurityUtils securityUtils;
+	private final UserService userService;
+
+	public AuditLogService(AuditLogRepository auditLogRepository,
+	                       AuditLogMapper auditLogMapper,
+	                       SecurityUtils securityUtils,
+	                       @Lazy UserService userService) {
+		this.auditLogRepository = auditLogRepository;
+		this.auditLogMapper = auditLogMapper;
+		this.securityUtils = securityUtils;
+		this.userService = userService;
+	}
 
 	@Transactional
 	public void logAction(String action, String entity, UUID entityId, String details) {
@@ -198,12 +207,56 @@ public class AuditLogService {
 		}
 	}
 
+	public List<String> getDistinctEntities() {
+		try {
+			return auditLogRepository.findDistinctEntities();
+		} catch (Exception ex) {
+			log.error("Error getting distinct audit entities: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to get distinct audit entities", ex);
+		}
+	}
+
 	public Map<String, Long> getActionCounts() {
 		try {
-			return (Map<String, Long>) auditLogRepository.countGroupByAction();
+			Map<String, Long> counts = new HashMap<>();
+			List<Object[]> results = auditLogRepository.countGroupByAction();
+			for (Object[] result : results) {
+				counts.put((String) result[0], (Long) result[1]);
+			}
+			return counts;
 		} catch (Exception ex) {
 			log.error("Error getting audit action counts: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to get audit action counts", ex);
+		}
+	}
+
+	public Map<String, Long> getEntityCounts() {
+		try {
+			Map<String, Long> counts = new HashMap<>();
+			List<Object[]> results = auditLogRepository.countGroupByEntity();
+			for (Object[] result : results) {
+				counts.put((String) result[0], (Long) result[1]);
+			}
+			return counts;
+		} catch (Exception ex) {
+			log.error("Error getting audit entity counts: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to get audit entity counts", ex);
+		}
+	}
+
+	public Map<String, Object> getAuditSummary() {
+		try {
+			Map<String, Object> summary = new HashMap<>();
+			summary.put("totalLogs", auditLogRepository.count());
+			summary.put("actionCounts", getActionCounts());
+			summary.put("entityCounts", getEntityCounts());
+			summary.put("distinctActions", getDistinctActions());
+			summary.put("distinctEntities", getDistinctEntities());
+			summary.put("recentLogs", auditLogRepository.findRecentLogs(Pageable.ofSize(10)));
+			return summary;
+		} catch (Exception ex) {
+			log.error("Error getting audit summary: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to get audit summary", ex);
 		}
 	}
 
@@ -245,6 +298,10 @@ public class AuditLogService {
 		return auditLogRepository.countByActionDateBetween(startDate, endDate);
 	}
 
+	public List<String> getActions() {
+		return getDistinctActions();
+	}
+
 	private User getCurrentUser() {
 		try {
 			return userService.getUserEntityById(securityUtils.getCurrentUserId());
@@ -271,53 +328,5 @@ public class AuditLogService {
 			ip = ip.split(",")[0].trim();
 		}
 		return ip;
-	}
-
-	public List<String> getActions() {
-		try {
-			return auditLogRepository.findDistinctActions();
-		} catch (Exception ex) {
-			log.error("Error getting distinct audit actions: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to get distinct audit actions", ex);
-		}
-	}
-
-	public List<String> getDistinctEntities() {
-		try {
-			return auditLogRepository.findDistinctEntities();
-		} catch (Exception ex) {
-			log.error("Error getting distinct audit entities: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to get distinct audit entities", ex);
-		}
-	}
-
-	public Map<String, Long> getEntityCounts() {
-		try {
-			Map<String, Long> counts = new HashMap<>();
-			List<Object[]> results = auditLogRepository.countGroupByEntity();
-			for (Object[] result : results) {
-				counts.put((String) result[0], (Long) result[1]);
-			}
-			return counts;
-		} catch (Exception ex) {
-			log.error("Error getting audit entity counts: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to get audit entity counts", ex);
-		}
-	}
-
-	public Map<String, Object> getAuditSummary() {
-		try {
-			Map<String, Object> summary = new HashMap<>();
-			summary.put("totalLogs", auditLogRepository.count());
-			summary.put("actionCounts", getActionCounts());
-			summary.put("entityCounts", getEntityCounts());
-			summary.put("distinctActions", getDistinctActions());
-			summary.put("distinctEntities", getDistinctEntities());
-			summary.put("recentLogs", auditLogRepository.findRecentLogs(Pageable.ofSize(10)));
-			return summary;
-		} catch (Exception ex) {
-			log.error("Error getting audit summary: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to get audit summary", ex);
-		}
 	}
 }
