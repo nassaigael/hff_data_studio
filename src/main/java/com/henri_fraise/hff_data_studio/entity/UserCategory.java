@@ -1,27 +1,29 @@
 package com.henri_fraise.hff_data_studio.entity;
 
 import jakarta.persistence.*;
-import java.util.List;
-import java.util.UUID;
 import lombok.*;
 
-@Builder
+import java.util.List;
+import java.util.UUID;
+
 @Getter
 @Setter
 @Entity
 @Table(name = "user_category")
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class UserCategory {
+
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   @Column(name = "category_id")
   private UUID id;
 
-  @Column(name = "label", nullable = false, unique = true)
+  @Column(name = "label", length = 60, nullable = false, unique = true)
   private String label;
 
-  @Column(name = "description")
+  @Column(name = "description", length = 255)
   private String description;
 
   @Column(name = "access_level", nullable = false)
@@ -33,8 +35,9 @@ public class UserCategory {
 
   @ManyToMany
   @JoinTable(
-      name = "category_permission",
-      joinColumns = @JoinColumn(name = "category_id"),
-      inverseJoinColumns = @JoinColumn(name = "permission_id"))
+          name = "category_permission",
+          joinColumns = @JoinColumn(name = "category_id"),
+          inverseJoinColumns = @JoinColumn(name = "permission_id")
+  )
   private List<Permission> permissions;
 }
