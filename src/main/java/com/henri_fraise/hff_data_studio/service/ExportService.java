@@ -97,6 +97,7 @@ public class ExportService {
 		return switch (format) {
 			case CSV -> generateCsvExport(execution, request.getResultIds());
 			case XLSX -> generateExcelExport(execution, request.getResultIds());
+			case EXCEL, SVG, PDF, HTML, SQL, JSON -> null;
 			case PNG -> generateImageExport(execution, request.getResultIds());
 			case ZIP -> generateZipExport(execution, request.getResultIds());
 		};
@@ -235,6 +236,7 @@ public class ExportService {
 		return switch (format) {
 			case CSV -> "csv";
 			case XLSX -> "xlsx";
+			case EXCEL, SVG, PDF, HTML, SQL, JSON -> null;
 			case PNG -> "png";
 			case ZIP -> "zip";
 		};
@@ -327,6 +329,7 @@ public class ExportService {
 		return switch (format) {
 			case CSV -> "text/csv";
 			case XLSX -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+			case EXCEL, SVG, PDF, HTML, SQL, JSON -> null;
 			case PNG -> "image/png";
 			case ZIP -> "application/zip";
 		};
