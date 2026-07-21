@@ -640,4 +640,15 @@ public class DatasetService {
 			throw new DatabaseException("Failed to cleanup old datasets", ex);
 		}
 	}
+
+	@Transactional
+	public void createDataset(Dataset dataset) {
+		try {
+			Dataset saved = datasetRepository.save(dataset);
+			log.info(" Dataset created successfully: {} ({})", saved.getDatasetName(), saved.getId());
+		} catch (Exception ex) {
+			log.error("Error creating dataset: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to create dataset", ex);
+		}
+	}
 }
