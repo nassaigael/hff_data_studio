@@ -490,7 +490,7 @@ public class UserService {
 		}
 	}
 
-	public List<Object[]> getUsersGroupedByYear() {
+	public List<Object[]> getUsersGroupedByYear(int year) {
 		try {
 			return customUserRepository.countByYear();
 		} catch (Exception ex) {
