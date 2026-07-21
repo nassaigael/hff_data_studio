@@ -62,4 +62,19 @@ public interface CleaningRuleRepository extends JpaRepository<CleaningRule, UUID
 
   @Query("SELECT r FROM CleaningRule r WHERE r.column.dataset.id = :datasetId ORDER BY r.executionOrder ASC")
   List<CleaningRule> findRulesByDatasetIdOrdered(@Param("datasetId") UUID datasetId);
+
+  @Query("SELECT COUNT(r) FROM CleaningRule r WHERE r.column.dataset.id = :datasetId AND r.ruleType = :ruleType AND r.isActive = true")
+  long countActiveRulesByDatasetIdAndRuleType(@Param("datasetId") UUID datasetId, @Param("ruleType") RuleType ruleType);
+
+  @Query("SELECT COUNT(r) FROM CleaningRule r WHERE r.column.dataset.id = :datasetId AND r.isActive = true")
+  long countActiveRulesByDatasetId(@Param("datasetId") UUID datasetId);
+
+  @Query("SELECT COUNT(r) FROM CleaningRule r WHERE r.ruleType = :ruleType")
+  long countByRuleType(@Param("ruleType") RuleType ruleType);
+
+  @Query("SELECT COUNT(r) FROM CleaningRule r WHERE r.column.dataset.id = :datasetId AND r.ruleType = :ruleType")
+  long countByDatasetIdAndRuleType(@Param("datasetId") UUID datasetId, @Param("ruleType") RuleType ruleType);
+
+  @Query("SELECT r FROM CleaningRule r WHERE r.column.dataset.id = :datasetId AND r.isActive = true AND r.ruleType = :ruleType ORDER BY r.executionOrder ASC")
+  List<CleaningRule> findActiveRulesByDatasetIdAndRuleType(@Param("datasetId") UUID datasetId, @Param("ruleType") RuleType ruleType);
 }
