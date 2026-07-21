@@ -70,7 +70,7 @@ public class AnalysisController {
 
 	@GetMapping("/analyses/categories")
 	@PreAuthorize("hasAuthority('ANALYSIS_VIEW')")
-	public ResponseEntity<List<String>> getAnalysisCategories() {
+	public ResponseEntity<List<AnalysisCategory>> getAnalysisCategories() {
 		return ResponseEntity.ok(analysisService.getAllCategories());
 	}
 
