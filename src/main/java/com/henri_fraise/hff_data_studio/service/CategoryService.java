@@ -257,7 +257,7 @@ public class CategoryService {
 		}
 	}
 
-	public List<PermissionResponse> getAllPermissions() {
+	public ArrayList<Permission> getAllPermissions() {
 		try {
 			return new ArrayList<>(permissionService.getAllPermissions());
 		} catch (Exception ex) {
@@ -412,8 +412,8 @@ public class CategoryService {
 	public void assignAllPermissionsToAdmin() {
 		try {
 			UserCategory admin = getAdminCategory();
-			List<PermissionResponse> allPermissions = permissionService.getAllPermissions();
-			admin.setPermissions(allPermissions.stream().map(permissionMapper::toEntity).collect(Collectors.toList()));
+			List<Permission> allPermissions = permissionService.getAllPermissions();
+			admin.setPermissions(allPermissions);
 			categoryRepository.save(admin);
 			log.info("All permissions assigned to ADMIN category");
 		} catch (Exception ex) {
