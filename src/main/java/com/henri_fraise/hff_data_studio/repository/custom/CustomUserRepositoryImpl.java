@@ -409,6 +409,34 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 	}
 
 	@Override
+	public List<Object[]> countByMonth() {
+		int year = LocalDateTime.now().getYear();
+		try {
+			String sql = """
+                    SELECT\s
+                        EXTRACT(MONTH FROM created_at) AS month,
+                        COUNT(user_id) AS total,
+                        SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) AS active,
+                        SUM(CASE WHEN is_active = false THEN 1 ELSE 0 END) AS inactive,
+                        MIN(created_at) AS firstUser,
+                        MAX(created_at) AS lastUser
+                    FROM users
+                    WHERE EXTRACT(YEAR FROM created_at) = :year
+                    GROUP BY EXTRACT(MONTH FROM created_at)
+                    ORDER BY month
+                   \s""";
+
+			Query query = entityManager.createNativeQuery(sql);
+			query.setParameter("year", year);
+			return query.getResultList();
+
+		} catch (Exception e) {
+			log.error("Error counting users by month for year {}: {}", year, e.getMessage(), e);
+			return List.of();
+		}
+	}
+
+	@Override
 	public List<Object[]> countByYear() {
 		try {
 			String sql = """

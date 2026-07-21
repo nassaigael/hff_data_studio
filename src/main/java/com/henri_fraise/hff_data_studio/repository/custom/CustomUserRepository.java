@@ -45,6 +45,8 @@ public interface CustomUserRepository {
 
 	List<Object[]> countByMonth(int year);
 
+	List<Object[]> countByMonth();
+
 	List<Object[]> countByYear();
 
 	List<Object[]> countGroupByMonth(int year);
