@@ -11,5 +11,5 @@ import lombok.*;
 @NoArgsConstructor
 public class PermissionUpdateRequest {
 
-  private List<UUID> permissionIDs;
+  private List<UUID> permissionIds;
 }

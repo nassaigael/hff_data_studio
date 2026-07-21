@@ -22,4 +22,18 @@ public class ExplorationReportMapper {
         .datasetName(report.getDataset() != null ? report.getDataset().getDatasetName() : null)
         .build();
   }
+
+  public ExplorationReport toEntity(ExplorationReportResponse report) {
+    if (report == null) return null;
+
+    return ExplorationReport.builder()
+        .id(report.getReportId())
+        .generatedAt(report.getGeneratedAt())
+        .totalRows(report.getTotalRows())
+        .duplicateCount(report.getDuplicateCount())
+        .missingValuesCount(report.getMissingValueCount())
+        .qualityScore(report.getQualityScore())
+        .reportPdfPath(report.getReportPdfPath())
+        .build();
+  }
 }

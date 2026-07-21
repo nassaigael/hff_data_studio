@@ -1,70 +1,59 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: HFF Data Studio API
-  description: >
-    REST API for the HFF Data Studio platform — HFF Data Intelligence Platform.
-    Enables import, exploration, cleaning, analysis, and export of datasets
-    for the Data Analyst service of Henri Fraise Fils & Cie (HFF).
-  version: "1.0.0"
+  description: HFF Data Intelligence Platform - CATalyst API
+  version: 1.0.0
   contact:
-    name: Data Analyst Service — HFF
+    name: Data Analyst Service - HFF
     email: data-analyst@hff.re
   license:
-    name: HFF Internal Use — Restricted Distribution
+    name: HFF Internal Use - Restricted Distribution
 
 servers:
   - url: http://localhost:8080/api/v1
     description: Local development server
+  - url: https://catalyst.hff.re/api/v1
+    description: Production server
 
 tags:
   - name: Authentication
     description: Login, token refresh, logout
   - name: Users
-    description: User account management (back-office)
+    description: User account management
   - name: Categories
-    description: User categories and permission matrix
+    description: User categories and permissions
   - name: Projects
-    description: Workspaces grouping files, datasets, and analyses
+    description: Project management
   - name: Files
-    description: Import and management of source files (CSV, Excel, SQL)
+    description: File upload and management
   - name: Datasets
-    description: Datasets extracted from source files
+    description: Dataset management
   - name: Exploration
-    description: Data quality reporting
+    description: Data exploration and quality reports
   - name: Cleaning
-    description: Cleaning rules, type conversion, history
+    description: Data cleaning rules and execution
   - name: Analyses
-    description: Predefined analysis catalog and executions
+    description: Predefined analyses and executions
   - name: Exports
-    description: Export results (CSV, Excel, images, ZIP)
+    description: Export results
   - name: Audit
-    description: Traceability log of sensitive actions
-
-security:
-  - bearerAuth: []
+    description: Audit logs
+  - name: Health
+    description: Health check endpoints
 
 paths:
-  # ===================== AUTHENTICATION =====================
+  # ==================== AUTHENTICATION ====================
   /auth/login:
     post:
       tags: [Authentication]
       summary: Authenticate a user
-      security: []
+      operationId: login
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [email, password]
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: analyst@hff.re
-                password:
-                  type: string
-                  format: password
+              $ref: "#/components/schemas/LoginRequest"
       responses:
         "200":
           description: Authentication successful
@@ -73,23 +62,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/TokenResponse"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: Invalid credentials
 
   /auth/refresh:
     post:
       tags: [Authentication]
-      summary: Refresh an expired access token
-      security: []
+      summary: Refresh access token
+      operationId: refresh
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [refreshToken]
-              properties:
-                refreshToken:
-                  type: string
+              $ref: "#/components/schemas/RefreshTokenRequest"
       responses:
         "200":
           description: New access token issued
@@ -97,94 +82,315 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TokenResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
 
   /auth/logout:
     post:
       tags: [Authentication]
-      summary: Logout current user (invalidate token)
+      summary: Logout current user
+      operationId: logout
       responses:
         "204":
           description: Logout successful
 
-  # ===================== USERS =====================
+  # ==================== USERS ====================
   /admin/users:
     get:
       tags: [Users]
-      summary: List users
+      summary: Get all users
+      operationId: getAllUsers
       parameters:
-        - $ref: "#/components/parameters/Page"
-        - $ref: "#/components/parameters/Size"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
         "200":
           description: Paginated list of users
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PageUser"
+                $ref: "#/components/schemas/PageUserResponse"
     post:
       tags: [Users]
-      summary: Create a user
+      summary: Create a new user
+      operationId: createUser
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserCreation"
+              $ref: "#/components/schemas/UserCreationRequest"
       responses:
         "201":
           description: User created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
-        "409":
-          description: Email already in use
+                $ref: "#/components/schemas/UserResponse"
 
-  /admin/users/{userId}:
-    parameters:
-      - $ref: "#/components/parameters/UserId"
+  /admin/users/active:
     get:
       tags: [Users]
-      summary: Get user details
+      summary: Get active users
+      operationId: getActiveUsers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of active users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageUserResponse"
+
+  /admin/users/{userId}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      operationId: getUserById
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: User details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
-        "404":
-          $ref: "#/components/responses/NotFound"
+                $ref: "#/components/schemas/UserResponse"
     put:
       tags: [Users]
-      summary: Update a user
+      summary: Update user
+      operationId: updateUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserUpdate"
+              $ref: "#/components/schemas/UserUpdateRequest"
       responses:
         "200":
           description: User updated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/UserResponse"
     delete:
       tags: [Users]
-      summary: Deactivate a user (soft delete)
+      summary: Deactivate user
+      operationId: deactivateUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "204":
           description: User deactivated
 
-  # ===================== CATEGORIES / PERMISSIONS =====================
+  /admin/users/{userId}/activate:
+    patch:
+      tags: [Users]
+      summary: Activate user
+      operationId: activateUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: User activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+
+  /admin/users/{userId}/password:
+    patch:
+      tags: [Users]
+      summary: Change user password
+      operationId: changePassword
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: Password changed
+
+  /admin/users/email/{email}:
+    get:
+      tags: [Users]
+      summary: Get user by email
+      operationId: getUserByEmail
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+
+  /admin/users/category/{categoryId}:
+    get:
+      tags: [Users]
+      summary: Get users by category
+      operationId: getUsersByCategory
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageUserResponse"
+
+  /admin/users/search:
+    get:
+      tags: [Users]
+      summary: Search users
+      operationId: searchUsers
+      parameters:
+        - name: searchTerm
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageUserResponse"
+
+  /admin/users/statistics:
+    get:
+      tags: [Users]
+      summary: Get user statistics
+      operationId: getUserStatistics
+      responses:
+        "200":
+          description: User statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStatisticsResponse"
+
+  /admin/users/statistics/yearly:
+    get:
+      tags: [Users]
+      summary: Get users grouped by year
+      operationId: getUsersByYear
+      responses:
+        "200":
+          description: Yearly user statistics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+
+  /admin/users/statistics/monthly:
+    get:
+      tags: [Users]
+      summary: Get users grouped by month
+      operationId: getUsersByMonth
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Monthly user statistics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+
+  # ==================== CATEGORIES ====================
   /admin/categories:
     get:
       tags: [Categories]
-      summary: List user categories
+      summary: Get all categories
+      operationId: getAllCategories
       responses:
         "200":
           description: List of categories
@@ -193,28 +399,95 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/UserCategory"
+                  $ref: "#/components/schemas/UserCategoryResponse"
     post:
       tags: [Categories]
-      summary: Create a category
+      summary: Create category
+      operationId: createCategory
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserCategory"
+              $ref: "#/components/schemas/CategoryCreationRequest"
       responses:
         "201":
           description: Category created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserCategory"
+                $ref: "#/components/schemas/UserCategoryResponse"
 
-  /admin/permissions:
+  /admin/categories/{categoryId}:
     get:
       tags: [Categories]
-      summary: List available permissions
+      summary: Get category by ID
+      operationId: getCategoryById
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCategoryResponse"
+    put:
+      tags: [Categories]
+      summary: Update category
+      operationId: updateCategory
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryCreationRequest"
+      responses:
+        "200":
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCategoryResponse"
+    delete:
+      tags: [Categories]
+      summary: Delete category
+      operationId: deleteCategory
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Category deleted
+
+  /admin/categories/{categoryId}/permissions:
+    get:
+      tags: [Categories]
+      summary: Get category permissions
+      operationId: getCategoryPermissions
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: List of permissions
@@ -223,180 +496,505 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Permission"
-
-  /admin/categories/{categoryId}/permissions:
-    parameters:
-      - name: categoryId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-    get:
-      tags: [Categories]
-      summary: Get permission matrix for a category
-      responses:
-        "200":
-          description: Permissions granted to the category
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Permission"
+                  $ref: "#/components/schemas/PermissionResponse"
     put:
       tags: [Categories]
-      summary: Update permission matrix for a category
+      summary: Update category permissions
+      operationId: updateCategoryPermissions
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                permissionIds:
-                  type: array
-                  items:
-                    type: integer
-                    format: int64
+              $ref: "#/components/schemas/PermissionUpdateRequest"
       responses:
         "200":
-          description: Permission matrix updated
+          description: Permissions updated
 
-  # ===================== PROJECTS =====================
+  /admin/categories/permissions:
+    get:
+      tags: [Categories]
+      summary: Get all permissions
+      operationId: getAllPermissions
+      responses:
+        "200":
+          description: List of permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PermissionResponse"
+
+  # ==================== PROJECTS ====================
   /projects:
     get:
       tags: [Projects]
-      summary: List projects accessible to current user
+      summary: Get all projects for current user
+      operationId: getProjects
       parameters:
-        - $ref: "#/components/parameters/Page"
-        - $ref: "#/components/parameters/Size"
         - name: status
           in: query
           schema:
             $ref: "#/components/schemas/ProjectStatus"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
         "200":
           description: Paginated list of projects
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PageProject"
+                $ref: "#/components/schemas/PageProjectResponse"
     post:
       tags: [Projects]
-      summary: Create a project
+      summary: Create project
+      operationId: createProject
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProjectCreation"
+              $ref: "#/components/schemas/ProjectCreationRequest"
       responses:
         "201":
           description: Project created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/ProjectResponse"
 
-  /projects/{projectId}:
-    parameters:
-      - $ref: "#/components/parameters/ProjectId"
+  /projects/all:
     get:
       tags: [Projects]
-      summary: Get project details
+      summary: Get all projects (admin only)
+      operationId: getAllProjectsAdmin
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/ProjectStatus"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of projects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageProjectResponse"
+
+  /projects/{projectId}:
+    get:
+      tags: [Projects]
+      summary: Get project by ID
+      operationId: getProjectById
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Project details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Project"
-        "404":
-          $ref: "#/components/responses/NotFound"
+                $ref: "#/components/schemas/ProjectResponse"
     put:
       tags: [Projects]
-      summary: Update a project
+      summary: Update project
+      operationId: updateProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProjectCreation"
+              $ref: "#/components/schemas/ProjectUpdateRequest"
       responses:
         "200":
           description: Project updated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/ProjectResponse"
     delete:
       tags: [Projects]
-      summary: Archive a project
+      summary: Archive project
+      operationId: archiveProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "204":
           description: Project archived
 
-  # ===================== FILES =====================
+  /projects/{projectId}/restore:
+    patch:
+      tags: [Projects]
+      summary: Restore archived project
+      operationId: restoreProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Project restored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+
+  /projects/{projectId}/status:
+    patch:
+      tags: [Projects]
+      summary: Update project status
+      operationId: updateProjectStatus
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/ProjectStatus"
+      responses:
+        "200":
+          description: Project status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+
+  /projects/user/{userId}:
+    get:
+      tags: [Projects]
+      summary: Get projects by user
+      operationId: getProjectsByUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of projects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageProjectResponse"
+
+  /projects/user/{userId}/status/{status}:
+    get:
+      tags: [Projects]
+      summary: Get projects by user and status
+      operationId: getProjectsByUserAndStatus
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/ProjectStatus"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of projects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageProjectResponse"
+
+  /projects/search:
+    get:
+      tags: [Projects]
+      summary: Search projects
+      operationId: searchProjects
+      parameters:
+        - name: searchTerm
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageProjectResponse"
+
+  /projects/status/{status}:
+    get:
+      tags: [Projects]
+      summary: Get projects by status (admin only)
+      operationId: getProjectsByStatus
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/ProjectStatus"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of projects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageProjectResponse"
+
+  /projects/statistics:
+    get:
+      tags: [Projects]
+      summary: Get project statistics (admin only)
+      operationId: getProjectStatistics
+      responses:
+        "200":
+          description: Project statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectStatisticsResponse"
+
+  /projects/{projectId}/hard:
+    delete:
+      tags: [Projects]
+      summary: Hard delete project (admin only)
+      operationId: hardDeleteProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Project permanently deleted
+
+  # ==================== FILES ====================
   /files/upload:
     post:
       tags: [Files]
-      summary: Upload a source file (CSV, Excel, or SQL export)
+      summary: Upload a file
+      operationId: uploadFile
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: fileType
+          in: query
+          schema:
+            $ref: "#/components/schemas/FileType"
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
-              required: [file, projectId]
               properties:
                 file:
                   type: string
                   format: binary
-                projectId:
-                  type: integer
-                  format: int64
-                fileType:
-                  $ref: "#/components/schemas/FileType"
       responses:
         "201":
-          description: File received and queued for processing
+          description: File uploaded
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SourceFile"
-        "400":
-          description: Invalid file format or size
-        "413":
-          description: File too large (> 200 MB default)
+                $ref: "#/components/schemas/SourceFileResponse"
 
   /files/{fileId}:
-    parameters:
-      - $ref: "#/components/parameters/FileId"
     get:
       tags: [Files]
-      summary: Get source file metadata
+      summary: Get file by ID
+      operationId: getFileById
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: File details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SourceFile"
+                $ref: "#/components/schemas/SourceFileResponse"
     delete:
       tags: [Files]
-      summary: Delete a source file and its associated datasets
+      summary: Delete file
+      operationId: deleteFile
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "204":
           description: File deleted
 
-  /files/{fileId}/datasets:
-    parameters:
-      - $ref: "#/components/parameters/FileId"
+  /files/project/{projectId}:
     get:
       tags: [Files]
-      summary: List datasets extracted from a file (Excel sheets / SQL tables)
+      summary: Get files by project
+      operationId: getFilesByProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SourceFileResponse"
+
+  /files/project/{projectId}/page:
+    get:
+      tags: [Files]
+      summary: Get files by project (paginated)
+      operationId: getFilesByProjectPaged
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of files
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageSourceFileResponse"
+
+  /files/{fileId}/datasets:
+    get:
+      tags: [Files]
+      summary: Get datasets by file
+      operationId: getDatasetsByFile
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: List of datasets
@@ -405,76 +1003,234 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Dataset"
+                  $ref: "#/components/schemas/DatasetResponse"
 
-  # ===================== DATASETS =====================
+  /files/{fileId}/download:
+    get:
+      tags: [Files]
+      summary: Download file
+      operationId: downloadFile
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /files/{fileId}/preview:
+    get:
+      tags: [Files]
+      summary: Get file preview
+      operationId: getFilePreview
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: maxLines
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: File preview content
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /files/{fileId}/statistics:
+    get:
+      tags: [Files]
+      summary: Get file statistics
+      operationId: getFileStatistics
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: File statistics
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /files/status/{status}:
+    get:
+      tags: [Files]
+      summary: Get files by status
+      operationId: getFilesByStatus
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/FileProcessingStatus"
+      responses:
+        "200":
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SourceFileResponse"
+
+  /files/{fileId}/status:
+    patch:
+      tags: [Files]
+      summary: Update file status
+      operationId: updateFileStatus
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/FileProcessingStatus"
+      responses:
+        "200":
+          description: File status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceFileResponse"
+
+  /files/all:
+    get:
+      tags: [Files]
+      summary: Get all files (paginated)
+      operationId: getAllFiles
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of files
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageSourceFileResponse"
+
+  # ==================== DATASETS ====================
   /datasets/{datasetId}:
-    parameters:
-      - $ref: "#/components/parameters/DatasetId"
     get:
       tags: [Datasets]
-      summary: Get dataset details
+      summary: Get dataset by ID
+      operationId: getDatasetById
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Dataset details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Dataset"
+                $ref: "#/components/schemas/DatasetResponse"
+    delete:
+      tags: [Datasets]
+      summary: Delete dataset
+      operationId: deleteDataset
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Dataset deleted
 
   /datasets/{datasetId}/data:
-    parameters:
-      - $ref: "#/components/parameters/DatasetId"
     get:
       tags: [Datasets]
-      summary: Get dataset data (paginated/filterable data viewer)
+      summary: Get dataset data
+      operationId: getDatasetData
       parameters:
-        - $ref: "#/components/parameters/Page"
-        - $ref: "#/components/parameters/Size"
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
         - name: sort
           in: query
           schema:
             type: string
-          description: Sort column (e.g., "price,desc")
         - name: filter
           in: query
           schema:
             type: string
-          description: Multi-column filter (e.g., "status:eq:ACTIVE")
         - name: version
           in: query
           schema:
             type: string
-            enum: [RAW, CLEANED]
             default: CLEANED
-          description: Data version to display (before/after cleaning)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 50
       responses:
         "200":
-          description: Dataset data page
+          description: Dataset data
           content:
             application/json:
               schema:
                 type: object
-                properties:
-                  columns:
-                    type: array
-                    items:
-                      type: string
-                  rows:
-                    type: array
-                    items:
-                      type: object
-                  page:
-                    type: integer
-                  totalElements:
-                    type: integer
 
   /datasets/{datasetId}/columns:
-    parameters:
-      - $ref: "#/components/parameters/DatasetId"
     get:
       tags: [Datasets]
-      summary: List dataset columns with their metadata
+      summary: Get dataset columns
+      operationId: getDatasetColumns
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: List of columns
@@ -483,73 +1239,454 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/DatasetColumn"
+                  $ref: "#/components/schemas/DatasetColumnResponse"
 
   /datasets/{datasetId}/columns/{columnId}:
-    parameters:
-      - $ref: "#/components/parameters/DatasetId"
-      - name: columnId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+    get:
+      tags: [Datasets]
+      summary: Get column by ID
+      operationId: getColumnById
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: columnId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Column details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetColumnResponse"
     put:
       tags: [Datasets]
-      summary: Rename a column / adjust its target type
+      summary: Update column
+      operationId: updateColumn
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: columnId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                normalizedName:
-                  type: string
-                targetType:
-                  $ref: "#/components/schemas/ColumnType"
+              $ref: "#/components/schemas/DatasetColumnUpdateRequest"
       responses:
         "200":
           description: Column updated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DatasetColumn"
+                $ref: "#/components/schemas/DatasetColumnResponse"
 
-  # ===================== EXPLORATION =====================
-  /datasets/{datasetId}/exploration-report:
-    parameters:
-      - $ref: "#/components/parameters/DatasetId"
+  /datasets/project/{projectId}:
+    get:
+      tags: [Datasets]
+      summary: Get datasets by project
+      operationId: getDatasetsByProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of datasets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageDatasetResponse"
+
+  /datasets/file/{fileId}:
+    get:
+      tags: [Datasets]
+      summary: Get datasets by file
+      operationId: getDatasetsByFile
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of datasets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageDatasetResponse"
+
+  /datasets/search:
+    get:
+      tags: [Datasets]
+      summary: Search datasets
+      operationId: searchDatasets
+      parameters:
+        - name: searchTerm
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageDatasetResponse"
+
+  /datasets/project/{projectId}/search:
+    get:
+      tags: [Datasets]
+      summary: Search datasets by project
+      operationId: searchProjectDatasets
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: searchTerm
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageDatasetResponse"
+
+  /datasets/statistics:
+    get:
+      tags: [Datasets]
+      summary: Get dataset statistics
+      operationId: getDatasetStatistics
+      responses:
+        "200":
+          description: Dataset statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetStatisticsResponse"
+
+  /datasets/statistics/map:
+    get:
+      tags: [Datasets]
+      summary: Get dataset statistics as map
+      operationId: getDatasetStatisticsMap
+      responses:
+        "200":
+          description: Dataset statistics map
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /datasets/cleaned:
+    get:
+      tags: [Datasets]
+      summary: Get cleaned datasets
+      operationId: getCleanedDatasets
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of cleaned datasets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageDatasetResponse"
+
+  /datasets/uncleaned:
+    get:
+      tags: [Datasets]
+      summary: Get uncleaned datasets
+      operationId: getUncleanedDatasets
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of uncleaned datasets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageDatasetResponse"
+
+  /datasets/{datasetId}/clean:
+    patch:
+      tags: [Datasets]
+      summary: Mark dataset as cleaned
+      operationId: markAsCleaned
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Dataset marked as cleaned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetResponse"
+
+  /datasets/{datasetId}/unclean:
+    patch:
+      tags: [Datasets]
+      summary: Mark dataset as uncleaned
+      operationId: markAsUncleaned
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Dataset marked as uncleaned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetResponse"
+
+  /datasets/{datasetId}/name:
+    patch:
+      tags: [Datasets]
+      summary: Update dataset name
+      operationId: updateDatasetName
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: datasetName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dataset name updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetResponse"
+
+  /datasets/{datasetId}/stats:
+    patch:
+      tags: [Datasets]
+      summary: Update dataset statistics
+      operationId: updateDatasetStats
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: rowCount
+          in: query
+          schema:
+            type: integer
+        - name: columnCount
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Dataset stats updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetResponse"
+
+  /datasets/recent:
+    get:
+      tags: [Datasets]
+      summary: Get recent datasets
+      operationId: getRecentDatasets
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: List of recent datasets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DatasetResponse"
+
+  /datasets/project/{projectId}/recent:
+    get:
+      tags: [Datasets]
+      summary: Get recent datasets by project
+      operationId: getRecentDatasetsByProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: List of recent datasets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DatasetResponse"
+
+  # ==================== EXPLORATION ====================
+  /datasets/{datasetId}/exploration/report:
     get:
       tags: [Exploration]
-      summary: Get existing exploration report
+      summary: Get exploration report
+      operationId: getExplorationReport
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Exploration report
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExplorationReport"
-        "404":
-          description: No report generated for this dataset
+                $ref: "#/components/schemas/ExplorationReportResponse"
     post:
       tags: [Exploration]
-      summary: Generate (or regenerate) dataset exploration report
+      summary: Generate exploration report
+      operationId: generateExplorationReport
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "201":
-          description: Report generated
+          description: Exploration report generated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExplorationReport"
+                $ref: "#/components/schemas/ExplorationReportResponse"
 
-  /datasets/{datasetId}/exploration-report/export:
-    parameters:
-      - $ref: "#/components/parameters/DatasetId"
+  /datasets/{datasetId}/exploration/report/export:
     get:
       tags: [Exploration]
-      summary: Export exploration report as PDF or HTML
+      summary: Export exploration report
+      operationId: exportExplorationReport
       parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
         - name: format
           in: query
           schema:
@@ -568,116 +1705,209 @@ paths:
               schema:
                 type: string
 
-  # ===================== CLEANING =====================
-  /columns/{columnId}/rules:
-    parameters:
-      - name: columnId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+  /datasets/{datasetId}/exploration/summary:
     get:
-      tags: [Cleaning]
-      summary: List cleaning rules for a column
+      tags: [Exploration]
+      summary: Get exploration summary
+      operationId: getExplorationSummary
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
-          description: List of rules
+          description: Exploration summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExplorationReportResponse"
+
+  # ==================== CLEANING ====================
+  /columns/{columnId}/rules:
+    get:
+      tags: [Cleaning]
+      summary: Get cleaning rules by column
+      operationId: getRulesByColumn
+      parameters:
+        - name: columnId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of cleaning rules
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/CleaningRule"
+                  $ref: "#/components/schemas/CleaningRuleResponse"
     post:
       tags: [Cleaning]
-      summary: Add a cleaning/conversion rule to a column
+      summary: Create cleaning rule
+      operationId: createRule
+      parameters:
+        - name: columnId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CleaningRuleCreation"
+              $ref: "#/components/schemas/CleaningRuleRequest"
       responses:
         "201":
           description: Rule created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CleaningRule"
+                $ref: "#/components/schemas/CleaningRuleResponse"
 
   /rules/{ruleId}:
-    parameters:
-      - name: ruleId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
     put:
       tags: [Cleaning]
-      summary: Update a cleaning rule (parameters, order, active status)
+      summary: Update cleaning rule
+      operationId: updateRule
+      parameters:
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CleaningRuleCreation"
+              $ref: "#/components/schemas/CleaningRuleRequest"
       responses:
         "200":
           description: Rule updated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CleaningRule"
+                $ref: "#/components/schemas/CleaningRuleResponse"
     delete:
       tags: [Cleaning]
-      summary: Delete a cleaning rule
+      summary: Delete cleaning rule
+      operationId: deleteRule
+      parameters:
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "204":
           description: Rule deleted
 
   /datasets/{datasetId}/cleaning/execute:
-    parameters:
-      - $ref: "#/components/parameters/DatasetId"
     post:
       tags: [Cleaning]
-      summary: Execute the cleaning pipeline (all active rules, in order)
+      summary: Execute cleaning pipeline
+      operationId: executeCleaning
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "202":
-          description: Cleaning pipeline started (asynchronous processing)
+          description: Cleaning started
           content:
             application/json:
               schema:
                 type: object
-                properties:
-                  processingId:
-                    type: string
-                  status:
-                    type: string
-                    example: IN_PROGRESS
 
   /datasets/{datasetId}/cleaning-history:
-    parameters:
-      - $ref: "#/components/parameters/DatasetId"
     get:
       tags: [Cleaning]
-      summary: Get cleaning operation history
+      summary: Get cleaning history
+      operationId: getCleaningHistory
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
         "200":
-          description: Cleaning history
+          description: Paginated cleaning history
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CleaningHistory"
+                $ref: "#/components/schemas/PageCleaningHistoryResponse"
 
-  # ===================== ANALYSES =====================
+  /cleaning-history/{historyId}:
+    get:
+      tags: [Cleaning]
+      summary: Get cleaning history by ID
+      operationId: getCleaningHistoryById
+      parameters:
+        - name: historyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Cleaning history entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CleaningHistoryResponse"
+
+  /datasets/{datasetId}/cleaning/status:
+    get:
+      tags: [Cleaning]
+      summary: Get cleaning status
+      operationId: getCleaningStatus
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Cleaning status
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ==================== ANALYSES ====================
   /analyses:
     get:
       tags: [Analyses]
-      summary: List predefined analysis catalog
+      summary: Get predefined analyses
+      operationId: getPredefinedAnalyses
       parameters:
         - name: category
           in: query
@@ -685,96 +1915,215 @@ paths:
             $ref: "#/components/schemas/AnalysisCategory"
       responses:
         "200":
-          description: Analysis catalog
+          description: List of predefined analyses
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/PredefinedAnalysis"
+                  $ref: "#/components/schemas/PredefinedAnalysisResponse"
     post:
       tags: [Analyses]
-      summary: Add a predefined analysis model to catalog (Admin)
+      summary: Create predefined analysis
+      operationId: createPredefinedAnalysis
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PredefinedAnalysis"
+              $ref: "#/components/schemas/PredefinedAnalysisRequest"
       responses:
         "201":
-          description: Analysis model created
+          description: Predefined analysis created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PredefinedAnalysis"
+                $ref: "#/components/schemas/PredefinedAnalysisResponse"
+
+  /analyses/{analysisId}:
+    get:
+      tags: [Analyses]
+      summary: Get predefined analysis by ID
+      operationId: getPredefinedAnalysisById
+      parameters:
+        - name: analysisId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Predefined analysis details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredefinedAnalysisResponse"
+    put:
+      tags: [Analyses]
+      summary: Update predefined analysis
+      operationId: updatePredefinedAnalysis
+      parameters:
+        - name: analysisId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredefinedAnalysisRequest"
+      responses:
+        "200":
+          description: Predefined analysis updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredefinedAnalysisResponse"
+    delete:
+      tags: [Analyses]
+      summary: Delete predefined analysis
+      operationId: deletePredefinedAnalysis
+      parameters:
+        - name: analysisId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Predefined analysis deleted
+
+  /analyses/categories:
+    get:
+      tags: [Analyses]
+      summary: Get analysis categories
+      operationId: getAnalysisCategories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /analyses/models:
+    post:
+      tags: [Analyses]
+      summary: Save analysis model
+      operationId: saveAnalysisModel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Model saved
+          content:
+            application/json:
+              schema:
+                type: object
 
   /executions:
     post:
       tags: [Analyses]
-      summary: Run an analysis execution (predefined or custom) on a dataset
+      summary: Run analysis
+      operationId: runAnalysis
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AnalysisExecutionCreation"
+              $ref: "#/components/schemas/AnalysisExecutionRequest"
       responses:
         "202":
-          description: Execution started (asynchronous processing)
+          description: Analysis started
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnalysisExecution"
+                $ref: "#/components/schemas/AnalysisExecutionResponse"
     get:
       tags: [Analyses]
-      summary: List analysis executions
+      summary: Get executions
+      operationId: getExecutions
       parameters:
         - name: datasetId
           in: query
           schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
             type: integer
-            format: int64
-        - $ref: "#/components/parameters/Page"
-        - $ref: "#/components/parameters/Size"
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
         "200":
           description: Paginated list of executions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PageAnalysisExecution"
+                $ref: "#/components/schemas/PageAnalysisExecutionResponse"
 
   /executions/{executionId}:
-    parameters:
-      - name: executionId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
     get:
       tags: [Analyses]
-      summary: Get execution status and parameters
+      summary: Get execution by ID
+      operationId: getExecutionById
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Execution details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnalysisExecution"
+                $ref: "#/components/schemas/AnalysisExecutionResponse"
+    delete:
+      tags: [Analyses]
+      summary: Delete execution
+      operationId: deleteExecution
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Execution deleted
 
   /executions/{executionId}/results:
-    parameters:
-      - name: executionId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
     get:
       tags: [Analyses]
-      summary: Get results produced by an execution (tables, charts, KPIs)
+      summary: Get execution results
+      operationId: getExecutionResults
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: List of results
@@ -783,95 +2132,201 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AnalysisResult"
+                  $ref: "#/components/schemas/AnalysisResultResponse"
 
-  /analyses/models:
-    post:
+  /executions/{executionId}/cancel:
+    patch:
       tags: [Analyses]
-      summary: Save a parameterized analysis configuration as a reusable model
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                analysisId:
-                  type: integer
-                  format: int64
-                parameters:
-                  type: object
-      responses:
-        "201":
-          description: Model saved
-
-  # ===================== EXPORTS =====================
-  /exports:
-    post:
-      tags: [Exports]
-      summary: Export one or more results (CSV, Excel, image, or ZIP package)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ExportCreation"
-      responses:
-        "201":
-          description: Export generated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Export"
-    get:
-      tags: [Exports]
-      summary: List export history
+      summary: Cancel execution
+      operationId: cancelExecution
       parameters:
-        - $ref: "#/components/parameters/Page"
-        - $ref: "#/components/parameters/Size"
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        "200":
-          description: Paginated export history
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PageExport"
+        "204":
+          description: Execution cancelled
 
-  /exports/{exportId}/download:
-    parameters:
-      - name: exportId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+  /results/{resultId}/download:
     get:
-      tags: [Exports]
-      summary: Download exported file
+      tags: [Analyses]
+      summary: Download result
+      operationId: downloadResult
+      parameters:
+        - name: resultId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
-          description: Exported file content
+          description: Result file
           content:
             application/octet-stream:
               schema:
                 type: string
                 format: binary
 
-  # ===================== AUDIT =====================
-  /admin/audit:
+  # ==================== EXPORTS ====================
+  /exports:
+    post:
+      tags: [Exports]
+      summary: Export results
+      operationId: exportResults
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportRequest"
+      responses:
+        "201":
+          description: Export created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportResponse"
     get:
-      tags: [Audit]
-      summary: Get global audit log (Admin)
+      tags: [Exports]
+      summary: Get exports
+      operationId: getExports
       parameters:
-        - $ref: "#/components/parameters/Page"
-        - $ref: "#/components/parameters/Size"
-        - name: userId
+        - name: format
+          in: query
+          schema:
+            $ref: "#/components/schemas/ExportFormat"
+        - name: page
           in: query
           schema:
             type: integer
-            format: int64
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of exports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageExportResponse"
+
+  /exports/{exportId}:
+    get:
+      tags: [Exports]
+      summary: Get export by ID
+      operationId: getExportById
+      parameters:
+        - name: exportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Export details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportResponse"
+    delete:
+      tags: [Exports]
+      summary: Delete export
+      operationId: deleteExport
+      parameters:
+        - name: exportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Export deleted
+
+  /exports/{exportId}/download:
+    get:
+      tags: [Exports]
+      summary: Download export
+      operationId: downloadExport
+      parameters:
+        - name: exportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Export file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /exports/execution/{executionId}:
+    get:
+      tags: [Exports]
+      summary: Get exports by execution
+      operationId: getExportsByExecution
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of exports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageExportResponse"
+
+  /exports/statistics:
+    get:
+      tags: [Exports]
+      summary: Get export statistics
+      operationId: getExportStatistics
+      responses:
+        "200":
+          description: Export statistics
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ==================== AUDIT ====================
+  /admin/audit:
+    get:
+      tags: [Audit]
+      summary: Get audit logs
+      operationId: getAuditLogs
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
         - name: startDate
           in: query
           schema:
@@ -882,20 +2337,132 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
         "200":
-          description: Paginated audit log
+          description: Paginated audit logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageAuditLogResponse"
+
+  /admin/audit/user/{userId}:
+    get:
+      tags: [Audit]
+      summary: Get audit logs by user
+      operationId: getAuditLogsByUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated audit logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageAuditLogResponse"
+
+  /admin/audit/{logId}:
+    get:
+      tags: [Audit]
+      summary: Get audit log by ID
+      operationId: getAuditLogById
+      parameters:
+        - name: logId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Audit log entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogResponse"
+
+  /admin/audit/actions:
+    get:
+      tags: [Audit]
+      summary: Get distinct audit actions
+      operationId: getActions
+      responses:
+        "200":
+          description: List of actions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /admin/audit/summary:
+    get:
+      tags: [Audit]
+      summary: Get audit summary
+      operationId: getAuditSummary
+      responses:
+        "200":
+          description: Audit summary
           content:
             application/json:
               schema:
                 type: object
-                properties:
-                  content:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/AuditLog"
-                  totalElements:
-                    type: integer
+
+  # ==================== HEALTH ====================
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: health
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /health/info:
+    get:
+      tags: [Health]
+      summary: Service info
+      operationId: info
+      responses:
+        "200":
+          description: Service information
+          content:
+            application/json:
+              schema:
+                type: object
 
 components:
   securitySchemes:
@@ -904,81 +2471,24 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
-  parameters:
-    Page:
-      name: page
-      in: query
-      schema:
-        type: integer
-        default: 0
-        minimum: 0
-    Size:
-      name: size
-      in: query
-      schema:
-        type: integer
-        default: 20
-        maximum: 100
-    UserId:
-      name: userId
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
-    ProjectId:
-      name: projectId
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
-    FileId:
-      name: fileId
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
-    DatasetId:
-      name: datasetId
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
-
-  responses:
-    Unauthorized:
-      description: Authentication required or invalid
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    Forbidden:
-      description: Insufficient permissions for this action
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-
   schemas:
-    Error:
+    # ===== AUTH =====
+    LoginRequest:
       type: object
       properties:
-        code:
+        email:
           type: string
-        message:
+          format: email
+        password:
           type: string
-        timestamp:
+      required: [email, password]
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
           type: string
-          format: date-time
+      required: [refreshToken]
 
     TokenResponse:
       type: object
@@ -989,54 +2499,25 @@ components:
           type: string
         expiresIn:
           type: integer
-          description: Access token validity duration (seconds)
-
-    # ---------- Users ----------
-    UserCategory:
-      type: object
-      properties:
-        categoryId:
-          type: integer
           format: int64
-        label:
+        tokenType:
           type: string
-          example: ADMIN
-        description:
-          type: string
-        accessLevel:
-          type: integer
-          minimum: 1
-          maximum: 5
+          default: Bearer
 
-    Permission:
-      type: object
-      properties:
-        permissionId:
-          type: integer
-          format: int64
-        code:
-          type: string
-          example: FILE_UPLOAD
-        label:
-          type: string
-        module:
-          type: string
-          enum: [Import, Cleaning, Analysis, Export, Admin]
-
-    User:
+    # ===== USERS =====
+    UserResponse:
       type: object
       properties:
         userId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         lastName:
           type: string
         firstName:
           type: string
         email:
           type: string
-          format: email
-        active:
+        isActive:
           type: boolean
         createdAt:
           type: string
@@ -1044,13 +2525,11 @@ components:
         lastLogin:
           type: string
           format: date-time
-          nullable: true
         category:
-          $ref: "#/components/schemas/UserCategory"
+          $ref: "#/components/schemas/UserCategoryResponse"
 
-    UserCreation:
+    UserCreationRequest:
       type: object
-      required: [lastName, firstName, email, password, categoryId]
       properties:
         lastName:
           type: string
@@ -1058,50 +2537,144 @@ components:
           type: string
         email:
           type: string
-          format: email
         password:
           type: string
-          format: password
         categoryId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+      required: [lastName, firstName, email, password, categoryId]
 
-    UserUpdate:
+    UserUpdateRequest:
       type: object
       properties:
         lastName:
           type: string
         firstName:
           type: string
-        active:
+        email:
+          type: string
+        isActive:
           type: boolean
         categoryId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        newPassword:
+          type: string
 
-    PageUser:
+    ChangePasswordRequest:
       type: object
       properties:
-        content:
+        newPassword:
+          type: string
+      required: [newPassword]
+
+    UserCategoryResponse:
+      type: object
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        label:
+          type: string
+        description:
+          type: string
+        accessLevel:
+          type: integer
+        permissions:
           type: array
           items:
-            $ref: "#/components/schemas/User"
-        page:
-          type: integer
-        totalElements:
-          type: integer
+            $ref: "#/components/schemas/PermissionResponse"
 
-    # ---------- Projects ----------
+    PermissionResponse:
+      type: object
+      properties:
+        permissionId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        label:
+          type: string
+        module:
+          type: string
+
+    CategoryCreationRequest:
+      type: object
+      properties:
+        label:
+          type: string
+        description:
+          type: string
+        accessLevel:
+          type: integer
+      required: [label, accessLevel]
+
+    PermissionUpdateRequest:
+      type: object
+      properties:
+        permissionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    UserStatisticsResponse:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+          format: int64
+        activeUsers:
+          type: integer
+          format: int64
+        inactiveUsers:
+          type: integer
+          format: int64
+        totalCategories:
+          type: integer
+          format: int64
+        newUsersLast30Days:
+          type: integer
+          format: int64
+        newUsersLast7Days:
+          type: integer
+          format: int64
+        activeUsersLast30Days:
+          type: integer
+          format: int64
+        activeUsersLast7Days:
+          type: integer
+          format: int64
+        activityRate:
+          type: number
+          format: double
+        adminCount:
+          type: integer
+          format: int64
+        analystCount:
+          type: integer
+          format: int64
+        consultantCount:
+          type: integer
+          format: int64
+        guestCount:
+          type: integer
+          format: int64
+        activePercentage:
+          type: number
+          format: double
+
+    # ===== PROJECTS =====
     ProjectStatus:
       type: string
       enum: [IN_PROGRESS, COMPLETED, ARCHIVED]
 
-    Project:
+    ProjectResponse:
       type: object
       properties:
         projectId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         projectName:
           type: string
         description:
@@ -1112,31 +2685,59 @@ components:
         status:
           $ref: "#/components/schemas/ProjectStatus"
         creatorUserId:
+          type: string
+          format: uuid
+        creatorFullName:
+          type: string
+        fileCount:
+          type: integer
+          format: int64
+        datasetCount:
           type: integer
           format: int64
 
-    ProjectCreation:
+    ProjectCreationRequest:
       type: object
-      required: [projectName]
       properties:
         projectName:
           type: string
         description:
           type: string
+      required: [projectName]
 
-    PageProject:
+    ProjectUpdateRequest:
       type: object
       properties:
-        content:
-          type: array
-          items:
-            $ref: "#/components/schemas/Project"
-        page:
-          type: integer
-        totalElements:
-          type: integer
+        projectName:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
 
-    # ---------- Files / Datasets ----------
+    ProjectStatisticsResponse:
+      type: object
+      properties:
+        totalProjects:
+          type: integer
+          format: int64
+        inProgress:
+          type: integer
+          format: int64
+        completed:
+          type: integer
+          format: int64
+        archived:
+          type: integer
+          format: int64
+        totalCreators:
+          type: integer
+          format: int64
+        newProjectsLast30Days:
+          type: integer
+          format: int64
+
+    # ===== FILES =====
     FileType:
       type: string
       enum: [CSV, EXCEL, SQL]
@@ -1145,37 +2746,50 @@ components:
       type: string
       enum: [RECEIVED, ANALYZING, EXPLORED, CLEANED, ERROR]
 
-    SourceFile:
+    SourceFileResponse:
       type: object
       properties:
         fileId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         fileName:
           type: string
         fileType:
           $ref: "#/components/schemas/FileType"
+        storagePath:
+          type: string
         sizeBytes:
           type: integer
           format: int64
-        uploadDate:
+        sizeFormatted:
+          type: string
+        uploadedAt:
           type: string
           format: date-time
         processingStatus:
           $ref: "#/components/schemas/FileProcessingStatus"
+        statusLabel:
+          type: string
         projectId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        projectName:
+          type: string
         userId:
+          type: string
+          format: uuid
+        userFullName:
+          type: string
+        datasetCount:
           type: integer
-          format: int64
 
-    Dataset:
+    # ===== DATASETS =====
+    DatasetResponse:
       type: object
       properties:
         datasetId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         datasetName:
           type: string
         rowCount:
@@ -1188,24 +2802,30 @@ components:
         isCleaned:
           type: boolean
         fileId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        projectId:
+          type: string
+          format: uuid
+        projectName:
+          type: string
+        qualityScore:
           type: integer
-          format: int64
+        analysisCount:
+          type: integer
 
-    ColumnType:
-      type: string
-      enum: [STRING, INTEGER, FLOAT, DATE, BOOLEAN]
-
-    DatasetColumn:
+    DatasetColumnResponse:
       type: object
       properties:
         columnId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         originalName:
           type: string
         normalizedName:
           type: string
-          nullable: true
         detectedType:
           $ref: "#/components/schemas/ColumnType"
         targetType:
@@ -1214,20 +2834,66 @@ components:
           type: integer
         nullCount:
           type: integer
+        nullPercentage:
+          type: number
         uniqueCount:
           type: integer
+        uniquePercentage:
+          type: number
+        cleaningRuleCount:
+          type: integer
         datasetId:
+          type: string
+          format: uuid
+
+    ColumnType:
+      type: string
+      enum: [STRING, INTEGER, FLOAT, DATE, BOOLEAN]
+
+    DatasetColumnUpdateRequest:
+      type: object
+      properties:
+        normalizedName:
+          type: string
+        targetType:
+          $ref: "#/components/schemas/ColumnType"
+
+    DatasetStatisticsResponse:
+      type: object
+      properties:
+        totalDatasets:
           type: integer
           format: int64
+        cleanedDatasets:
+          type: integer
+          format: int64
+        uncleanedDatasets:
+          type: integer
+          format: int64
+        totalRows:
+          type: integer
+          format: int64
+        totalColumns:
+          type: integer
+          format: int64
+        averageRows:
+          type: number
+          format: double
+        averageColumns:
+          type: number
+          format: double
+        averageQualityScore:
+          type: number
+          format: double
 
-    # ---------- Exploration ----------
-    ExplorationReport:
+    # ===== EXPLORATION =====
+    ExplorationReportResponse:
       type: object
       properties:
         reportId:
-          type: integer
-          format: int64
-        generationDate:
+          type: string
+          format: uuid
+        generatedAt:
           type: string
           format: date-time
         totalRows:
@@ -1238,48 +2904,50 @@ components:
           type: integer
         qualityScore:
           type: number
-          format: float
-          minimum: 0
-          maximum: 100
         reportPdfPath:
           type: string
-          nullable: true
         datasetId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        datasetName:
+          type: string
+        columnStatistics:
+          type: object
 
-    # ---------- Cleaning ----------
+    # ===== CLEANING =====
     RuleType:
       type: string
-      enum:
-        - TYPE_CONVERSION
-        - DUPLICATE_REMOVAL
-        - NULL_IMPUTATION
-        - REGEX_CLEANING
-        - TRIM
-        - VALUE_CONSTRAINT
+      enum: [TYPE_CONVERSION, DUPLICATE_REMOVAL, NULL_IMPUTATION, REGEX_CLEANING, TRIM, VALUE_CONSTRAINT]
 
-    CleaningRule:
+    CleaningRuleResponse:
       type: object
       properties:
         ruleId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         ruleType:
           $ref: "#/components/schemas/RuleType"
+        ruleTypeLabel:
+          type: string
         parametersJson:
           type: object
         executionOrder:
           type: integer
-        active:
+        isActive:
           type: boolean
         columnId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        columnName:
+          type: string
+        datasetId:
+          type: string
+          format: uuid
+        datasetName:
+          type: string
 
-    CleaningRuleCreation:
+    CleaningRuleRequest:
       type: object
-      required: [ruleType]
       properties:
         ruleType:
           $ref: "#/components/schemas/RuleType"
@@ -1287,49 +2955,89 @@ components:
           type: object
         executionOrder:
           type: integer
-        active:
+        isActive:
           type: boolean
-          default: true
+      required: [ruleType]
 
-    HistoryStatus:
+    CleaningHistoryStatus:
       type: string
-      enum: [SUCCESS, FAILURE]
+      enum: [SUCCESS, FAILURE, PARTIAL_SUCCESS, IN_PROGRESS, CANCELLED, PENDING]
 
-    CleaningHistory:
+    CleaningHistoryResponse:
       type: object
       properties:
         historyId:
-          type: integer
-          format: int64
-        executionDate:
+          type: string
+          format: uuid
+        executedAt:
           type: string
           format: date-time
         status:
-          $ref: "#/components/schemas/HistoryStatus"
+          $ref: "#/components/schemas/CleaningHistoryStatus"
+        statusLabel:
+          type: string
+        statusIcon:
+          type: string
         details:
           type: string
-          nullable: true
+        durationMs:
+          type: integer
+        durationFormatted:
+          type: string
+        affectedRows:
+          type: integer
         datasetId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        datasetName:
+          type: string
         ruleId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        ruleType:
+          $ref: "#/components/schemas/RuleType"
+        ruleTypeLabel:
+          type: string
+        columnName:
+          type: string
         userId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        userFullName:
+          type: string
+        userEmail:
+          type: string
 
-    # ---------- Analyses ----------
+    # ===== ANALYSES =====
     AnalysisCategory:
       type: string
       enum: [STATISTICAL, CORRELATION, TEMPORAL, SEGMENTATION, FINANCIAL]
 
-    PredefinedAnalysis:
+    PredefinedAnalysisResponse:
       type: object
       properties:
         analysisId:
+          type: string
+          format: uuid
+        analysisName:
+          type: string
+        description:
+          type: string
+        category:
+          $ref: "#/components/schemas/AnalysisCategory"
+        categoryLabel:
+          type: string
+        referenceScript:
+          type: string
+        requiredParametersJson:
+          type: object
+        executionCount:
           type: integer
           format: int64
+
+    PredefinedAnalysisRequest:
+      type: object
+      properties:
         analysisName:
           type: string
         description:
@@ -1340,188 +3048,303 @@ components:
           type: string
         requiredParametersJson:
           type: object
+      required: [analysisName, category, referenceScript]
 
-    ExecutionStatus:
+    AnalysisExecutionStatus:
       type: string
-      enum: [IN_PROGRESS, COMPLETED, ERROR]
+      enum: [IN_PROGRESS, COMPLETED, ERROR, CANCELLED, PENDING]
 
-    AnalysisExecutionCreation:
+    AnalysisExecutionRequest:
       type: object
-      required: [datasetId]
       properties:
         datasetId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         analysisId:
-          type: integer
-          format: int64
-          nullable: true
-          description: NULL for custom analysis
+          type: string
+          format: uuid
         parameters:
           type: object
+      required: [datasetId]
 
-    AnalysisExecution:
+    AnalysisExecutionResponse:
       type: object
       properties:
         executionId:
-          type: integer
-          format: int64
-        executionDate:
+          type: string
+          format: uuid
+        executedAt:
           type: string
           format: date-time
         status:
-          $ref: "#/components/schemas/ExecutionStatus"
+          $ref: "#/components/schemas/AnalysisExecutionStatus"
+        statusLabel:
+          type: string
         durationMs:
           type: integer
-          nullable: true
+        durationFormatted:
+          type: string
         usedParametersJson:
           type: object
         datasetId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        datasetName:
+          type: string
         analysisId:
-          type: integer
-          format: int64
-          nullable: true
+          type: string
+          format: uuid
+        analysisName:
+          type: string
+        analysisCategory:
+          $ref: "#/components/schemas/AnalysisCategory"
         userId:
-          type: integer
-          format: int64
-
-    PageAnalysisExecution:
-      type: object
-      properties:
-        content:
+          type: string
+          format: uuid
+        userFullName:
+          type: string
+        results:
           type: array
           items:
-            $ref: "#/components/schemas/AnalysisExecution"
-        page:
-          type: integer
-        totalElements:
+            $ref: "#/components/schemas/AnalysisResultResponse"
+        resultCount:
           type: integer
 
     ResultType:
       type: string
       enum: [TABLE, CHART, KPI]
 
-    AnalysisResult:
+    ChartType:
+      type: string
+      enum: [BAR, LINE, PIE, SCATTER, AREA]
+
+    ChartResponse:
+      type: object
+      properties:
+        chartId:
+          type: string
+          format: uuid
+        chartType:
+          $ref: "#/components/schemas/ChartType"
+        chartTypeLabel:
+          type: string
+        configJson:
+          type: object
+        resultId:
+          type: string
+          format: uuid
+
+    AnalysisResultResponse:
       type: object
       properties:
         resultId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         resultType:
           $ref: "#/components/schemas/ResultType"
+        resultTypeLabel:
+          type: string
         title:
           type: string
         filePath:
           type: string
         fileFormat:
           type: string
-          enum: [CSV, XLSX, PNG, SVG]
         displayOrder:
           type: integer
         executionId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         chart:
-          $ref: "#/components/schemas/Chart"
-          nullable: true
+          $ref: "#/components/schemas/ChartResponse"
+        downloadUrl:
+          type: string
 
-    ChartType:
-      type: string
-      enum: [BAR, LINE, PIE, SCATTER, AREA]
-
-    Chart:
-      type: object
-      properties:
-        chartId:
-          type: integer
-          format: int64
-        chartType:
-          $ref: "#/components/schemas/ChartType"
-        configJson:
-          type: object
-          description: >
-            Visual configuration (colors, axes, legends) aligned with HFF
-            brand guidelines (e.g., colors #0B2545, #FFCD11).
-        resultId:
-          type: integer
-          format: int64
-
-    # ---------- Exports ----------
+    # ===== EXPORTS =====
     ExportFormat:
       type: string
       enum: [CSV, XLSX, PNG, ZIP]
 
-    ExportCreation:
+    ExportRequest:
       type: object
-      required: [executionId, exportFormat]
       properties:
         executionId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         exportFormat:
           $ref: "#/components/schemas/ExportFormat"
         resultIds:
           type: array
           items:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
+      required: [executionId, exportFormat]
 
-    Export:
+    ExportResponse:
       type: object
       properties:
         exportId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         exportFormat:
           $ref: "#/components/schemas/ExportFormat"
-        exportDate:
+        formatLabel:
+          type: string
+        exportedAt:
           type: string
           format: date-time
         filePath:
           type: string
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        fileSizeFormatted:
+          type: string
         executionId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        executionStatus:
+          type: string
         userId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        userFullName:
+          type: string
+        downloadUrl:
+          type: string
 
-    PageExport:
+    # ===== AUDIT =====
+    AuditLogResponse:
+      type: object
+      properties:
+        logId:
+          type: string
+          format: uuid
+        action:
+          type: string
+        concernedEntity:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        actionDate:
+          type: string
+          format: date-time
+        ipAddress:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        userFullName:
+          type: string
+        userEmail:
+          type: string
+
+    # ===== PAGINATION =====
+    PageResponse:
       type: object
       properties:
         content:
           type: array
-          items:
-            $ref: "#/components/schemas/Export"
-        page:
+        pageNumber:
+          type: integer
+        pageSize:
           type: integer
         totalElements:
           type: integer
+          format: int64
+        totalPages:
+          type: integer
+        isFirst:
+          type: boolean
+        isLast:
+          type: boolean
+        hasNext:
+          type: boolean
+        hasPrevious:
+          type: boolean
 
-    # ---------- Audit ----------
-    AuditLog:
-      type: object
-      properties:
-              logId:
-                type: integer
-                format: int64
-              action:
-                type: string
-              concernedEntity:
-                type: string
-                nullable: true
-              entityId:
-                type: integer
-                format: int64
-                nullable: true
-              actionDate:
-                type: string
-                format: date-time
-              ipAddress:
-                type: string
-                nullable: true
-              userId:
-                type: integer
-                format: int64
+    PageUserResponse:
+      allOf:
+        - $ref: "#/components/schemas/PageResponse"
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/UserResponse"
+
+    PageProjectResponse:
+      allOf:
+        - $ref: "#/components/schemas/PageResponse"
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProjectResponse"
+
+    PageSourceFileResponse:
+      allOf:
+        - $ref: "#/components/schemas/PageResponse"
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/SourceFileResponse"
+
+    PageDatasetResponse:
+      allOf:
+        - $ref: "#/components/schemas/PageResponse"
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/DatasetResponse"
+
+    PageCleaningHistoryResponse:
+      allOf:
+        - $ref: "#/components/schemas/PageResponse"
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/CleaningHistoryResponse"
+
+    PageAnalysisExecutionResponse:
+      allOf:
+        - $ref: "#/components/schemas/PageResponse"
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/AnalysisExecutionResponse"
+
+    PageExportResponse:
+      allOf:
+        - $ref: "#/components/schemas/PageResponse"
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ExportResponse"
+
+    PageAuditLogResponse:
+      allOf:
+        - $ref: "#/components/schemas/PageResponse"
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/AuditLogResponse"
+
+security:
+  - bearerAuth: []

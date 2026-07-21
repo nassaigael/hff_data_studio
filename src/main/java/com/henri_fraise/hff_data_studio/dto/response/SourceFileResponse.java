@@ -14,7 +14,7 @@ import lombok.*;
 public class SourceFileResponse {
   private UUID fileId;
   private String fileName;
-  private FileType fileType;
+  private FileType fileFormat;
   private String storagePath;
   private Long sizesBytes;
   private String sizesFormatted;

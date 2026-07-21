@@ -3,7 +3,7 @@ package com.henri_fraise.hff_data_studio.mapper;
 import com.henri_fraise.hff_data_studio.dto.response.ExportResponse;
 import com.henri_fraise.hff_data_studio.entity.Export;
 import com.henri_fraise.hff_data_studio.enums.AnalysisExecutionStatus;
-import com.henri_fraise.hff_data_studio.enums.FileFormat;
+import com.henri_fraise.hff_data_studio.enums.ExportFormat;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
@@ -16,8 +16,8 @@ public class ExportMapper {
 
     return ExportResponse.builder()
         .exportId(export.getId())
-        .exportFormat(export.getFileFormat())
-        .formatLabel(getFormatLabel(export.getFileFormat()))
+        .exportFormat(export.getExportFormat())
+        .formatLabel(getFormatLabel(export.getExportFormat()))
         .exportedAt(export.getExportedAt())
         .filePath(export.getFilePath())
         .fileName(extractFileName(export.getFilePath()))
@@ -50,7 +50,7 @@ public class ExportMapper {
     return String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
   }
 
-  private String getFormatLabel(FileFormat format) {
+  private String getFormatLabel(ExportFormat format) {
     if (format == null) return null;
 
     return switch (format) {

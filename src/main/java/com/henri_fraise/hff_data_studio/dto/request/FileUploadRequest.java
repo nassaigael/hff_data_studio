@@ -20,5 +20,5 @@ public class FileUploadRequest {
   private UUID projectId;
 
   @NotNull(message = "File type is required")
-  private FileType fileType;
+  private FileType fileFormat;
 }

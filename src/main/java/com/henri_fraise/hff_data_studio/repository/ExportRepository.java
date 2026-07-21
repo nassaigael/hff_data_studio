@@ -1,7 +1,10 @@
 package com.henri_fraise.hff_data_studio.repository;
 
 import com.henri_fraise.hff_data_studio.entity.Export;
-import com.henri_fraise.hff_data_studio.enums.FileFormat;
+import com.henri_fraise.hff_data_studio.enums.ExportFormat;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,55 +12,53 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
 @Repository
 public interface ExportRepository extends JpaRepository<Export, UUID> {
 
-	Page<Export> findByUserIdOrderByExportedAt(UUID userId, Pageable pageable);
+  List<Export> findByExecutionId(UUID executionId);
 
-	Page<Export> findByExecutionIdOrderByExportedAt(UUID executionId, Pageable pageable);
+  Page<Export> findByExecutionId(UUID executionId, Pageable pageable);
 
-	Page<Export> findByFileFormatOrderByExportedAtDesc(FileFormat fileFormat, Pageable pageable);
+  List<Export> findByUserIdOrderByExportedAtDesc(UUID userId);
 
-	List<Export> findByUserIdOrderByExportedAtDesc(UUID userId);
+  List<Export> findByExportFormat(ExportFormat format);
 
-	long countByUserId(UUID userId);
+  Page<Export> findByExportFormat(ExportFormat format, Pageable pageable);
 
-	long countByExecutionId(UUID executionId);
+  List<Export> findByExportedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
-	long countByFileFormat(FileFormat fileFormat);
+  List<Export> findByExportedAtBefore(LocalDateTime date);
 
-	long countByUserIdAndFileFormat(UUID userId, FileFormat fileFormat);
+  long countByUserId(UUID userId);
 
-	@Query("SELECT e FROM Export e WHERE e.exportedAt BETWEEN :start_date AND :end_date")
-	List<Export> findByExportedDateRange(
-			@Param("start_date") LocalDateTime startDate,
-			@Param("end_date") LocalDateTime endDate
-	);
+  long countByExportFormat(ExportFormat format);
 
-	@Query("SELECT e FROM Export e WHERE e.user.id = :user_id AND " +
-			"(:search_term IS NULL OR LOWER(e.fileName) LIKE LOWER(CONCAT('%', :search_term, '%') ) OR " +
-			"LOWER(e.fileFormat) LIKE LOWER(CONCAT('%', :search_term, '%') ) )")
-	Page<Export> searchUserExports(
-				@Param("user_id") UUID userId,
-				@Param("search_term") String searchTerm,
-				Pageable pageable);
+  long countByExecutionId(UUID executionId);
 
-	@Query("SELECT COUNT(e) FROM Export e WHERE e.exportedAt BETWEEN :start_date AND :end_date")
-	long countExportsBetween(
-			@Param("start_date") LocalDateTime startDate,
-			@Param("end_date") LocalDateTime endDate
-	);
+  long countByExportedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
-	@Query("SELECT e.fileFormat, COUNT(e) FROM Export e GROUP BY e.fileFormat")
-	List<Object[]> countExportsByFileFormat();
+  @Query("SELECT SUM(e.fileSize) FROM Export e")
+  Long sumFileSizes();
 
-	@Query("SELECT e FROM Export e WHERE e.exportedAt < :date")
-	List<Export> findOldExports(@Param("date") LocalDateTime date);
+  @Query("SELECT AVG(e.fileSize) FROM Export e")
+  Double averageFileSize();
 
+  @Query("SELECT SUM(e.fileSize) FROM Export e WHERE e.user.id = :userId")
+  Long sumFileSizesByUserId(@Param("userId") UUID userId);
 
+  @Query("SELECT e.exportFormat, COUNT(e) FROM Export e GROUP BY e.exportFormat")
+  List<Object[]> countGroupByFormat();
 
+  @Query("SELECT e.user.id, COUNT(e) FROM Export e GROUP BY e.user.id")
+  List<Object[]> countGroupByUser();
+
+  @Query("SELECT e FROM Export e WHERE e.execution.id = :executionId AND e.exportFormat = :format")
+  List<Export> findByExecutionIdAndFormat(
+      @Param("executionId") UUID executionId, @Param("format") ExportFormat format);
+
+  @Query("SELECT e FROM Export e ORDER BY e.exportedAt DESC")
+  List<Export> findRecentExports(Pageable pageable);
+
+  @Query("SELECT COUNT(e) FROM Export e WHERE e.execution.dataset.id = :datasetId")
+  long countByDatasetId(@Param("datasetId") UUID datasetId);
 }

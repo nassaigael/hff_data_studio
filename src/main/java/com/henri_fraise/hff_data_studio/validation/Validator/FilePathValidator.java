@@ -1,12 +1,12 @@
 package com.henri_fraise.hff_data_studio.validation.Validator;
 
 import com.henri_fraise.hff_data_studio.validation.Annotation.ValidFilePath;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.Path;
 
 public class FilePathValidator implements ConstraintValidator<ValidFilePath, String> {
 
@@ -23,13 +23,16 @@ public class FilePathValidator implements ConstraintValidator<ValidFilePath, Str
 
   @Override
   public boolean isValid(String value, ConstraintValidatorContext context) {
-    if (value == null || value.trim().isEmpty()) return allowNull;
+    if (value == null || value.trim().isEmpty()) {
+      return allowNull;
+    }
 
     String trimmed = value.trim();
-    try {
-      Path path = (Path) Paths.get(trimmed);
 
-      if (mustExist && !Files.exists((java.nio.file.Path) path)) {
+    try {
+      Path path = Paths.get(trimmed);
+
+      if (mustExist && !Files.exists(path)) {
         context.disableDefaultConstraintViolation();
         context
             .buildConstraintViolationWithTemplate("File does not exist: " + trimmed)
@@ -39,7 +42,7 @@ public class FilePathValidator implements ConstraintValidator<ValidFilePath, Str
 
       boolean extensionAllowed =
           Arrays.stream(allowedExtensions)
-              .anyMatch(ext -> trimmed.toLowerCase().endsWith("." + ext));
+              .anyMatch(ext -> trimmed.toLowerCase().endsWith("." + ext.toLowerCase()));
       if (!extensionAllowed) {
         context.disableDefaultConstraintViolation();
         context
@@ -57,7 +60,9 @@ public class FilePathValidator implements ConstraintValidator<ValidFilePath, Str
             .addConstraintViolation();
         return false;
       }
+
       return true;
+
     } catch (Exception e) {
       context.disableDefaultConstraintViolation();
       context

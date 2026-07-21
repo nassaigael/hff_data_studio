@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectStatisticsResponse {
-	private Long totalProjects;
-	private Long inProgress;
-	private Long completed;
-	private Long archived;
-	private Long totalCreators;
-	private Long newProjectsLast30Days;
+  private Long totalProjects;
+  private Long inProgress;
+  private Long completed;
+  private Long archived;
+  private Long totalCreators;
+  private Long newProjectsLast30Days;
 }

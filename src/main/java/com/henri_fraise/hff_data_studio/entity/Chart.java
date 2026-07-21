@@ -2,8 +2,11 @@ package com.henri_fraise.hff_data_studio.entity;
 
 import com.henri_fraise.hff_data_studio.enums.ChartType;
 import jakarta.persistence.*;
+import java.util.Map;
 import java.util.UUID;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -23,10 +26,11 @@ public class Chart {
   @Enumerated(EnumType.STRING)
   private ChartType chartType;
 
-  @Column(name = "config_json", columnDefinition = "TEXT")
-  private String configJson;
+  @Column(name = "config_json", columnDefinition = "JSONB")
+  @JdbcTypeCode(SqlTypes.JSON)
+  private Map<String, Object> configJson;
 
-  @OneToOne
+  @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "result_id", nullable = false, unique = true)
   private AnalysisResult result;
 }

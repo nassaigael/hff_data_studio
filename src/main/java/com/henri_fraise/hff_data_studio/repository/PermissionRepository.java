@@ -11,31 +11,28 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PermissionRepository extends JpaRepository<Permission, UUID> {
+
   Optional<Permission> findByCode(String code);
 
   List<Permission> findByModule(String module);
 
-  List<Permission> findByModuleOrderByCode(String module);
+  List<Permission> findByModuleIn(List<String> modules);
+
+  List<Permission> findByCodeIn(List<String> codes);
+
+  List<Permission> findByIsActiveTrue();
 
   boolean existsByCode(String code);
 
-  boolean existsByCodeAndIdNot(String code, UUID id);
-
-  @Query("SELECT p FROM Permission p WHERE p.code IN :codes")
-  List<Permission> findByCodes(@Param("codes") List<String> codes);
-
-  @Query("SELECT p FROM Permission p ORDER BY p.module, p.code")
-  List<Permission> findAllOrdered();
-
-  @Query("SELECT DISTINCT p.module FROM Permission p")
-  List<String> findAllModules();
-
-  @Query("SELECT p FROM Permission p JOIN p.categories c WHERE c.id = :categoryId")
+  @Query("SELECT p FROM Permission p JOIN p.userCategories c WHERE c.id = :categoryId")
   List<Permission> findPermissionsByCategoryId(@Param("categoryId") UUID categoryId);
 
-  @Query("SELECT p FROM Permission p JOIN p.categories c WHERE c.label = :categoryLabel")
+  @Query("SELECT p FROM Permission p JOIN p.userCategories c WHERE c.label = :categoryLabel")
   List<Permission> findPermissionsByCategoryLabel(@Param("categoryLabel") String categoryLabel);
 
-  @Query("SELECT COUNT(p) FROM Permission p JOIN p.categories c WHERE c.id = :categoryId")
+  @Query("SELECT COUNT(p) FROM Permission p JOIN p.userCategories c WHERE c.id = :categoryId")
   long countPermissionsByCategoryId(@Param("categoryId") UUID categoryId);
+
+  @Query("SELECT p.code FROM Permission p JOIN p.userCategories c WHERE c.id = :categoryId")
+  List<String> findPermissionCodesByCategoryId(@Param("categoryId") UUID categoryId);
 }

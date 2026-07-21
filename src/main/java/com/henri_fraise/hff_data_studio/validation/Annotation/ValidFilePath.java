@@ -1,9 +1,9 @@
 package com.henri_fraise.hff_data_studio.validation.Annotation;
 
 import com.henri_fraise.hff_data_studio.validation.Validator.FilePathValidator;
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
 import java.lang.annotation.*;
-import javax.validation.Constraint;
-import javax.validation.Payload;
 
 @Documented
 @Constraint(validatedBy = FilePathValidator.class)

@@ -19,6 +19,8 @@ public interface CleaningHistoryRepository extends JpaRepository<CleaningHistory
 
   List<CleaningHistory> findByDatasetIdOrderByExecutedAtDesc(UUID datasetId);
 
+  List<CleaningHistory> findByDatasetIdAndStatus(UUID datasetId, CleaningHistoryStatus status);
+
   long countByDatasetId(UUID datasetId);
 
   long countByDatasetIdAndStatus(UUID datasetId, CleaningHistoryStatus status);
@@ -94,4 +96,9 @@ public interface CleaningHistoryRepository extends JpaRepository<CleaningHistory
           + "CAST(COUNT(h) AS DOUBLE) * 100 "
           + "FROM CleaningHistory h")
   Double calculateOverallSuccessRate();
+
+  @Query("SELECT COUNT(h) FROM CleaningHistory h WHERE h.rule.column.id = :columnId")
+  long countByColumnId(@Param("columnId") UUID columnId);
+
+  long countByUserId(UUID userId);
 }

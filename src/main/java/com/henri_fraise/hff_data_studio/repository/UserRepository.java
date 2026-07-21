@@ -8,67 +8,68 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
 
   Optional<User> findByEmail(String email);
 
-  Optional<User> findByEmailIsAndIsActiveTrue(String email);
-
   Page<User> findAllByIsActiveTrue(Pageable pageable);
 
-  List<User> findAllByIsActiveTrue();
+  List<User> findByIsActiveTrue();
 
-  Page<User> findByIsActiveTrueAndLastNameContainingIgnoreCaseOrFirstNameContainingIgnoreCase(
-      String lastName, String firstName, Pageable pageable);
+  List<User> findByIsActiveFalse();
 
-  Page<User> findByCategory_Id(UUID categoryId, Pageable pageable);
+  Page<User> findByCategoryId(UUID categoryId, Pageable pageable);
 
-  List<User> findByLastLoginBefore(LocalDateTime date);
+  List<User> findByCategoryId(UUID categoryId);
+
+  List<User> findByCategoryLabel(String categoryLabel);
+
+  List<User> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+  List<User> findByCreatedAtBefore(LocalDateTime date);
+
+  List<User> findByCreatedAtAfter(LocalDateTime date);
+
+  long countByIsActiveTrue();
+
+  long countByIsActiveFalse();
+
+  long countByCategoryId(UUID categoryId);
+
+  long countByCategoryLabel(String categoryLabel);
+
+  long countByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+  long countByCreatedAtAfter(LocalDateTime date);
+
+  long countByCreatedAtBefore(LocalDateTime date);
 
   boolean existsByEmail(String email);
 
   boolean existsByEmailAndIsActiveTrue(String email);
 
-  boolean existsByEmailAndIdNot(String email, UUID id);
-
-  long countByIsActiveTrue();
-
-  long countByCategory_Id(UUID categoryId);
-
-  @Modifying
-  @Transactional
-  @Query("UPDATE User u SET u.isActive = false WHERE u.id = :user_id")
-  void deactivateUser(@Param("user_id") UUID userId);
-
-  @Modifying
-  @Transactional
-  @Query("UPDATE User u SET u.lastLogin = :lastLogin WHERE u.id = :user_id")
-  void updateLastLogin(@Param("user_id") UUID userId, @Param("lastLogin") LocalDateTime lastLogin);
-
-  @Modifying
-  @Transactional
-  @Query("UPDATE User u SET u.passwordHash = :passwordHash WHERE u.id = :user_id")
-  void updatePassword(@Param("user_id") UUID userId, @Param("passwordHash") String passwordHash);
-
   @Query(
-      "SELECT u FROM User u WHERE u.isActive = true AND "
-          + "(:searchTerm IS NULL OR "
+      "SELECT u FROM User u WHERE "
           + "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
           + "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
-          + "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+          + "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   Page<User> searchUsers(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-  @Query("SELECT u FROM User u WHERE u.isActive = true AND u.category.label = :categoryLabel")
-  List<User> findActiveUsersByCategoryLabel(@Param("categoryLabel") String categoryLabel);
+  @Query(
+      "SELECT u FROM User u WHERE "
+          + "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
+          + "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
+          + "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+  List<User> searchUsers(@Param("searchTerm") String searchTerm);
 
-  @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt BETWEEN :startDate AND :endDate")
-  long countUsersCreatedBetween(
-      @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+  @Query("SELECT u FROM User u ORDER BY u.createdAt DESC")
+  List<User> findRecentUsers(@Param("limit") int limit);
+
+  @Query("SELECT u FROM User u WHERE u.isActive = true ORDER BY u.lastLogin DESC")
+  List<User> findRecentlyActiveUsers(@Param("limit") int limit);
 }

@@ -3,6 +3,12 @@ package com.henri_fraise.hff_data_studio.enums;
 public enum ExportFormat {
   CSV,
   XLSX,
+  EXCEL,
   PNG,
-  ZIP
+  SVG,
+  PDF,
+  HTML,
+  ZIP,
+  SQL,
+  JSON;
 }

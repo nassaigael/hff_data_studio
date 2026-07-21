@@ -26,6 +26,9 @@ public class AuditLog {
   @Column(name = "concerned_entity")
   private String concernedEntity;
 
+  @Column(name = "details")
+  private String details;
+
   @Column(name = "entity_id")
   private UUID entityId;
 

@@ -31,6 +31,12 @@ public interface DatasetColumnRepository extends JpaRepository<DatasetColumn, UU
 
   long countByDatasetIdAndNullCountGreaterThan(UUID datasetId, Integer nullCount);
 
+  @Query("SELECT SUM(c.uniqueCount) FROM DatasetColumn c WHERE c.dataset.id = :dataset_id")
+  Long sumUniqueCountByDatasetId(@Param("dataset_id") UUID datasetId);
+
+  @Query("SELECT SUM(c.nullCount) FROM DatasetColumn  c WHERE c.dataset.id = :dataset_id")
+  Long sumNullCountByDatasetId(@Param("dataset_id") UUID datasetId);
+
   @Modifying
   @Transactional
   @Query("UPDATE DatasetColumn c SET c.normalizedName = :normalized_name WHERE c.id = :column_id")
@@ -54,24 +60,26 @@ public interface DatasetColumnRepository extends JpaRepository<DatasetColumn, UU
       @Param("unique_count") Integer uniqueCount);
 
   @Query(
-      "SELECT c FROM DatasetColumn  c WHERE  c.dataset_id = :dataset_id AND "
+      "SELECT c FROM DatasetColumn  c WHERE  c.dataset.id = :dataset_id AND "
           + "(c.normalizedName IS NULL OR c.targetType IS NULL OR c.targetType != c.detectedType)")
   List<DatasetColumn> findColumnsNeedingNormalization(@Param("dataset_id") UUID datasetId);
 
-  @Query("SELECT c FROM DatasetColumn c WHERE c.dataset_id = :dataset_id AND c.nullCount > 0")
+  @Query("SELECT c FROM DatasetColumn c WHERE c.dataset.id = :dataset_id AND c.nullCount > 0")
   List<DatasetColumn> findColumnsWithNullsValues(@Param("dataset_id") UUID datasetId);
 
   @Query(
-      "SELECT c FROM DatasetColumn c WHERE c.dataset_id = :dataset_id AND c.uniqueCount ="
-          + " c.row_count")
+      "SELECT c FROM DatasetColumn c WHERE c.dataset.id = :dataset_id AND c.uniqueCount ="
+          + " c.dataset.rowCount")
   List<DatasetColumn> findUniqueColumns(@Param("dataset_id") UUID datasetId);
 
-  @Query("SELECT MAX(c.position) FROM DatasetColumn c WHERE c.dataset_id = :dataset_id")
+  @Query("SELECT MAX(c.position) FROM DatasetColumn c WHERE c.dataset.id = :dataset_id")
   Integer findMaxPositionByDatasetId(@Param("dataset_id") UUID datasetId);
 
   @Query(
-      "SELECT c FROM DatasetColumn c WHERE c.dataset_id = :dataset_id AND c.detectedType ="
+      "SELECT c FROM DatasetColumn c WHERE c.dataset.id = :dataset_id AND c.detectedType ="
           + " :detected_type AND c.targetType IS NULL ")
   List<DatasetColumn> findColumnsWithDetectedTypeNotConverted(
       @Param("dataset_id") UUID datasetId, @Param("detected_type") ColumnType detectedType);
+
+  Optional<DatasetColumn> findByIdAndDatasetId(UUID id, UUID datasetId);
 }

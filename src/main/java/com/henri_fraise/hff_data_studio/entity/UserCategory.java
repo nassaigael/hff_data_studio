@@ -5,23 +5,24 @@ import java.util.List;
 import java.util.UUID;
 import lombok.*;
 
-@Builder
 @Getter
 @Setter
 @Entity
 @Table(name = "user_category")
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class UserCategory {
+
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   @Column(name = "category_id")
   private UUID id;
 
-  @Column(name = "label", nullable = false, unique = true)
+  @Column(name = "label", length = 60, nullable = false, unique = true)
   private String label;
 
-  @Column(name = "description")
+  @Column(name = "description", length = 255)
   private String description;
 
   @Column(name = "access_level", nullable = false)
