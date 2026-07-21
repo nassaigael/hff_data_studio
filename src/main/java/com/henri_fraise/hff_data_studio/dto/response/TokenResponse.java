@@ -17,7 +17,5 @@ public class TokenResponse {
 
   private Long expiresIn;
 
-  private String tokenType;
-
   @Builder.Default private String tokerType = "Bearer";
 }
