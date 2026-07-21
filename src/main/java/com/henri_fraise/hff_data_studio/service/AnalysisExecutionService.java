@@ -13,6 +13,7 @@ import com.henri_fraise.hff_data_studio.repository.AnalysisExecutionRepository;
 import com.henri_fraise.hff_data_studio.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
