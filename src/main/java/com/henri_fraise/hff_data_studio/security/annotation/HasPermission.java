@@ -7,9 +7,9 @@ import java.lang.annotation.*;
 @Documented
 public @interface HasPermission {
 
-	String value();
+  String value();
 
-	String entity() default "";
+  String entity() default "";
 
-	String operation() default "READ";
+  String operation() default "READ";
 }
