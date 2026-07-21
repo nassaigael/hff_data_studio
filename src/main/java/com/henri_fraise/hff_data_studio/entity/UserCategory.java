@@ -1,10 +1,9 @@
 package com.henri_fraise.hff_data_studio.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.List;
 import java.util.UUID;
+import lombok.*;
 
 @Getter
 @Setter
@@ -35,9 +34,8 @@ public class UserCategory {
 
   @ManyToMany
   @JoinTable(
-          name = "category_permission",
-          joinColumns = @JoinColumn(name = "category_id"),
-          inverseJoinColumns = @JoinColumn(name = "permission_id")
-  )
+      name = "category_permission",
+      joinColumns = @JoinColumn(name = "category_id"),
+      inverseJoinColumns = @JoinColumn(name = "permission_id"))
   private List<Permission> permissions;
 }
