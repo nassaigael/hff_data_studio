@@ -267,5 +267,20 @@ public class DataCleaningService {
 			return map;
 		}
 
+		private Map<String, Object> getStringObjectMap(UUID datasetId, String status, String message, int totalRules, int processedRules, int successCount, int failureCount, int affectedRows, Long durationMs) {
+			Map<String, Object> map = new HashMap<>();
+			map.put("datasetId", datasetId);
+			map.put("status", status);
+			map.put("message", message);
+			map.put("totalRules", totalRules);
+			map.put("processedRules", processedRules);
+			map.put("successCount", successCount);
+			map.put("failureCount", failureCount);
+			map.put("affectedRows", affectedRows);
+			map.put("durationMs", durationMs);
+			map.put("progress", totalRules > 0 ? (int) ((double) processedRules / totalRules * 100) : 0);
+			return map;
+		}
+
 	}
 }
