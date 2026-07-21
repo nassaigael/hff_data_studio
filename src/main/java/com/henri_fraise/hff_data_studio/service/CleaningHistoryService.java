@@ -29,9 +29,9 @@ public class CleaningHistoryService {
 	private final CleaningHistoryMapper historyMapper;
 
 	@Transactional
-	public void createHistory(Dataset dataset, CleaningRule rule, User user,
-	                          CleaningHistoryStatus status, String details,
-	                          Integer durationMs, Integer affectedRows) {
+	public CleaningHistory createHistory(Dataset dataset, CleaningRule rule, User user,
+	                                     CleaningHistoryStatus status, String details,
+	                                     Integer durationMs, Integer affectedRows) {
 		CleaningHistory history = CleaningHistory.builder()
 				.dataset(dataset)
 				.rule(rule)
@@ -43,6 +43,7 @@ public class CleaningHistoryService {
 				.build();
 		CleaningHistory saved = historyRepository.save(history);
 		log.info("Cleaning history created: {} for dataset: {}", saved.getId(), dataset.getDatasetName());
+		return history;
 	}
 
 	public long countAllOperations() {
