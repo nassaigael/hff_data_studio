@@ -56,7 +56,6 @@ public class AuthService {
               .accessToken(accessToken)
               .refreshToken(refreshToken)
               .expiresIn(jwtService.getAccessTokenExpiration())
-              .tokenType("Bearer")
               .build();
 
     } catch (UserDisabledException ex) {
@@ -96,7 +95,6 @@ public class AuthService {
               .accessToken(newAccessToken)
               .refreshToken(refreshToken)
               .expiresIn(jwtService.getAccessTokenExpiration())
-              .tokenType("Bearer")
               .build();
 
     } catch (TokenInvalidException | TokenExpiredException | UserDisabledException ex) {
