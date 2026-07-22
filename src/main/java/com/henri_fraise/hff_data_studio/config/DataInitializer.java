@@ -54,7 +54,7 @@ public class DataInitializer implements CommandLineRunner {
               .build();
 
       userRepository.save(adminUser);
-      log.info("✅ Admin user created: admin@hff.re / 123456");
+      log.info("User default ADMIN created successfully");
     }
   }
 }
