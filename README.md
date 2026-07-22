@@ -25,6 +25,8 @@
 - [API Documentation](#-api-documentation)
 - [Security](#-security)
 - [Testing](#-testing)
+- [Deployment](#-deployment)
+- [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
 - [License](#-license)
 - [Author](#-author)
@@ -33,29 +35,32 @@
 
 ## 🎯 Overview
 
-HFF Data Studio provides an end-to-end pipeline for handling business data:
+HFF Data Studio is a production-ready data management platform that provides an end-to-end pipeline for handling business data with enterprise-grade security and compliance:
 
-1. **Ingest** — Upload source files (CSV, Excel, SQL dumps) into isolated projects.
-2. **Explore** — Automatically profile datasets, detect column types, and compute a quality score.
-3. **Clean** — Configure per-column cleaning rules (normalization, null handling, type conversion, deduplication).
-4. **Analyze** — Run predefined analyses powered by Python scripts and Spring AI (DeepSeek).
-5. **Visualize & Export** — Generate charts, PDF reports, and exports (CSV, Excel, JSON).
-6. **Audit** — Every action is logged for traceability and compliance.
+1. **Ingest** — Upload source files (CSV, Excel, SQL dumps) into isolated project workspaces with automatic validation.
+2. **Explore** — Automatically profile datasets with statistical analysis, detect column types, and compute comprehensive quality scores.
+3. **Clean** — Configure versioned, per-column cleaning rules (normalization, null handling, type conversion, deduplication) with full history tracking.
+4. **Analyze** — Run predefined analyses powered by Python scripts and Spring AI (DeepSeek) with configurable parameters.
+5. **Visualize & Export** — Generate interactive charts, professional PDF reports, and multi-format exports (CSV, Excel, JSON) with download tracking.
+6. **Audit** — Every action is logged with user context, timestamps, and details for complete traceability and compliance.
+7. **Secure** — JWT-based authentication with token blacklisting, role-based access control, and comprehensive permission system.
 
 ---
 
 ## ✨ Key Features
 
-- 🔐 **Role-Based Access Control** — Users, categories, and fine-grained permissions with JWT authentication.
-- 📁 **Project Workspaces** — Organize source files, datasets, and analyses per project with archive/restore lifecycle.
-- 🧪 **Automated Data Profiling** — Column type detection, null/unique statistics, and quality scoring.
-- 🧹 **Configurable Cleaning Pipeline** — Ordered, versioned cleaning rules per column with a full history.
-- 🤖 **AI-Powered Analytics** — Predefined analyses running on Python with DeepSeek integration via Spring AI.
-- 📊 **Reports & Charts** — Generate PDF exploration reports and rich chart datasets.
-- 📤 **Multi-Format Exports** — CSV, Excel, JSON export with tracking.
-- 📋 **Complete Audit Log** — Every mutation is recorded for security and compliance reviews.
-- ✅ **Rich Validation** — Custom Bean Validation constraints (email, password strength, file type, URL, phone, etc.).
-- 🌐 **CORS-Ready REST API** — Ready for integration with SPA frontends.
+- 🔐 **Role-Based Access Control** — Users, categories, and fine-grained permissions with JWT authentication and token blacklisting.
+- 📁 **Project Workspaces** — Organize source files, datasets, and analyses per project with archive/restore lifecycle and soft deletion.
+- 🧪 **Automated Data Profiling** — Column type detection, null/unique statistics, distribution analysis, and comprehensive quality scoring.
+- 🧹 **Configurable Cleaning Pipeline** — Ordered, versioned cleaning rules per column with full history, rollback capabilities, and preview.
+- 🤖 **AI-Powered Analytics** — Predefined analyses running on Python with DeepSeek integration via Spring AI for intelligent insights.
+- 📊 **Reports & Charts** — Generate professional PDF exploration reports and rich, exportable chart datasets.
+- 📤 **Multi-Format Exports** — CSV, Excel, JSON export with download tracking and compression options.
+- 📋 **Complete Audit Log** — Every mutation is recorded with user context, IP address, and timestamps for security and compliance reviews.
+- ✅ **Rich Validation** — Custom Bean Validation constraints (email, password strength, file type, URL, phone, SQL identifier, etc.) with detailed error messages.
+- 🌐 **CORS-Ready REST API** — Fully documented REST API ready for integration with SPA frontends (React, Vue, Angular).
+- 🔄 **Token Management** — Automatic token refresh, blacklist management, and secure logout with token revocation.
+- 📦 **File Storage** — Configurable local or cloud storage for uploaded files with automatic organization and cleanup.
 
 ---
 
