@@ -27,9 +27,7 @@ public class UserCategoryService {
   private final PermissionService permissionService;
   private final UserCategoryMapper categoryMapper;
   private final AuditLogService auditLogService;
-
-  // ==================== CRUD Operations ====================
-
+  
   public List<UserCategoryResponse> getAllCategories() {
     try {
       return categoryRepository.findAll().stream()
@@ -60,7 +58,6 @@ public class UserCategoryService {
 
   @Transactional
   public UserCategoryResponse createCategory(CategoryCreationRequest request) {
-    // Check if label already exists
     if (categoryRepository.existsByLabel(request.getLabel())) {
       throw new ResourceAlreadyExistsException("UserCategory", "label", request.getLabel());
     }
@@ -71,7 +68,6 @@ public class UserCategoryService {
 
       log.info("Category created successfully: {} ({})", saved.getLabel(), saved.getId());
 
-      // Audit log
       auditLogService.logAction(
           "CATEGORY_CREATED",
           "UserCategory",
@@ -89,7 +85,6 @@ public class UserCategoryService {
   public UserCategoryResponse updateCategory(UUID categoryId, CategoryCreationRequest request) {
     UserCategory category = getCategoryEntityById(categoryId);
 
-    // Check label uniqueness if changed
     if (!category.getLabel().equals(request.getLabel())
         && categoryRepository.existsByLabel(request.getLabel())) {
       throw new ResourceAlreadyExistsException("UserCategory", "label", request.getLabel());
@@ -103,7 +98,6 @@ public class UserCategoryService {
       UserCategory updated = categoryRepository.save(category);
       log.info("Category updated successfully: {} ({})", updated.getLabel(), updated.getId());
 
-      // Audit log
       auditLogService.logAction(
           "CATEGORY_UPDATED",
           "UserCategory",
@@ -121,7 +115,6 @@ public class UserCategoryService {
   public void deleteCategory(UUID categoryId) {
     UserCategory category = getCategoryEntityById(categoryId);
 
-    // Check if category has users
     if (!category.getUsers().isEmpty()) {
       throw new ValidationException(
           "Cannot delete category with assigned users. Please reassign or deactivate users first.");
