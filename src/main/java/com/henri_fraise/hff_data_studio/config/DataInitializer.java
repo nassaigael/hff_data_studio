@@ -36,7 +36,7 @@ public class DataInitializer implements CommandLineRunner {
                   () -> {
                     UserCategory newCategory =
                         UserCategory.builder()
-                            .label("ADMIN")
+                            .label("ANALYSIS_VIEW")
                             .description("Administrator")
                             .accessLevel(5)
                             .build();
