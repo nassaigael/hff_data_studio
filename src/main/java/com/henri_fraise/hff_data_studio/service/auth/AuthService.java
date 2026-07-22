@@ -34,9 +34,9 @@ public class AuthService {
   @Transactional
   public TokenResponse login(LoginRequest request) {
     try {
-      Authentication authentication = authenticationManager.authenticate(
-              new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-      );
+      Authentication authentication =
+          authenticationManager.authenticate(
+              new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
       UserDetails userDetails = (UserDetails) authentication.getPrincipal();
       User user = userService.getUserEntityByEmail(request.getEmail());
@@ -53,10 +53,10 @@ public class AuthService {
       log.info("User logged in successfully: {}", request.getEmail());
 
       return TokenResponse.builder()
-              .accessToken(accessToken)
-              .refreshToken(refreshToken)
-              .expiresIn(jwtService.getAccessTokenExpiration())
-              .build();
+          .accessToken(accessToken)
+          .refreshToken(refreshToken)
+          .expiresIn(jwtService.getAccessTokenExpiration())
+          .build();
 
     } catch (UserDisabledException ex) {
       log.warn("Login failed - account disabled: {}", request.getEmail());
@@ -92,10 +92,10 @@ public class AuthService {
       log.info("Token refreshed for user: {}", username);
 
       return TokenResponse.builder()
-              .accessToken(newAccessToken)
-              .refreshToken(refreshToken)
-              .expiresIn(jwtService.getAccessTokenExpiration())
-              .build();
+          .accessToken(newAccessToken)
+          .refreshToken(refreshToken)
+          .expiresIn(jwtService.getAccessTokenExpiration())
+          .build();
 
     } catch (TokenInvalidException | TokenExpiredException | UserDisabledException ex) {
       throw ex;
