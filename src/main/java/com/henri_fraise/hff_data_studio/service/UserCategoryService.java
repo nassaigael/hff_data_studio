@@ -131,7 +131,6 @@ public class UserCategoryService {
       categoryRepository.delete(category);
       log.info("Category deleted successfully: {} ({})", category.getLabel(), categoryId);
 
-      // Audit log
       auditLogService.logAction(
           "CATEGORY_DELETED",
           "UserCategory",
@@ -142,8 +141,6 @@ public class UserCategoryService {
       throw new DatabaseException("Failed to delete category", ex);
     }
   }
-
-  // ==================== Permission Management ====================
 
   @Transactional
   public void assignPermissionsToCategory(UUID categoryId, List<UUID> permissionIds) {
@@ -156,8 +153,6 @@ public class UserCategoryService {
 
       log.info(
           "Permissions assigned to category {}: {}", category.getLabel(), permissionIds.size());
-
-      // Audit log
       auditLogService.logAction(
           "PERMISSIONS_ASSIGNED",
           "UserCategory",
@@ -173,8 +168,6 @@ public class UserCategoryService {
     UserCategory category = getCategoryEntityById(categoryId);
     return category.getPermissions();
   }
-
-  // ==================== Validation Methods ====================
 
   public boolean existsByLabel(String label) {
     return categoryRepository.existsByLabel(label);
