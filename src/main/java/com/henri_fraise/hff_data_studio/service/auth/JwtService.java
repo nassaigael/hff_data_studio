@@ -6,16 +6,15 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
@@ -66,11 +65,7 @@ public class JwtService {
 
   private Claims extractAllClaims(String token) {
     try {
-      return Jwts.parser()
-              .setSigningKey(getSigningKey())
-              .build()
-              .parseClaimsJws(token)
-              .getBody();
+      return Jwts.parser().setSigningKey(getSigningKey()).build().parseClaimsJws(token).getBody();
     } catch (ExpiredJwtException ex) {
       throw new TokenExpiredException("Token has expired");
     } catch (Exception ex) {
@@ -91,12 +86,12 @@ public class JwtService {
 
   private String createToken(Map<String, Object> claims, String subject, Long expiration) {
     return Jwts.builder()
-            .setClaims(claims)
-            .setSubject(subject)
-            .setIssuedAt(new Date(System.currentTimeMillis()))
-            .setExpiration(new Date(System.currentTimeMillis() + expiration))
-            .signWith(getSigningKey())
-            .compact();
+        .setClaims(claims)
+        .setSubject(subject)
+        .setIssuedAt(new Date(System.currentTimeMillis()))
+        .setExpiration(new Date(System.currentTimeMillis() + expiration))
+        .signWith(getSigningKey())
+        .compact();
   }
 
   public Boolean isTokenValid(String token) {

@@ -1,12 +1,11 @@
 package com.henri_fraise.hff_data_studio.security.token;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +29,9 @@ public class TokenBlacklistService {
       return;
     }
     blacklistedTokens.put(token, System.currentTimeMillis() + expirationMs);
-    log.debug("Token blacklisted with expiration: {}", token.substring(0, Math.min(token.length(), 20)) + "...");
+    log.debug(
+        "Token blacklisted with expiration: {}",
+        token.substring(0, Math.min(token.length(), 20)) + "...");
   }
 
   public boolean isBlacklisted(String token) {
@@ -50,7 +51,9 @@ public class TokenBlacklistService {
 
   public void removeFromBlacklist(String token) {
     blacklistedTokens.remove(token);
-    log.debug("Token removed from blacklist: {}", token.substring(0, Math.min(token.length(), 20)) + "...");
+    log.debug(
+        "Token removed from blacklist: {}",
+        token.substring(0, Math.min(token.length(), 20)) + "...");
   }
 
   public int getBlacklistSize() {
@@ -67,9 +70,7 @@ public class TokenBlacklistService {
     long now = System.currentTimeMillis();
     int before = blacklistedTokens.size();
 
-    blacklistedTokens.entrySet().removeIf(entry ->
-            entry.getValue() < now
-    );
+    blacklistedTokens.entrySet().removeIf(entry -> entry.getValue() < now);
 
     int after = blacklistedTokens.size();
     log.info("Cleaned {} expired tokens from blacklist", before - after);
