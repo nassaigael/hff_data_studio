@@ -27,7 +27,7 @@ public class UserCategoryService {
   private final PermissionService permissionService;
   private final UserCategoryMapper categoryMapper;
   private final AuditLogService auditLogService;
-  
+
   public List<UserCategoryResponse> getAllCategories() {
     try {
       return categoryRepository.findAll().stream()
