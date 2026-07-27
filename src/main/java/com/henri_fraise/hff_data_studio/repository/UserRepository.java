@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.henri_fraise.hff_data_studio.enums.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,11 +25,42 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   List<User> findByIsActiveFalse();
 
+  List<User> findByCategoryLabel(String categoryLabel);
+
+  Page<User> findByRole(UserRole role, Pageable pageable);
+
+  List<User> findByRole(UserRole role);
+
+  List<User> findByRoleAndIsActive(UserRole role, boolean isActive);
+
+  long countByRole(UserRole role);
+
+  long countByRoleAndIsActive(UserRole role, boolean isActive);
+
+
+  @Query("SELECT u FROM User u WHERE " +
+          "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+          "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+          "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+  Page<User> searchUsers(@Param("searchTerm") String searchTerm, Pageable pageable);
+
+  @Query("SELECT u FROM User u WHERE " +
+          "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+          "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+          "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+  List<User> searchUsers(@Param("searchTerm") String searchTerm);
+
+  @Query("SELECT u.role, COUNT(u) FROM User u GROUP BY u.role")
+  List<Object[]> countGroupByRole();
+
+  @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt BETWEEN :startDate AND :endDate")
+  long countByCreatedAtBetween(@Param("startDate") LocalDateTime startDate,
+                               @Param("endDate") LocalDateTime endDate);
+
+
   Page<User> findByCategoryId(UUID categoryId, Pageable pageable);
 
   List<User> findByCategoryId(UUID categoryId);
-
-  List<User> findByCategoryLabel(String categoryLabel);
 
   List<User> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
@@ -43,8 +76,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   long countByCategoryLabel(String categoryLabel);
 
-  long countByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
-
   long countByCreatedAtAfter(LocalDateTime date);
 
   long countByCreatedAtBefore(LocalDateTime date);
@@ -52,20 +83,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   boolean existsByEmail(String email);
 
   boolean existsByEmailAndIsActiveTrue(String email);
-
-  @Query(
-      "SELECT u FROM User u WHERE "
-          + "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
-          + "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
-          + "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-  Page<User> searchUsers(@Param("searchTerm") String searchTerm, Pageable pageable);
-
-  @Query(
-      "SELECT u FROM User u WHERE "
-          + "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
-          + "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
-          + "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-  List<User> searchUsers(@Param("searchTerm") String searchTerm);
 
   @Query("SELECT u FROM User u ORDER BY u.createdAt DESC")
   List<User> findRecentUsers(@Param("limit") int limit);
