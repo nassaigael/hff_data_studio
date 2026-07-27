@@ -68,28 +68,23 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    return http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .csrf(AbstractHttpConfigurer::disable)
-        .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .exceptionHandling(
-            exceptions ->
-                exceptions
+    return http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(exceptions -> exceptions
                     .authenticationEntryPoint(authenticationEntryPoint)
-                    .accessDeniedHandler(accessDeniedHandler))
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers(PUBLIC_ENDPOINTS)
-                    .permitAll()
-                    .requestMatchers(ADMIN_ENDPOINTS)
-                    .hasAuthority("ADMIN")
-                    .requestMatchers(USER_ENDPOINTS)
-                    .authenticated()
-                    .anyRequest()
-                    .authenticated())
-        .userDetailsService(userDetailsService)
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-        .build();
+                    .accessDeniedHandler(accessDeniedHandler)
+            )
+            .authorizeHttpRequests(auth -> auth
+                    .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                    .requestMatchers(ADMIN_ENDPOINTS).hasAuthority("ADMIN")
+                    .requestMatchers(USER_ENDPOINTS).authenticated()
+                    .anyRequest().authenticated()
+            )
+            .userDetailsService(userDetailsService)
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .build();
   }
 
   @Bean

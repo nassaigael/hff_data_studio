@@ -5,6 +5,7 @@ import com.henri_fraise.hff_data_studio.dto.request.UserUpdateRequest;
 import com.henri_fraise.hff_data_studio.dto.response.UserResponse;
 import com.henri_fraise.hff_data_studio.entity.User;
 import com.henri_fraise.hff_data_studio.entity.UserCategory;
+import com.henri_fraise.hff_data_studio.enums.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -22,15 +23,18 @@ public class UserMapper {
     }
 
     return UserResponse.builder()
-        .userId(user.getId())
-        .lastName(user.getLastName())
-        .firstName(user.getFirstName())
-        .email(user.getEmail())
-        .isActive(user.getIsActive())
-        .createdAt(user.getCreatedAt())
-        .lastLogin(user.getLastLogin())
-        .category(categoryMapper.toResponse(user.getCategory()))
-        .build();
+            .userId(user.getId())
+            .lastName(user.getLastName())
+            .firstName(user.getFirstName())
+            .email(user.getEmail())
+            .isActive(user.getIsActive())
+            .role(user.getRole())
+            .roleLabel(user.getRole() != null ? user.getRole().getDisplayName() : null)
+            .roleDescription(user.getRole() != null ? user.getRole().getDescription() : null)
+            .createdAt(user.getCreatedAt())
+            .lastLogin(user.getLastLogin())
+            .category(categoryMapper.toResponse(user.getCategory()))
+            .build();
   }
 
   public User toEntity(UserCreationRequest request, UserCategory category) {
@@ -39,13 +43,14 @@ public class UserMapper {
     }
 
     return User.builder()
-        .lastName(request.getLastName())
-        .firstName(request.getFirstName())
-        .email(request.getEmail())
-        .passwordHash(passwordEncoder.encode(request.getNewPassword()))
-        .isActive(true)
-        .category(category)
-        .build();
+            .lastName(request.getLastName())
+            .firstName(request.getFirstName())
+            .email(request.getEmail())
+            .passwordHash(passwordEncoder.encode(request.getPassword()))
+            .isActive(true)
+            .role(request.getRole() != null ? request.getRole() : UserRole.INVITE)
+            .category(category)
+            .build();
   }
 
   public void updateEntity(User user, UserUpdateRequest request, UserCategory category) {
@@ -64,6 +69,9 @@ public class UserMapper {
     }
     if (request.getIsActive() != null) {
       user.setIsActive(request.getIsActive());
+    }
+    if (request.getRole() != null) {
+      user.setRole(request.getRole());
     }
     if (category != null) {
       user.setCategory(category);

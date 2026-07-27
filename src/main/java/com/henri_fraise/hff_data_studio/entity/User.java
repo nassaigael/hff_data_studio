@@ -1,22 +1,23 @@
 package com.henri_fraise.hff_data_studio.entity;
 
+import com.henri_fraise.hff_data_studio.enums.UserRole;
 import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
-@Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class User {
+
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   @Column(name = "user_id")
@@ -31,7 +32,7 @@ public class User {
   @Column(name = "email", nullable = false, unique = true)
   private String email;
 
-  @Column(name = "password", nullable = false)
+  @Column(name = "password_hash", nullable = false)
   private String passwordHash;
 
   @Column(name = "is_active", nullable = false)
@@ -45,8 +46,13 @@ public class User {
   @Column(name = "last_login")
   private LocalDateTime lastLogin;
 
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "category_id", nullable = false)
+  @Column(name = "role", nullable = false)
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  private UserRole role = UserRole.INVITE;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "category_id")
   private UserCategory category;
 
   @OneToMany(mappedBy = "creator")
@@ -66,4 +72,35 @@ public class User {
 
   @OneToMany(mappedBy = "user")
   private List<CleaningHistory> cleaningHistories;
+
+  public boolean isAdmin() {
+    return role != null && role.isAdmin();
+  }
+
+  public boolean isDataAnalyst() {
+    return role != null && role.isDataAnalyst();
+  }
+
+  public boolean isConsultant() {
+    return role != null && role.isConsultant();
+  }
+
+  public boolean isInvite() {
+    return role != null && role.isInvite();
+  }
+
+  public boolean hasPermission(String permissionCode) {
+    if (isAdmin()) {
+      return true;
+    }
+    if (category == null || category.getPermissions() == null) {
+      return false;
+    }
+    return category.getPermissions().stream()
+            .anyMatch(p -> p.getCode().equals(permissionCode));
+  }
+
+  public String getFullName() {
+    return firstName + " " + lastName;
+  }
 }

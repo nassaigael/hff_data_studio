@@ -1,15 +1,20 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
-import java.util.UUID;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-import lombok.*;
+import com.henri_fraise.hff_data_studio.enums.UserRole;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+import java.util.UUID;
+
+@Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class UserCreationRequest {
 
   @NotBlank(message = "Last name is required")
@@ -23,10 +28,10 @@ public class UserCreationRequest {
   private String email;
 
   @NotBlank(message = "Password is required")
-  private String newPassword;
+  private String password;
 
-  @NotBlank(message = "Category is required")
+  @NotNull(message = "Role is required")
+  private UserRole role;
+
   private UUID categoryId;
-
-  private Boolean isActive;
 }

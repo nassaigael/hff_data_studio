@@ -1,14 +1,18 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
-import java.util.UUID;
-import javax.validation.constraints.Email;
-import lombok.*;
+import com.henri_fraise.hff_data_studio.enums.UserRole;
+import jakarta.validation.constraints.Email;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+import java.util.UUID;
+
+@Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class UserUpdateRequest {
 
   private String lastName;
@@ -19,6 +23,8 @@ public class UserUpdateRequest {
   private String email;
 
   private Boolean isActive;
+
+  private UserRole role;
 
   private UUID categoryId;
 

@@ -6,6 +6,7 @@ import com.henri_fraise.hff_data_studio.dto.response.UserResponse;
 import com.henri_fraise.hff_data_studio.dto.response.UserStatisticsResponse;
 import com.henri_fraise.hff_data_studio.entity.User;
 import com.henri_fraise.hff_data_studio.entity.UserCategory;
+import com.henri_fraise.hff_data_studio.enums.UserRole;
 import com.henri_fraise.hff_data_studio.exception.DatabaseException;
 import com.henri_fraise.hff_data_studio.exception.InvalidCredentialsException;
 import com.henri_fraise.hff_data_studio.exception.ResourceAlreadyExistsException;
@@ -587,6 +588,41 @@ public class UserService {
       log.error("Error resetting password: {}", ex.getMessage(), ex);
       throw new DatabaseException("Failed to reset password", ex);
     }
+  }
+
+  // ==================== ROLE METHODS ====================
+
+  public UserResponse changeUserRole(UUID userId, UserRole newRole) {
+    User user = getUserEntityById(userId);
+    user.setRole(newRole);
+    User updated = userRepository.save(user);
+    log.info("User role changed: {} -> {} for user: {}", user.getEmail(), newRole, userId);
+
+    auditLogService.logAction(
+            "USER_ROLE_CHANGED",
+            "User",
+            userId,
+            "User " + user.getEmail() + " role changed to " + newRole.getDisplayName()
+    );
+
+    return userMapper.toResponse(updated);
+  }
+
+  public Page<UserResponse> getUsersByRole(UserRole role, Pageable pageable) {
+    Page<User> users = userRepository.findByRole(role, pageable);
+    return users.map(userMapper::toResponse);
+  }
+
+  public long countUsersByRole(UserRole role) {
+    return userRepository.countByRole(role);
+  }
+
+  public List<User> getUsersByRole(UserRole role) {
+    return userRepository.findByRole(role);
+  }
+
+  public List<User> getUsersWithRoleAndActive(UserRole role, boolean active) {
+    return userRepository.findByRoleAndIsActive(role, active);
   }
 
   public String getCurrentUserEmail() {
