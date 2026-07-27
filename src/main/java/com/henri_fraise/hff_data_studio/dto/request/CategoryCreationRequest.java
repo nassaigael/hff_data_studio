@@ -16,6 +16,6 @@ public class CategoryCreationRequest {
 
   private String description;
 
-  @NotNull(message = "Acces level is required")
+  @NotNull(message = "Access level is required")
   private Integer accessLevel;
 }
