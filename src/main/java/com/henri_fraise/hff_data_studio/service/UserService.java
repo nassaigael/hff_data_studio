@@ -6,6 +6,7 @@ import com.henri_fraise.hff_data_studio.dto.response.UserResponse;
 import com.henri_fraise.hff_data_studio.dto.response.UserStatisticsResponse;
 import com.henri_fraise.hff_data_studio.entity.User;
 import com.henri_fraise.hff_data_studio.entity.UserCategory;
+import com.henri_fraise.hff_data_studio.enums.UserRole;
 import com.henri_fraise.hff_data_studio.exception.DatabaseException;
 import com.henri_fraise.hff_data_studio.exception.InvalidCredentialsException;
 import com.henri_fraise.hff_data_studio.exception.ResourceAlreadyExistsException;
