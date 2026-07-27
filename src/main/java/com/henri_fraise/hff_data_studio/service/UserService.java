@@ -589,6 +589,41 @@ public class UserService {
     }
   }
 
+  // ==================== ROLE METHODS ====================
+
+  public UserResponse changeUserRole(UUID userId, UserRole newRole) {
+    User user = getUserEntityById(userId);
+    user.setRole(newRole);
+    User updated = userRepository.save(user);
+    log.info("User role changed: {} -> {} for user: {}", user.getEmail(), newRole, userId);
+
+    auditLogService.logAction(
+            "USER_ROLE_CHANGED",
+            "User",
+            userId,
+            "User " + user.getEmail() + " role changed to " + newRole.getDisplayName()
+    );
+
+    return userMapper.toResponse(updated);
+  }
+
+  public Page<UserResponse> getUsersByRole(UserRole role, Pageable pageable) {
+    Page<User> users = userRepository.findByRole(role, pageable);
+    return users.map(userMapper::toResponse);
+  }
+
+  public long countUsersByRole(UserRole role) {
+    return userRepository.countByRole(role);
+  }
+
+  public List<User> getUsersByRole(UserRole role) {
+    return userRepository.findByRole(role);
+  }
+
+  public List<User> getUsersWithRoleAndActive(UserRole role, boolean active) {
+    return userRepository.findByRoleAndIsActive(role, active);
+  }
+
   public String getCurrentUserEmail() {
     return null;
   }
