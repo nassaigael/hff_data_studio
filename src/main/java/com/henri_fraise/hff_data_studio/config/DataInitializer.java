@@ -1,7 +1,10 @@
 package com.henri_fraise.hff_data_studio.config;
 
+import com.henri_fraise.hff_data_studio.entity.Permission;
 import com.henri_fraise.hff_data_studio.entity.User;
 import com.henri_fraise.hff_data_studio.entity.UserCategory;
+import com.henri_fraise.hff_data_studio.enums.UserRole;
+import com.henri_fraise.hff_data_studio.repository.PermissionRepository;
 import com.henri_fraise.hff_data_studio.repository.UserCategoryRepository;
 import com.henri_fraise.hff_data_studio.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +14,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -18,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
 
   private final UserRepository userRepository;
   private final UserCategoryRepository categoryRepository;
+  private final PermissionRepository permissionRepository;
   private final BCryptPasswordEncoder passwordEncoder;
 
   @Override
@@ -29,32 +35,37 @@ public class DataInitializer implements CommandLineRunner {
     if (userRepository.count() == 0) {
       log.info("👤 Creating first admin user...");
 
-      UserCategory adminCategory =
-          categoryRepository
-              .findByLabel("ADMIN")
-              .orElseGet(
-                  () -> {
-                    UserCategory newCategory =
-                        UserCategory.builder()
-                            .label("ANALYSIS_VIEW")
-                            .description("Administrator")
-                            .accessLevel(5)
-                            .build();
-                    return categoryRepository.save(newCategory);
-                  });
+      UserCategory adminCategory = categoryRepository.findByLabel("ADMIN")
+              .orElseGet(() -> {
+                UserCategory newCategory = UserCategory.builder()
+                        .label("ADMIN")
+                        .description("Administrator - Full access")
+                        .accessLevel(5)
+                        .build();
+                return categoryRepository.save(newCategory);
+              });
 
-      User adminUser =
-          User.builder()
+      List<Permission> allPermissions = permissionRepository.findAll();
+      adminCategory.setPermissions(allPermissions);
+      categoryRepository.save(adminCategory);
+
+      User adminUser = User.builder()
               .lastName("Administrator")
               .firstName("System")
               .email("admin@hff.re")
               .passwordHash(passwordEncoder.encode("123456"))
               .isActive(true)
+              .role(UserRole.ADMIN)
               .category(adminCategory)
               .build();
 
       userRepository.save(adminUser);
-      log.info("User default ADMIN created successfully");
+
+      log.info("✅ Admin user created successfully!");
+      log.info("   📧 Email: admin@hff.re");
+      log.info("   🔑 Password: 123456");
+      log.info("   👤 Role: {}", UserRole.ADMIN.getDisplayName());
+      log.info("   📋 Permissions: {} permissions assigned", allPermissions.size());
     }
   }
 }
