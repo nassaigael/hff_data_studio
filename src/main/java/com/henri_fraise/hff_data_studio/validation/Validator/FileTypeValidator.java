@@ -2,8 +2,8 @@ package com.henri_fraise.hff_data_studio.validation.Validator;
 
 import com.henri_fraise.hff_data_studio.validation.Annotation.ValidFileType;
 import java.util.Arrays;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import org.springframework.web.multipart.MultipartFile;
 
 public class FileTypeValidator implements ConstraintValidator<ValidFileType, MultipartFile> {

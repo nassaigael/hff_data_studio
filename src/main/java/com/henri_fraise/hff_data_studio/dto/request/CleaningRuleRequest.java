@@ -2,7 +2,7 @@ package com.henri_fraise.hff_data_studio.dto.request;
 
 import com.henri_fraise.hff_data_studio.enums.RuleType;
 import java.util.Map;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Getter

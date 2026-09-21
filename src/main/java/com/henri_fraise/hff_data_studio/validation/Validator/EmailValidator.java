@@ -3,8 +3,8 @@ package com.henri_fraise.hff_data_studio.validation.Validator;
 import com.henri_fraise.hff_data_studio.validation.Annotation.ValidEmail;
 import java.util.Arrays;
 import java.util.regex.Pattern;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class EmailValidator implements ConstraintValidator<ValidEmail, String> {
 

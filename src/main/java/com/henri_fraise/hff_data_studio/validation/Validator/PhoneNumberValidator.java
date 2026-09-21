@@ -2,8 +2,8 @@ package com.henri_fraise.hff_data_studio.validation.Validator;
 
 import com.henri_fraise.hff_data_studio.validation.Annotation.ValidPhoneNumber;
 import java.util.regex.Pattern;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumber, String> {
 

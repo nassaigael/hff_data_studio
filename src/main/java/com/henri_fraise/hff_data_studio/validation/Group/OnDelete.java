@@ -1,5 +1,5 @@
 package com.henri_fraise.hff_data_studio.validation.Group;
 
-import javax.validation.groups.Default;
+import jakarta.validation.groups.Default;
 
 public interface OnDelete extends Default {}

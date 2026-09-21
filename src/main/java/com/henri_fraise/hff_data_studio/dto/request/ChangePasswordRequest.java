@@ -1,6 +1,6 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @AllArgsConstructor

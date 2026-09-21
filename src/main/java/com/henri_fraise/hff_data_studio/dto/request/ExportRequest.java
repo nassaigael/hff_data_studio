@@ -3,7 +3,7 @@ package com.henri_fraise.hff_data_studio.dto.request;
 import com.henri_fraise.hff_data_studio.enums.ExportFormat;
 import java.util.List;
 import java.util.UUID;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Getter

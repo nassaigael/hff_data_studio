@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PredefinedAnalysisRequest {
 
-  @javax.validation.constraints.NotBlank(message = "Analysis name is required")
+  @jakarta.validation.constraints.NotBlank(message = "Analysis name is required")
   private String analysisName;
 
   private String description;

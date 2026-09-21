@@ -3,8 +3,8 @@ package com.henri_fraise.hff_data_studio.validation.Validator;
 import com.henri_fraise.hff_data_studio.validation.Annotation.ValidPassword;
 import java.util.ArrayList;
 import java.util.List;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class PasswordValidator implements ConstraintValidator<ValidPassword, String> {
 
