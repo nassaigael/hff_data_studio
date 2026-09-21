@@ -19,15 +19,3 @@ public @interface UniqueEmail {
   Class<?>[] payload() default {};
 }
 
-@Component
-@RequiredArgsConstructor
-class UniqueEmailValidator implements ConstraintValidator<UniqueEmail, String> {
-
-  private final UserRepository userRepository;
-
-  @Override
-  public boolean isValid(String email, ConstraintValidatorContext context) {
-    if (email == null || email.isEmpty()) return true;
-    return !userRepository.existsByEmail(email);
-  }
-}
