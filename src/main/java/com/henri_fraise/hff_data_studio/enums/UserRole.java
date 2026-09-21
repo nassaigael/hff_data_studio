@@ -1,5 +1,8 @@
 package com.henri_fraise.hff_data_studio.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum UserRole {
 
 	ADMIN("Administrator", "Full access to all features"),
@@ -13,14 +16,6 @@ public enum UserRole {
 	UserRole(String displayName, String description) {
 		this.displayName = displayName;
 		this.description = description;
-	}
-
-	public String getDisplayName() {
-		return displayName;
-	}
-
-	public String getDescription() {
-		return description;
 	}
 
 	public static UserRole fromLabel(String label) {
