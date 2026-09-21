@@ -2,28 +2,31 @@ openapi: 3.0.3
 info:
   title: HFF Data Studio API
   description: |
-    HFF Data Intelligence Platform - From raw data to decision, without detour.
+    **HFF Data Intelligence Platform** — From raw data to decision, without detour.
     
-    API complète pour la gestion de projets, fichiers, datasets, nettoyage,
-    analyse, exploration et export de données.
+    API REST complète couvrant : authentification, gestion de projets, upload de fichiers,
+    exploration, nettoyage, analyse, exports, collaboration, notifications, dashboards,
+    webhooks, sources de données externes, recherche full-text, IA, multi-tenancy et administration.
   version: 1.0.0
   contact:
     name: Henri Fraise
     email: contact@hff.re
+    url: https://hff.re
   license:
     name: Proprietary
+    url: https://hff.re/license
 
 servers:
   - url: http://localhost:8080/api/v1
     description: Development server
-  - url: https://catalyst.hff.re/api/v1
+  - url: https://api.hff.re/api/v1
     description: Production server
 
 tags:
   - name: Authentication
-    description: Endpoints d'authentification (login, refresh, logout)
+    description: Login, refresh token, logout
   - name: Health
-    description: Vérification de l'état du service
+    description: Statut du service et monitoring
   - name: Projects
     description: Gestion des projets
   - name: Files
@@ -33,17 +36,51 @@ tags:
   - name: Exploration
     description: Rapports d'exploration et qualité des données
   - name: Cleaning
-    description: Règles et exécution du nettoyage
+    description: Règles de nettoyage et exécution
   - name: Analysis
-    description: Analyses prédéfinies et exécutions
+    description: Analyses prédéfinies
   - name: Executions
-    description: Exécutions d'analyses
+    description: Exécutions d'analyses et résultats
   - name: Exports
     description: Export des résultats
+  - name: Collaboration
+    description: Partage de projets et membres
+  - name: Comments
+    description: Commentaires et annotations
+  - name: Notifications
+    description: Notifications in-app et email
+  - name: Favorites
+    description: Favoris et activité utilisateur
+  - name: Scheduling
+    description: Analyses planifiées
+  - name: Webhooks
+    description: Webhooks sortants
+  - name: Data Sources
+    description: Sources de données externes
+  - name: Dashboards
+    description: Dashboards personnalisables
+  - name: Templates
+    description: Templates de projets
+  - name: Approvals
+    description: Workflows d'approbation
+  - name: Tags
+    description: Tags polymorphes
+  - name: Data Catalog
+    description: Catalogue de données et glossaire
+  - name: Search
+    description: Recherche full-text
+  - name: Versions
+    description: Versioning de datasets
+  - name: AI
+    description: Assistant IA
+  - name: Tenants
+    description: Multi-tenancy
   - name: Users
     description: Gestion des utilisateurs (admin)
   - name: Categories
-    description: Gestion des catégories et permissions (admin)
+    description: Catégories et permissions (admin)
+  - name: Permissions
+    description: Permissions (admin)
   - name: Audit
     description: Logs d'audit (admin)
 
@@ -51,7 +88,10 @@ security:
   - bearerAuth: []
 
 paths:
-  # ==================== AUTH ====================
+
+  # ═══════════════════════════════════════════════════════════════
+  # AUTHENTICATION
+  # ═══════════════════════════════════════════════════════════════
   /auth/login:
     post:
       tags: [Authentication]
@@ -100,7 +140,9 @@ paths:
         '204':
           description: Déconnexion réussie
 
-  # ==================== HEALTH ====================
+  # ═══════════════════════════════════════════════════════════════
+  # HEALTH
+  # ═══════════════════════════════════════════════════════════════
   /health:
     get:
       tags: [Health]
@@ -136,11 +178,13 @@ paths:
                   version: { type: string }
                   description: { type: string }
 
-  # ==================== PROJECTS ====================
+  # ═══════════════════════════════════════════════════════════════
+  # PROJECTS
+  # ═══════════════════════════════════════════════════════════════
   /projects:
     get:
       tags: [Projects]
-      summary: Liste des projets de l'utilisateur connecté
+      summary: Liste des projets de l'utilisateur
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/SizeParam'
@@ -150,7 +194,7 @@ paths:
             $ref: '#/components/schemas/ProjectStatus'
       responses:
         '200':
-          description: Liste paginée des projets
+          description: Liste paginée
           content:
             application/json:
               schema:
@@ -179,6 +223,10 @@ paths:
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/SizeParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ProjectStatus'
       responses:
         '200':
           description: Liste paginée
@@ -262,6 +310,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProjectResponse'
 
+  /projects/{projectId}/hard:
+    delete:
+      tags: [Projects]
+      summary: Suppression définitive (admin)
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+      responses:
+        '204':
+          description: Projet supprimé définitivement
+
+  /projects/user/{userId}:
+    get:
+      tags: [Projects]
+      summary: Projets d'un utilisateur
+      parameters:
+        - $ref: '#/components/parameters/UserIdPath'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseProjectResponse'
+
+  /projects/user/{userId}/status/{status}:
+    get:
+      tags: [Projects]
+      summary: Projets d'un utilisateur par statut
+      parameters:
+        - $ref: '#/components/parameters/UserIdPath'
+        - name: status
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ProjectStatus'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseProjectResponse'
+
   /projects/search:
     get:
       tags: [Projects]
@@ -275,7 +370,27 @@ paths:
         - $ref: '#/components/parameters/SizeParam'
       responses:
         '200':
-          description: Résultats de recherche
+          description: Résultats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseProjectResponse'
+
+  /projects/status/{status}:
+    get:
+      tags: [Projects]
+      summary: Projets par statut (admin)
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ProjectStatus'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
           content:
             application/json:
               schema:
@@ -284,7 +399,7 @@ paths:
   /projects/statistics:
     get:
       tags: [Projects]
-      summary: Statistiques globales des projets (admin)
+      summary: Statistiques globales (admin)
       responses:
         '200':
           description: Statistiques
@@ -293,7 +408,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProjectStatisticsResponse'
 
-  # ==================== FILES ====================
+  # ═══════════════════════════════════════════════════════════════
+  # FILES
+  # ═══════════════════════════════════════════════════════════════
   /files/upload:
     post:
       tags: [Files]
@@ -352,54 +469,22 @@ paths:
         - $ref: '#/components/parameters/FileIdPath'
       responses:
         '200':
-          description: Contenu binaire du fichier
+          description: Contenu binaire
           content:
             application/octet-stream:
               schema:
                 type: string
                 format: binary
 
-  /files/project/{projectId}:
-    get:
-      tags: [Files]
-      summary: Liste des fichiers d'un projet
-      parameters:
-        - $ref: '#/components/parameters/ProjectIdPath'
-      responses:
-        '200':
-          description: Liste des fichiers
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SourceFileResponse'
-
-  /files/project/{projectId}/page:
-    get:
-      tags: [Files]
-      summary: Liste paginée des fichiers d'un projet
-      parameters:
-        - $ref: '#/components/parameters/ProjectIdPath'
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/SizeParam'
-      responses:
-        '200':
-          description: Liste paginée
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageResponseSourceFileResponse'
-
   /files/{fileId}/datasets:
     get:
       tags: [Files]
-      summary: Datasets associés à un fichier
+      summary: Datasets associés
       parameters:
         - $ref: '#/components/parameters/FileIdPath'
       responses:
         '200':
-          description: Liste des datasets
+          description: Liste
           content:
             application/json:
               schema:
@@ -410,7 +495,7 @@ paths:
   /files/{fileId}/preview:
     get:
       tags: [Files]
-      summary: Aperçu du contenu d'un fichier
+      summary: Aperçu du contenu
       parameters:
         - $ref: '#/components/parameters/FileIdPath'
         - name: maxLines
@@ -423,10 +508,95 @@ paths:
             text/plain:
               schema: { type: string }
 
+  /files/{fileId}/statistics:
+    get:
+      tags: [Files]
+      summary: Statistiques d'un fichier
+      parameters:
+        - $ref: '#/components/parameters/FileIdPath'
+      responses:
+        '200':
+          description: Statistiques
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /files/{fileId}/status:
+    patch:
+      tags: [Files]
+      summary: Mettre à jour le statut
+      parameters:
+        - $ref: '#/components/parameters/FileIdPath'
+        - name: status
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/FileProcessingStatus'
+      responses:
+        '200':
+          description: Statut mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceFileResponse'
+
+  /files/project/{projectId}:
+    get:
+      tags: [Files]
+      summary: Fichiers d'un projet
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SourceFileResponse'
+
+  /files/project/{projectId}/page:
+    get:
+      tags: [Files]
+      summary: Fichiers d'un projet (paginé)
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseSourceFileResponse'
+
+  /files/status/{status}:
+    get:
+      tags: [Files]
+      summary: Fichiers par statut
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/FileProcessingStatus'
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SourceFileResponse'
+
   /files/all:
     get:
       tags: [Files]
-      summary: Liste tous les fichiers
+      summary: Tous les fichiers
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/SizeParam'
@@ -438,7 +608,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PageResponseSourceFileResponse'
 
-  # ==================== DATASETS ====================
+  # ═══════════════════════════════════════════════════════════════
+  # DATASETS
+  # ═══════════════════════════════════════════════════════════════
   /datasets/{datasetId}:
     get:
       tags: [Datasets]
@@ -464,7 +636,7 @@ paths:
   /datasets/{datasetId}/data:
     get:
       tags: [Datasets]
-      summary: Récupérer les données d'un dataset
+      summary: Données d'un dataset
       parameters:
         - $ref: '#/components/parameters/DatasetIdPath'
         - $ref: '#/components/parameters/PageParam'
@@ -480,7 +652,7 @@ paths:
           schema: { type: string, default: CLEANED }
       responses:
         '200':
-          description: Données du dataset
+          description: Données
           content:
             application/json:
               schema:
@@ -489,7 +661,7 @@ paths:
   /datasets/{datasetId}/columns:
     get:
       tags: [Datasets]
-      summary: Liste des colonnes d'un dataset
+      summary: Colonnes d'un dataset
       parameters:
         - $ref: '#/components/parameters/DatasetIdPath'
       responses:
@@ -536,17 +708,103 @@ paths:
               schema:
                 $ref: '#/components/schemas/DatasetColumnResponse'
 
-  /datasets/statistics:
-    get:
+  /datasets/{datasetId}/clean:
+    patch:
       tags: [Datasets]
-      summary: Statistiques globales des datasets
+      summary: Marquer comme nettoyé
+      parameters:
+        - $ref: '#/components/parameters/DatasetIdPath'
       responses:
         '200':
-          description: Statistiques
+          description: Dataset mis à jour
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatasetStatisticsResponse'
+                $ref: '#/components/schemas/DatasetResponse'
+
+  /datasets/{datasetId}/unclean:
+    patch:
+      tags: [Datasets]
+      summary: Marquer comme non nettoyé
+      parameters:
+        - $ref: '#/components/parameters/DatasetIdPath'
+      responses:
+        '200':
+          description: Dataset mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetResponse'
+
+  /datasets/{datasetId}/name:
+    patch:
+      tags: [Datasets]
+      summary: Renommer un dataset
+      parameters:
+        - $ref: '#/components/parameters/DatasetIdPath'
+        - name: datasetName
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Dataset renommé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetResponse'
+
+  /datasets/{datasetId}/stats:
+    patch:
+      tags: [Datasets]
+      summary: Mettre à jour les stats
+      parameters:
+        - $ref: '#/components/parameters/DatasetIdPath'
+        - name: rowCount
+          in: query
+          schema: { type: integer }
+        - name: columnCount
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Dataset mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetResponse'
+
+  /datasets/project/{projectId}:
+    get:
+      tags: [Datasets]
+      summary: Datasets d'un projet
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseDatasetResponse'
+
+  /datasets/file/{fileId}:
+    get:
+      tags: [Datasets]
+      summary: Datasets d'un fichier
+      parameters:
+        - $ref: '#/components/parameters/FileIdPath'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseDatasetResponse'
 
   /datasets/search:
     get:
@@ -562,6 +820,80 @@ paths:
       responses:
         '200':
           description: Résultats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseDatasetResponse'
+
+  /datasets/project/{projectId}/search:
+    get:
+      tags: [Datasets]
+      summary: Rechercher dans un projet
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - name: searchTerm
+          in: query
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Résultats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseDatasetResponse'
+
+  /datasets/statistics:
+    get:
+      tags: [Datasets]
+      summary: Statistiques globales
+      responses:
+        '200':
+          description: Statistiques
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetStatisticsResponse'
+
+  /datasets/statistics/map:
+    get:
+      tags: [Datasets]
+      summary: Statistiques (map)
+      responses:
+        '200':
+          description: Map
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /datasets/cleaned:
+    get:
+      tags: [Datasets]
+      summary: Datasets nettoyés
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseDatasetResponse'
+
+  /datasets/uncleaned:
+    get:
+      tags: [Datasets]
+      summary: Datasets non nettoyés
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
           content:
             application/json:
               schema:
@@ -585,11 +917,88 @@ paths:
                 items:
                   $ref: '#/components/schemas/DatasetResponse'
 
-  # ==================== EXPLORATION ====================
+  /datasets/project/{projectId}/recent:
+    get:
+      tags: [Datasets]
+      summary: Datasets récents d'un projet
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DatasetResponse'
+
+  # ═══════════════════════════════════════════════════════════════
+  # DATASET VERSIONS
+  # ═══════════════════════════════════════════════════════════════
+  /datasets/{datasetId}/versions:
+    post:
+      tags: [Versions]
+      summary: Créer une version
+      parameters:
+        - $ref: '#/components/parameters/DatasetIdPath'
+        - name: label
+          in: query
+          schema: { type: string }
+      responses:
+        '201':
+          description: Version créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetVersionResponse'
+    get:
+      tags: [Versions]
+      summary: Lister les versions
+      parameters:
+        - $ref: '#/components/parameters/DatasetIdPath'
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DatasetVersionResponse'
+
+  /datasets/{datasetId}/versions/diff:
+    get:
+      tags: [Versions]
+      summary: Comparer deux versions
+      parameters:
+        - $ref: '#/components/parameters/DatasetIdPath'
+        - name: from
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: to
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Diff
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDiffResponse'
+
+  # ═══════════════════════════════════════════════════════════════
+  # EXPLORATION
+  # ═══════════════════════════════════════════════════════════════
   /datasets/{datasetId}/exploration/report:
     get:
       tags: [Exploration]
-      summary: Récupérer le rapport d'exploration
+      summary: Récupérer le rapport
       parameters:
         - $ref: '#/components/parameters/DatasetIdPath'
       responses:
@@ -601,7 +1010,7 @@ paths:
                 $ref: '#/components/schemas/ExplorationReportResponse'
     post:
       tags: [Exploration]
-      summary: Générer un rapport d'exploration
+      summary: Générer un rapport
       parameters:
         - $ref: '#/components/parameters/DatasetIdPath'
       responses:
@@ -623,7 +1032,7 @@ paths:
           schema: { type: string, default: PDF, enum: [PDF, HTML] }
       responses:
         '200':
-          description: Fichier exporté
+          description: Fichier
           content:
             application/octet-stream:
               schema:
@@ -644,16 +1053,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExplorationReportResponse'
 
-  # ==================== CLEANING ====================
+  # ═══════════════════════════════════════════════════════════════
+  # CLEANING
+  # ═══════════════════════════════════════════════════════════════
   /columns/{columnId}/rules:
     get:
       tags: [Cleaning]
-      summary: Règles de nettoyage d'une colonne
+      summary: Règles d'une colonne
       parameters:
         - $ref: '#/components/parameters/ColumnIdPath'
       responses:
         '200':
-          description: Liste des règles
+          description: Liste
           content:
             application/json:
               schema:
@@ -662,7 +1073,7 @@ paths:
                   $ref: '#/components/schemas/CleaningRuleResponse'
     post:
       tags: [Cleaning]
-      summary: Créer une règle de nettoyage
+      summary: Créer une règle
       parameters:
         - $ref: '#/components/parameters/ColumnIdPath'
       requestBody:
@@ -710,7 +1121,7 @@ paths:
   /datasets/{datasetId}/cleaning/execute:
     post:
       tags: [Cleaning]
-      summary: Exécuter le nettoyage d'un dataset
+      summary: Exécuter le nettoyage
       parameters:
         - $ref: '#/components/parameters/DatasetIdPath'
       responses:
@@ -721,10 +1132,47 @@ paths:
               schema:
                 type: object
 
+  /datasets/{datasetId}/cleaning/dry-run:
+    post:
+      tags: [Cleaning]
+      summary: Simulation de nettoyage
+      parameters:
+        - $ref: '#/components/parameters/DatasetIdPath'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Résultat de la simulation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DryRunResponse'
+
+  /datasets/{datasetId}/cleaning-suggestions:
+    get:
+      tags: [Cleaning]
+      summary: Suggestions automatiques de nettoyage
+      parameters:
+        - $ref: '#/components/parameters/DatasetIdPath'
+      responses:
+        '200':
+          description: Suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CleaningSuggestionResponse'
+
   /datasets/{datasetId}/cleaning-history:
     get:
       tags: [Cleaning]
-      summary: Historique de nettoyage d'un dataset
+      summary: Historique de nettoyage
       parameters:
         - $ref: '#/components/parameters/DatasetIdPath'
         - $ref: '#/components/parameters/PageParam'
@@ -740,7 +1188,7 @@ paths:
   /cleaning-history/{historyId}:
     get:
       tags: [Cleaning]
-      summary: Détails d'une opération de nettoyage
+      summary: Détails d'une opération
       parameters:
         - $ref: '#/components/parameters/HistoryIdPath'
       responses:
@@ -754,7 +1202,7 @@ paths:
   /datasets/{datasetId}/cleaning/status:
     get:
       tags: [Cleaning]
-      summary: Statut du nettoyage d'un dataset
+      summary: Statut du nettoyage
       parameters:
         - $ref: '#/components/parameters/DatasetIdPath'
       responses:
@@ -765,11 +1213,13 @@ paths:
               schema:
                 type: object
 
-  # ==================== ANALYSIS ====================
+  # ═══════════════════════════════════════════════════════════════
+  # ANALYSIS
+  # ═══════════════════════════════════════════════════════════════
   /analyses:
     get:
       tags: [Analysis]
-      summary: Liste des analyses prédéfinies
+      summary: Analyses prédéfinies
       parameters:
         - name: category
           in: query
@@ -777,7 +1227,7 @@ paths:
             $ref: '#/components/schemas/AnalysisCategory'
       responses:
         '200':
-          description: Liste des analyses
+          description: Liste
           content:
             application/json:
               schema:
@@ -786,7 +1236,7 @@ paths:
                   $ref: '#/components/schemas/PredefinedAnalysisResponse'
     post:
       tags: [Analysis]
-      summary: Créer une analyse prédéfinie
+      summary: Créer une analyse
       requestBody:
         required: true
         content:
@@ -816,7 +1266,7 @@ paths:
                 $ref: '#/components/schemas/PredefinedAnalysisResponse'
     put:
       tags: [Analysis]
-      summary: Mettre à jour une analyse
+      summary: Mettre à jour
       parameters:
         - $ref: '#/components/parameters/AnalysisIdPath'
       requestBody:
@@ -834,17 +1284,17 @@ paths:
                 $ref: '#/components/schemas/PredefinedAnalysisResponse'
     delete:
       tags: [Analysis]
-      summary: Supprimer une analyse
+      summary: Supprimer
       parameters:
         - $ref: '#/components/parameters/AnalysisIdPath'
       responses:
         '204':
-          description: Analyse supprimée
+          description: Supprimée
 
   /analyses/categories:
     get:
       tags: [Analysis]
-      summary: Liste des catégories d'analyse
+      summary: Catégories d'analyse
       responses:
         '200':
           description: Catégories
@@ -858,7 +1308,7 @@ paths:
   /analyses/models:
     post:
       tags: [Analysis]
-      summary: Sauvegarder un modèle d'analyse
+      summary: Sauvegarder un modèle
       requestBody:
         required: true
         content:
@@ -873,7 +1323,9 @@ paths:
               schema:
                 type: object
 
-  # ==================== EXECUTIONS ====================
+  # ═══════════════════════════════════════════════════════════════
+  # EXECUTIONS
+  # ═══════════════════════════════════════════════════════════════
   /executions:
     post:
       tags: [Executions]
@@ -963,7 +1415,9 @@ paths:
                 type: string
                 format: binary
 
-  # ==================== EXPORTS ====================
+  # ═══════════════════════════════════════════════════════════════
+  # EXPORTS
+  # ═══════════════════════════════════════════════════════════════
   /exports:
     post:
       tags: [Exports]
@@ -1036,10 +1490,26 @@ paths:
                 type: string
                 format: binary
 
+  /exports/execution/{executionId}:
+    get:
+      tags: [Exports]
+      summary: Exports d'une exécution
+      parameters:
+        - $ref: '#/components/parameters/ExecutionIdPath'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseExportResponse'
+
   /exports/statistics:
     get:
       tags: [Exports]
-      summary: Statistiques des exports
+      summary: Statistiques
       responses:
         '200':
           description: Statistiques
@@ -1048,7 +1518,1211 @@ paths:
               schema:
                 type: object
 
-  # ==================== USERS (ADMIN) ====================
+  # ═══════════════════════════════════════════════════════════════
+  # COLLABORATION
+  # ═══════════════════════════════════════════════════════════════
+  /collaboration/projects/share:
+    post:
+      tags: [Collaboration]
+      summary: Partager un projet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareProjectRequest'
+      responses:
+        '201':
+          description: Membre ajouté
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberResponse'
+
+  /collaboration/projects/{projectId}/members:
+    get:
+      tags: [Collaboration]
+      summary: Liste des membres
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+      responses:
+        '200':
+          description: Membres
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectMemberResponse'
+
+  /collaboration/projects/{projectId}/members/{userId}/role:
+    patch:
+      tags: [Collaboration]
+      summary: Modifier le rôle
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - $ref: '#/components/parameters/UserIdPath'
+        - name: role
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/MemberRole'
+      responses:
+        '204':
+          description: Rôle mis à jour
+
+  /collaboration/projects/{projectId}/members/{userId}:
+    delete:
+      tags: [Collaboration]
+      summary: Retirer un membre
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - $ref: '#/components/parameters/UserIdPath'
+      responses:
+        '204':
+          description: Membre retiré
+
+  # ═══════════════════════════════════════════════════════════════
+  # COMMENTS
+  # ═══════════════════════════════════════════════════════════════
+  /comments:
+    post:
+      tags: [Comments]
+      summary: Créer un commentaire
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+      responses:
+        '201':
+          description: Commentaire créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+    get:
+      tags: [Comments]
+      summary: Liste des commentaires
+      parameters:
+        - name: entityType
+          in: query
+          required: true
+          schema: { type: string }
+        - name: entityId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseCommentResponse'
+
+  /comments/{commentId}:
+    put:
+      tags: [Comments]
+      summary: Modifier un commentaire
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content: { type: string }
+      responses:
+        '200':
+          description: Commentaire modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+    delete:
+      tags: [Comments]
+      summary: Supprimer un commentaire
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimé
+
+  /comments/count:
+    get:
+      tags: [Comments]
+      summary: Compter les commentaires
+      parameters:
+        - name: entityType
+          in: query
+          required: true
+          schema: { type: string }
+        - name: entityId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Nombre
+          content:
+            application/json:
+              schema: { type: integer, format: int64 }
+
+  # ═══════════════════════════════════════════════════════════════
+  # NOTIFICATIONS
+  # ═══════════════════════════════════════════════════════════════
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Liste des notifications
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseNotificationResponse'
+
+  /notifications/unread:
+    get:
+      tags: [Notifications]
+      summary: Notifications non lues
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseNotificationResponse'
+
+  /notifications/count/unread:
+    get:
+      tags: [Notifications]
+      summary: Nombre de non lues
+      responses:
+        '200':
+          description: Nombre
+          content:
+            application/json:
+              schema: { type: integer, format: int64 }
+
+  /notifications/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Marquer comme lue
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Marquée
+
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Tout marquer comme lu
+      responses:
+        '200':
+          description: Nombre marqué
+          content:
+            application/json:
+              schema: { type: integer }
+
+  /notifications/{notificationId}:
+    delete:
+      tags: [Notifications]
+      summary: Supprimer
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimée
+
+  # ═══════════════════════════════════════════════════════════════
+  # FAVORITES
+  # ═══════════════════════════════════════════════════════════════
+  /favorites/toggle:
+    post:
+      tags: [Favorites]
+      summary: Ajouter/retirer un favori
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavoriteRequest'
+      responses:
+        '200':
+          description: Favori
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteResponse'
+
+  /favorites:
+    get:
+      tags: [Favorites]
+      summary: Liste des favoris
+      responses:
+        '200':
+          description: Favoris
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FavoriteResponse'
+
+  /favorites/check:
+    get:
+      tags: [Favorites]
+      summary: Vérifier si favori
+      parameters:
+        - name: entityType
+          in: query
+          required: true
+          schema: { type: string }
+        - name: entityId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Résultat
+          content:
+            application/json:
+              schema: { type: boolean }
+
+  # ═══════════════════════════════════════════════════════════════
+  # SCHEDULING
+  # ═══════════════════════════════════════════════════════════════
+  /schedules:
+    post:
+      tags: [Scheduling]
+      summary: Créer une planification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduledAnalysisRequest'
+      responses:
+        '201':
+          description: Planification créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledAnalysisResponse'
+    get:
+      tags: [Scheduling]
+      summary: Liste des planifications
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledAnalysisResponse'
+
+  /schedules/{scheduleId}:
+    put:
+      tags: [Scheduling]
+      summary: Mettre à jour
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduledAnalysisRequest'
+      responses:
+        '200':
+          description: Planification mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledAnalysisResponse'
+    delete:
+      tags: [Scheduling]
+      summary: Supprimer
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimée
+
+  /schedules/{scheduleId}/toggle:
+    patch:
+      tags: [Scheduling]
+      summary: Activer/Désactiver
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: active
+          in: query
+          required: true
+          schema: { type: boolean }
+      responses:
+        '204':
+          description: Statut mis à jour
+
+  # ═══════════════════════════════════════════════════════════════
+  # WEBHOOKS
+  # ═══════════════════════════════════════════════════════════════
+  /webhooks:
+    post:
+      tags: [Webhooks]
+      summary: Créer un webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookRequest'
+      responses:
+        '201':
+          description: Webhook créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+    get:
+      tags: [Webhooks]
+      summary: Liste des webhooks
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebhookResponse'
+
+  /webhooks/{webhookId}:
+    put:
+      tags: [Webhooks]
+      summary: Mettre à jour
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookRequest'
+      responses:
+        '200':
+          description: Webhook mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+    delete:
+      tags: [Webhooks]
+      summary: Supprimer
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimé
+
+  # ═══════════════════════════════════════════════════════════════
+  # DATA SOURCES
+  # ═══════════════════════════════════════════════════════════════
+  /data-sources:
+    post:
+      tags: [Data Sources]
+      summary: Créer une source
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalDataSourceRequest'
+      responses:
+        '201':
+          description: Source créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalDataSourceResponse'
+    get:
+      tags: [Data Sources]
+      summary: Liste des sources
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExternalDataSourceResponse'
+
+  /data-sources/{sourceId}/test:
+    post:
+      tags: [Data Sources]
+      summary: Tester la connexion
+      parameters:
+        - name: sourceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Résultat du test
+          content:
+            application/json:
+              schema: { type: boolean }
+
+  /data-sources/{sourceId}:
+    delete:
+      tags: [Data Sources]
+      summary: Supprimer
+      parameters:
+        - name: sourceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimée
+
+  # ═══════════════════════════════════════════════════════════════
+  # DASHBOARDS
+  # ═══════════════════════════════════════════════════════════════
+  /dashboards:
+    post:
+      tags: [Dashboards]
+      summary: Créer un dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardRequest'
+      responses:
+        '201':
+          description: Dashboard créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+    get:
+      tags: [Dashboards]
+      summary: Liste des dashboards
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardResponse'
+
+  /dashboards/{dashboardId}:
+    get:
+      tags: [Dashboards]
+      summary: Détails
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+    put:
+      tags: [Dashboards]
+      summary: Mettre à jour
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardRequest'
+      responses:
+        '200':
+          description: Mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+    delete:
+      tags: [Dashboards]
+      summary: Supprimer
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimé
+
+  # ═══════════════════════════════════════════════════════════════
+  # TEMPLATES
+  # ═══════════════════════════════════════════════════════════════
+  /templates/from-project/{projectId}:
+    post:
+      tags: [Templates]
+      summary: Créer un template depuis un projet
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                category: { type: string }
+                isPublic: { type: boolean }
+      responses:
+        '201':
+          description: Template créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTemplateResponse'
+
+  /templates/{templateId}/instantiate:
+    post:
+      tags: [Templates]
+      summary: Instancier un template
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: projectName
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: Projet créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+
+  /templates/mine:
+    get:
+      tags: [Templates]
+      summary: Mes templates
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectTemplateResponse'
+
+  /templates/public:
+    get:
+      tags: [Templates]
+      summary: Templates publics
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectTemplateResponse'
+
+  /templates/{templateId}:
+    delete:
+      tags: [Templates]
+      summary: Supprimer
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimé
+
+  # ═══════════════════════════════════════════════════════════════
+  # APPROVALS
+  # ═══════════════════════════════════════════════════════════════
+  /approvals:
+    post:
+      tags: [Approvals]
+      summary: Créer une demande
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRequestDto'
+      responses:
+        '201':
+          description: Demande créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalResponse'
+
+  /approvals/{approvalId}/approve:
+    patch:
+      tags: [Approvals]
+      summary: Approuver
+      parameters:
+        - name: approvalId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment: { type: string }
+      responses:
+        '200':
+          description: Approuvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalResponse'
+
+  /approvals/{approvalId}/reject:
+    patch:
+      tags: [Approvals]
+      summary: Rejeter
+      parameters:
+        - name: approvalId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment: { type: string }
+      responses:
+        '200':
+          description: Rejetée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalResponse'
+
+  /approvals/mine:
+    get:
+      tags: [Approvals]
+      summary: Mes demandes
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseApprovalResponse'
+
+  /approvals/pending:
+    get:
+      tags: [Approvals]
+      summary: Demandes en attente
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseApprovalResponse'
+
+  /approvals/entity:
+    get:
+      tags: [Approvals]
+      summary: Demandes pour une entité
+      parameters:
+        - name: entityType
+          in: query
+          required: true
+          schema: { type: string }
+        - name: entityId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApprovalResponse'
+
+  # ═══════════════════════════════════════════════════════════════
+  # TAGS
+  # ═══════════════════════════════════════════════════════════════
+  /tags:
+    post:
+      tags: [Tags]
+      summary: Créer un tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+      responses:
+        '201':
+          description: Tag créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+    get:
+      tags: [Tags]
+      summary: Liste des tags
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagResponse'
+
+  /tags/{tagId}:
+    delete:
+      tags: [Tags]
+      summary: Supprimer
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimé
+
+  /tags/assign:
+    post:
+      tags: [Tags]
+      summary: Assigner des tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagAssignRequest'
+      responses:
+        '204':
+          description: Assignés
+
+  /tags/{tagId}/entity:
+    delete:
+      tags: [Tags]
+      summary: Retirer un tag
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: entityType
+          in: query
+          required: true
+          schema: { type: string }
+        - name: entityId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Retiré
+
+  /tags/entity:
+    get:
+      tags: [Tags]
+      summary: Tags d'une entité
+      parameters:
+        - name: entityType
+          in: query
+          required: true
+          schema: { type: string }
+        - name: entityId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagResponse'
+
+  # ═══════════════════════════════════════════════════════════════
+  # DATA CATALOG
+  # ═══════════════════════════════════════════════════════════════
+  /catalog/entries:
+    post:
+      tags: [Data Catalog]
+      summary: Créer une entrée
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogEntryRequest'
+      responses:
+        '201':
+          description: Entrée créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogEntryResponse'
+    get:
+      tags: [Data Catalog]
+      summary: Rechercher des entrées
+      parameters:
+        - name: entityType
+          in: query
+          required: true
+          schema: { type: string }
+        - name: entityId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogEntryResponse'
+
+  /catalog/entries/{entryId}:
+    put:
+      tags: [Data Catalog]
+      summary: Mettre à jour
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogEntryRequest'
+      responses:
+        '200':
+          description: Mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogEntryResponse'
+    delete:
+      tags: [Data Catalog]
+      summary: Supprimer
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimée
+
+  /catalog/glossary:
+    post:
+      tags: [Data Catalog]
+      summary: Créer un terme
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlossaryTermRequest'
+      responses:
+        '201':
+          description: Terme créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlossaryTermResponse'
+    get:
+      tags: [Data Catalog]
+      summary: Rechercher des termes
+      parameters:
+        - name: keyword
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GlossaryTermResponse'
+
+  /catalog/glossary/{termId}:
+    delete:
+      tags: [Data Catalog]
+      summary: Supprimer un terme
+      parameters:
+        - name: termId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimé
+
+  # ═══════════════════════════════════════════════════════════════
+  # SEARCH
+  # ═══════════════════════════════════════════════════════════════
+  /search:
+    get:
+      tags: [Search]
+      summary: Recherche full-text
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: entityTypes
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Résultats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  # ═══════════════════════════════════════════════════════════════
+  # AI
+  # ═══════════════════════════════════════════════════════════════
+  /ai/chat:
+    post:
+      tags: [AI]
+      summary: Chat avec l'assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiMessageRequest'
+      responses:
+        '200':
+          description: Réponse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiConversationResponse'
+
+  /ai/conversations:
+    get:
+      tags: [AI]
+      summary: Liste des conversations
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AiConversationResponse'
+
+  /ai/conversations/{conversationId}:
+    get:
+      tags: [AI]
+      summary: Détails d'une conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Conversation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiConversationResponse'
+    delete:
+      tags: [AI]
+      summary: Supprimer une conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimée
+
+  # ═══════════════════════════════════════════════════════════════
+  # TENANTS
+  # ═══════════════════════════════════════════════════════════════
+  /tenants:
+    post:
+      tags: [Tenants]
+      summary: Créer un tenant (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantCreationRequest'
+      responses:
+        '201':
+          description: Tenant créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+
+  /tenants/current:
+    get:
+      tags: [Tenants]
+      summary: Tenant courant
+      responses:
+        '200':
+          description: Tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+
+  /tenants/mine:
+    get:
+      tags: [Tenants]
+      summary: Mes tenants
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantResponse'
+
+  /tenants/{tenantId}/users/{userId}:
+    post:
+      tags: [Tenants]
+      summary: Ajouter un utilisateur
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/UserIdPath'
+        - name: role
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Utilisateur ajouté
+    delete:
+      tags: [Tenants]
+      summary: Retirer un utilisateur
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/UserIdPath'
+      responses:
+        '204':
+          description: Retiré
+
+  # ═══════════════════════════════════════════════════════════════
+  # USERS (ADMIN)
+  # ═══════════════════════════════════════════════════════════════
   /admin/users:
     get:
       tags: [Users]
@@ -1080,6 +2754,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserResponse'
 
+  /admin/users/active:
+    get:
+      tags: [Users]
+      summary: Utilisateurs actifs
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseUserResponse'
+
   /admin/users/{userId}:
     get:
       tags: [Users]
@@ -1095,7 +2784,7 @@ paths:
                 $ref: '#/components/schemas/UserResponse'
     put:
       tags: [Users]
-      summary: Mettre à jour un utilisateur
+      summary: Mettre à jour
       parameters:
         - $ref: '#/components/parameters/UserIdPath'
       requestBody:
@@ -1106,29 +2795,62 @@ paths:
               $ref: '#/components/schemas/UserUpdateRequest'
       responses:
         '200':
-          description: Utilisateur mis à jour
+          description: Mis à jour
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
     delete:
       tags: [Users]
-      summary: Désactiver un utilisateur
+      summary: Désactiver
       parameters:
         - $ref: '#/components/parameters/UserIdPath'
       responses:
         '204':
-          description: Utilisateur désactivé
+          description: Désactivé
+
+  /admin/users/email/{email}:
+    get:
+      tags: [Users]
+      summary: Rechercher par email
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema: { type: string, format: email }
+      responses:
+        '200':
+          description: Utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /admin/users/category/{categoryId}:
+    get:
+      tags: [Users]
+      summary: Utilisateurs par catégorie
+      parameters:
+        - $ref: '#/components/parameters/CategoryIdPath'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseUserResponse'
 
   /admin/users/{userId}/activate:
     patch:
       tags: [Users]
-      summary: Activer un utilisateur
+      summary: Activer
       parameters:
         - $ref: '#/components/parameters/UserIdPath'
       responses:
         '200':
-          description: Utilisateur activé
+          description: Activé
           content:
             application/json:
               schema:
@@ -1137,7 +2859,7 @@ paths:
   /admin/users/{userId}/password:
     patch:
       tags: [Users]
-      summary: Changer le mot de passe d'un utilisateur
+      summary: Changer le mot de passe
       parameters:
         - $ref: '#/components/parameters/UserIdPath'
       requestBody:
@@ -1172,7 +2894,7 @@ paths:
   /admin/users/statistics:
     get:
       tags: [Users]
-      summary: Statistiques des utilisateurs
+      summary: Statistiques
       responses:
         '200':
           description: Statistiques
@@ -1181,7 +2903,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserStatisticsResponse'
 
-  # ==================== CATEGORIES (ADMIN) ====================
+  /admin/users/statistics/yearly:
+    get:
+      tags: [Users]
+      summary: Statistiques annuelles
+      responses:
+        '200':
+          description: Statistiques
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+                  items: {}
+
+  /admin/users/statistics/monthly:
+    get:
+      tags: [Users]
+      summary: Statistiques mensuelles
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Statistiques
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+                  items: {}
+
+  # ═══════════════════════════════════════════════════════════════
+  # CATEGORIES (ADMIN)
+  # ═══════════════════════════════════════════════════════════════
   /admin/categories:
     get:
       tags: [Categories]
@@ -1215,7 +2974,7 @@ paths:
   /admin/categories/{categoryId}:
     get:
       tags: [Categories]
-      summary: Détails d'une catégorie
+      summary: Détails
       parameters:
         - $ref: '#/components/parameters/CategoryIdPath'
       responses:
@@ -1227,7 +2986,7 @@ paths:
                 $ref: '#/components/schemas/UserCategoryResponse'
     put:
       tags: [Categories]
-      summary: Mettre à jour une catégorie
+      summary: Mettre à jour
       parameters:
         - $ref: '#/components/parameters/CategoryIdPath'
       requestBody:
@@ -1238,19 +2997,19 @@ paths:
               $ref: '#/components/schemas/CategoryCreationRequest'
       responses:
         '200':
-          description: Catégorie mise à jour
+          description: Mise à jour
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserCategoryResponse'
     delete:
       tags: [Categories]
-      summary: Supprimer une catégorie
+      summary: Supprimer
       parameters:
         - $ref: '#/components/parameters/CategoryIdPath'
       responses:
         '204':
-          description: Catégorie supprimée
+          description: Supprimée
 
   /admin/categories/{categoryId}/permissions:
     get:
@@ -1269,7 +3028,7 @@ paths:
                   $ref: '#/components/schemas/PermissionResponse'
     put:
       tags: [Categories]
-      summary: Mettre à jour les permissions d'une catégorie
+      summary: Mettre à jour les permissions
       parameters:
         - $ref: '#/components/parameters/CategoryIdPath'
       requestBody:
@@ -1282,11 +3041,27 @@ paths:
         '200':
           description: Permissions mises à jour
 
-  # ==================== AUDIT (ADMIN) ====================
+  /admin/categories/permissions:
+    get:
+      tags: [Categories]
+      summary: Toutes les permissions
+      responses:
+        '200':
+          description: Permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermissionResponse'
+
+  # ═══════════════════════════════════════════════════════════════
+  # AUDIT (ADMIN)
+  # ═══════════════════════════════════════════════════════════════
   /admin/audit:
     get:
       tags: [Audit]
-      summary: Liste des logs d'audit
+      summary: Logs d'audit
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/SizeParam'
@@ -1302,6 +3077,22 @@ paths:
         - name: action
           in: query
           schema: { type: string }
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseAuditLogResponse'
+
+  /admin/audit/user/{userId}:
+    get:
+      tags: [Audit]
+      summary: Logs d'un utilisateur
+      parameters:
+        - $ref: '#/components/parameters/UserIdPath'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
       responses:
         '200':
           description: Liste paginée
@@ -1330,7 +3121,7 @@ paths:
   /admin/audit/actions:
     get:
       tags: [Audit]
-      summary: Liste des actions distinctes
+      summary: Actions distinctes
       responses:
         '200':
           description: Actions
@@ -1352,7 +3143,11 @@ paths:
               schema:
                 type: object
 
+# ═══════════════════════════════════════════════════════════════
+# COMPONENTS
+# ═══════════════════════════════════════════════════════════════
 components:
+
   securitySchemes:
     bearerAuth:
       type: http
@@ -1450,7 +3245,8 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
 
   schemas:
-    # ---------- ENUMS ----------
+
+    # ═══════════════ ENUMS ═══════════════
     UserRole:
       type: string
       enum: [ADMIN, DATA_ANALYST, CONSULTANT, INVITE]
@@ -1490,8 +3286,41 @@ components:
     EntityType:
       type: string
       enum: [USER, PROJECT, DATASET, FILE, ANALYSIS]
+    MemberRole:
+      type: string
+      enum: [OWNER, EDITOR, VIEWER]
+    NotificationType:
+      type: string
+      enum: [INFO, SUCCESS, WARNING, ERROR, MENTION]
+    NotificationChannel:
+      type: string
+      enum: [IN_APP, EMAIL, WEBHOOK]
+    ScheduleFrequency:
+      type: string
+      enum: [ONCE, HOURLY, DAILY, WEEKLY, MONTHLY, CRON]
+    WebhookProvider:
+      type: string
+      enum: [SLACK, TEAMS, DISCORD, GENERIC]
+    DeliveryStatus:
+      type: string
+      enum: [PENDING, SUCCESS, FAILED, RETRYING]
+    DataSourceType:
+      type: string
+      enum: [POSTGRESQL, MYSQL, ORACLE, MARIADB, SQLSERVER, REST_API, S3, GCS, ONEDRIVE, SHAREPOINT]
+    ApprovalStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED, CANCELLED]
+    WidgetType:
+      type: string
+      enum: [KPI, CHART, TABLE, TEXT]
+    AiRole:
+      type: string
+      enum: [USER, ASSISTANT, SYSTEM]
+    TagColor:
+      type: string
+      enum: [BLUE, GREEN, YELLOW, RED, PURPLE, GRAY, ORANGE, TEAL]
 
-    # ---------- REQUESTS ----------
+    # ═══════════════ REQUESTS ═══════════════
     LoginRequest:
       type: object
       required: [email, password]
@@ -1618,7 +3447,184 @@ components:
           type: array
           items: { type: string, format: uuid }
 
-    # ---------- RESPONSES ----------
+    ShareProjectRequest:
+      type: object
+      required: [projectId, role]
+      properties:
+        projectId: { type: string, format: uuid }
+        userEmail: { type: string, format: email }
+        userId: { type: string, format: uuid }
+        role:
+          $ref: '#/components/schemas/MemberRole'
+
+    CommentRequest:
+      type: object
+      required: [content, entityType, entityId]
+      properties:
+        content: { type: string, maxLength: 5000 }
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        parentId: { type: string, format: uuid }
+
+    FavoriteRequest:
+      type: object
+      required: [entityType, entityId]
+      properties:
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        displayName: { type: string }
+
+    ScheduledAnalysisRequest:
+      type: object
+      required: [name, datasetId, frequency]
+      properties:
+        name: { type: string }
+        datasetId: { type: string, format: uuid }
+        analysisId: { type: string, format: uuid }
+        parameters:
+          type: object
+        frequency:
+          $ref: '#/components/schemas/ScheduleFrequency'
+        cronExpression: { type: string }
+        isActive: { type: boolean }
+
+    WebhookRequest:
+      type: object
+      required: [name, url, provider, eventTypes]
+      properties:
+        name: { type: string }
+        url: { type: string }
+        provider:
+          $ref: '#/components/schemas/WebhookProvider'
+        eventTypes:
+          type: array
+          items: { type: string }
+        secret: { type: string }
+        isActive: { type: boolean }
+
+    ExternalDataSourceRequest:
+      type: object
+      required: [name, type, config]
+      properties:
+        name: { type: string }
+        type:
+          $ref: '#/components/schemas/DataSourceType'
+        config:
+          type: object
+        credentials:
+          type: object
+
+    DashboardRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        isDefault: { type: boolean }
+        isPublic: { type: boolean }
+        projectId: { type: string, format: uuid }
+        widgets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WidgetRequest'
+
+    WidgetRequest:
+      type: object
+      required: [type, title]
+      properties:
+        type:
+          $ref: '#/components/schemas/WidgetType'
+        title: { type: string }
+        position: { type: integer }
+        rowIndex: { type: integer }
+        colIndex: { type: integer }
+        width: { type: integer }
+        height: { type: integer }
+        config:
+          type: object
+        dataSourceType: { type: string }
+        dataSourceId: { type: string, format: uuid }
+
+    ApprovalRequestDto:
+      type: object
+      required: [entityType, entityId, title]
+      properties:
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        title: { type: string }
+        comment: { type: string }
+
+    TagRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        color:
+          $ref: '#/components/schemas/TagColor'
+
+    TagAssignRequest:
+      type: object
+      required: [entityType, entityId, tagIds]
+      properties:
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        tagIds:
+          type: array
+          items: { type: string, format: uuid }
+
+    CatalogEntryRequest:
+      type: object
+      required: [entityType, entityId, displayName]
+      properties:
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        displayName: { type: string }
+        description: { type: string }
+        businessDomain: { type: string }
+        ownerName: { type: string }
+        stewardName: { type: string }
+        classification: { type: string }
+        sensitivityLevel: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        metadata:
+          type: object
+
+    GlossaryTermRequest:
+      type: object
+      required: [term, definition]
+      properties:
+        term: { type: string }
+        definition: { type: string }
+        synonyms:
+          type: array
+          items: { type: string }
+        relatedTerms:
+          type: array
+          items: { type: string }
+        domain: { type: string }
+
+    AiMessageRequest:
+      type: object
+      required: [message]
+      properties:
+        conversationId: { type: string, format: uuid }
+        message: { type: string }
+        contextType: { type: string }
+        contextId: { type: string, format: uuid }
+
+    TenantCreationRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        domain: { type: string }
+        maxUsers: { type: integer }
+        maxStorageMb: { type: integer, format: int64 }
+
+    # ═══════════════ RESPONSES ═══════════════
     TokenResponse:
       type: object
       properties:
@@ -1650,6 +3656,32 @@ components:
         archived: { type: integer, format: int64 }
         totalCreators: { type: integer, format: int64 }
         newProjectsLast30Days: { type: integer, format: int64 }
+
+    ProjectMemberResponse:
+      type: object
+      properties:
+        memberId: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        userFullName: { type: string }
+        userEmail: { type: string, format: email }
+        role:
+          $ref: '#/components/schemas/MemberRole'
+        joinedAt: { type: string, format: date-time }
+        invitedByName: { type: string }
+
+    ProjectTemplateResponse:
+      type: object
+      properties:
+        templateId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        category: { type: string }
+        config:
+          type: object
+        isPublic: { type: boolean }
+        usageCount: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
 
     SourceFileResponse:
       type: object
@@ -1715,6 +3747,37 @@ components:
         averageQualityScore: { type: number, format: double }
         newDatasetsLast30Days: { type: integer, format: int64 }
 
+    DatasetVersionResponse:
+      type: object
+      properties:
+        versionId: { type: string, format: uuid }
+        datasetId: { type: string, format: uuid }
+        versionNumber: { type: integer }
+        label: { type: string }
+        rowCount: { type: integer }
+        columnCount: { type: integer }
+        qualityScore: { type: number, format: double }
+        isCurrent: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    VersionDiffResponse:
+      type: object
+      properties:
+        datasetId: { type: string, format: uuid }
+        fromVersion: { type: integer }
+        toVersion: { type: integer }
+        rowCountDelta: { type: integer }
+        columnCountDelta: { type: integer }
+        qualityScoreDelta: { type: number, format: double }
+        addedColumns:
+          type: array
+          items: { type: string }
+        removedColumns:
+          type: array
+          items: { type: string }
+        schemaChanged: { type: boolean }
+        dataChanged: { type: boolean }
+
     ExplorationReportResponse:
       type: object
       properties:
@@ -1770,7 +3833,42 @@ components:
         columnName: { type: string }
         ruleParameters: { type: string }
         userFullName: { type: string }
-        userEmail: { type: string }
+        userEmail: { type: string, format: email }
+
+    DryRunResponse:
+      type: object
+      properties:
+        datasetId: { type: string, format: uuid }
+        totalRules: { type: integer }
+        affectedRows: { type: integer }
+        affectedColumns: { type: integer }
+        estimatedDurationMs: { type: integer, format: int64 }
+        previews:
+          type: array
+          items:
+            type: object
+        canProceed: { type: boolean }
+        warnings:
+          type: array
+          items: { type: string }
+
+    CleaningSuggestionResponse:
+      type: object
+      properties:
+        columnId: { type: string, format: uuid }
+        columnName: { type: string }
+        columnType: { type: string }
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              ruleType: { type: string }
+              priority: { type: integer }
+              reason: { type: string }
+              confidence: { type: number, format: double }
+              parameters:
+                type: object
 
     PredefinedAnalysisResponse:
       type: object
@@ -1859,6 +3957,253 @@ components:
         userFullName: { type: string }
         downloadUrl: { type: string }
 
+    CommentResponse:
+      type: object
+      properties:
+        commentId: { type: string, format: uuid }
+        content: { type: string }
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        authorId: { type: string, format: uuid }
+        authorFullName: { type: string }
+        authorEmail: { type: string, format: email }
+        parentId: { type: string, format: uuid }
+        replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentResponse'
+        isEdited: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    NotificationResponse:
+      type: object
+      properties:
+        notificationId: { type: string, format: uuid }
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        title: { type: string }
+        message: { type: string }
+        linkUrl: { type: string }
+        isRead: { type: boolean }
+        readAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    FavoriteResponse:
+      type: object
+      properties:
+        favoriteId: { type: string, format: uuid }
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        displayName: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    ScheduledAnalysisResponse:
+      type: object
+      properties:
+        scheduleId: { type: string, format: uuid }
+        name: { type: string }
+        datasetId: { type: string, format: uuid }
+        datasetName: { type: string }
+        analysisId: { type: string, format: uuid }
+        analysisName: { type: string }
+        frequency:
+          $ref: '#/components/schemas/ScheduleFrequency'
+        cronExpression: { type: string }
+        nextRunAt: { type: string, format: date-time }
+        lastRunAt: { type: string, format: date-time }
+        isActive: { type: boolean }
+        runCount: { type: integer, format: int64 }
+        failureCount: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+
+    WebhookResponse:
+      type: object
+      properties:
+        webhookId: { type: string, format: uuid }
+        name: { type: string }
+        url: { type: string }
+        provider:
+          $ref: '#/components/schemas/WebhookProvider'
+        eventTypes:
+          type: array
+          items: { type: string }
+        isActive: { type: boolean }
+        failureCount: { type: integer, format: int64 }
+        lastTriggeredAt: { type: string, format: date-time }
+        lastStatusCode: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    ExternalDataSourceResponse:
+      type: object
+      properties:
+        sourceId: { type: string, format: uuid }
+        name: { type: string }
+        type:
+          $ref: '#/components/schemas/DataSourceType'
+        config:
+          type: object
+        isActive: { type: boolean }
+        lastTestAt: { type: string, format: date-time }
+        lastTestSuccess: { type: boolean }
+        lastError: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    DashboardResponse:
+      type: object
+      properties:
+        dashboardId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        isDefault: { type: boolean }
+        isPublic: { type: boolean }
+        projectId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        widgets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WidgetResponse'
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    WidgetResponse:
+      type: object
+      properties:
+        widgetId: { type: string, format: uuid }
+        type:
+          $ref: '#/components/schemas/WidgetType'
+        title: { type: string }
+        position: { type: integer }
+        rowIndex: { type: integer }
+        colIndex: { type: integer }
+        width: { type: integer }
+        height: { type: integer }
+        config:
+          type: object
+        dataSourceType: { type: string }
+        dataSourceId: { type: string, format: uuid }
+
+    ApprovalResponse:
+      type: object
+      properties:
+        approvalId: { type: string, format: uuid }
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        title: { type: string }
+        comment: { type: string }
+        status:
+          $ref: '#/components/schemas/ApprovalStatus'
+        requesterId: { type: string, format: uuid }
+        requesterFullName: { type: string }
+        reviewerId: { type: string, format: uuid }
+        reviewerFullName: { type: string }
+        reviewComment: { type: string }
+        reviewedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    TagResponse:
+      type: object
+      properties:
+        tagId: { type: string, format: uuid }
+        name: { type: string }
+        color:
+          $ref: '#/components/schemas/TagColor'
+        createdAt: { type: string, format: date-time }
+
+    CatalogEntryResponse:
+      type: object
+      properties:
+        entryId: { type: string, format: uuid }
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        displayName: { type: string }
+        description: { type: string }
+        businessDomain: { type: string }
+        ownerName: { type: string }
+        stewardName: { type: string }
+        classification: { type: string }
+        sensitivityLevel: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        metadata:
+          type: object
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    GlossaryTermResponse:
+      type: object
+      properties:
+        termId: { type: string, format: uuid }
+        term: { type: string }
+        definition: { type: string }
+        synonyms:
+          type: array
+          items: { type: string }
+        relatedTerms:
+          type: array
+          items: { type: string }
+        domain: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    SearchResponse:
+      type: object
+      properties:
+        query: { type: string }
+        totalHits: { type: integer, format: int64 }
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        tookMs: { type: integer, format: int64 }
+
+    SearchResult:
+      type: object
+      properties:
+        entityType: { type: string }
+        entityId: { type: string }
+        title: { type: string }
+        snippet: { type: string }
+        rank: { type: number, format: double }
+        highlights:
+          type: array
+          items: { type: string }
+
+    AiConversationResponse:
+      type: object
+      properties:
+        conversationId: { type: string, format: uuid }
+        title: { type: string }
+        contextType: { type: string }
+        contextId: { type: string, format: uuid }
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiMessageResponse'
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    AiMessageResponse:
+      type: object
+      properties:
+        messageId: { type: string, format: uuid }
+        role:
+          $ref: '#/components/schemas/AiRole'
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    TenantResponse:
+      type: object
+      properties:
+        tenantId: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        domain: { type: string }
+        isActive: { type: boolean }
+        maxUsers: { type: integer }
+        maxStorageMb: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+
     UserResponse:
       type: object
       properties:
@@ -1922,7 +4267,7 @@ components:
         ipAddress: { type: string }
         userId: { type: string, format: uuid }
         userFullName: { type: string }
-        userEmail: { type: string }
+        userEmail: { type: string, format: email }
 
     ErrorResponse:
       type: object
@@ -1941,7 +4286,19 @@ components:
           type: object
           additionalProperties: { type: string }
 
-    # ---------- PAGINATION ----------
+    # ═══════════════ PAGINATION ═══════════════
+    PageMetadata:
+      type: object
+      properties:
+        pageNumber: { type: integer }
+        pageSize: { type: integer }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+        isFirst: { type: boolean }
+        isLast: { type: boolean }
+        hasNext: { type: boolean }
+        hasPrevious: { type: boolean }
+
     PageResponseProjectResponse:
       allOf:
         - $ref: '#/components/schemas/PageMetadata'
@@ -2002,6 +4359,36 @@ components:
               items:
                 $ref: '#/components/schemas/ExportResponse'
 
+    PageResponseCommentResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/CommentResponse'
+
+    PageResponseNotificationResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/NotificationResponse'
+
+    PageResponseApprovalResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/ApprovalResponse'
+
     PageResponseUserResponse:
       allOf:
         - $ref: '#/components/schemas/PageMetadata'
@@ -2021,15 +4408,3 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/AuditLogResponse'
-
-    PageMetadata:
-      type: object
-      properties:
-        pageNumber: { type: integer }
-        pageSize: { type: integer }
-        totalElements: { type: integer, format: int64 }
-        totalPages: { type: integer }
-        isFirst: { type: boolean }
-        isLast: { type: boolean }
-        hasNext: { type: boolean }
-        hasPrevious: { type: boolean }
