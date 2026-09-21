@@ -27,8 +27,6 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 @Slf4j
 public class GlobalExceptionHandler {
 
-  // ==================== Business Exceptions ====================
-
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<ErrorResponse> handleResourceNotFound(
       ResourceNotFoundException ex, HttpServletRequest request) {
@@ -256,8 +254,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
   }
 
-  // ==================== Spring Security Exceptions ====================
-
   @ExceptionHandler(AuthenticationException.class)
   public ResponseEntity<ErrorResponse> handleAuthenticationException(
       AuthenticationException ex, HttpServletRequest request) {
@@ -301,13 +297,11 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
   }
 
-  // ==================== Validation Exceptions ====================
-
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ValidationErrorResponse> handleMethodArgumentNotValid(
       MethodArgumentNotValidException ex, HttpServletRequest request) {
 
-    log.warn("Validation error: {}", ex.getMessage());
+    log.warn(ex.getMessage(), "Validation error: {}");
 
     Map<String, String> errors =
         ex.getBindingResult().getFieldErrors().stream()
@@ -396,8 +390,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
-  // ==================== File Exceptions ====================
-
   @ExceptionHandler(MaxUploadSizeExceededException.class)
   public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(
       MaxUploadSizeExceededException ex, HttpServletRequest request) {
@@ -420,8 +412,6 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
   }
-
-  // ==================== Database Exceptions ====================
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
@@ -462,8 +452,6 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
   }
-
-  // ==================== Generic Exceptions ====================
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponse> handleIllegalArgumentException(

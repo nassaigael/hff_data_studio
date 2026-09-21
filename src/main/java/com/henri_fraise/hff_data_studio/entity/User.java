@@ -2,12 +2,11 @@ package com.henri_fraise.hff_data_studio.entity;
 
 import com.henri_fraise.hff_data_studio.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Getter
 @Setter
@@ -96,8 +95,7 @@ public class User {
     if (category == null || category.getPermissions() == null) {
       return false;
     }
-    return category.getPermissions().stream()
-            .anyMatch(p -> p.getCode().equals(permissionCode));
+    return category.getPermissions().stream().anyMatch(p -> p.getCode().equals(permissionCode));
   }
 
   public String getFullName() {

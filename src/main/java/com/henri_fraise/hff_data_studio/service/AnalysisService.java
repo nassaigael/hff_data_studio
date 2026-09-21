@@ -54,8 +54,6 @@ public class AnalysisService {
   private final AuditLogService auditLogService;
   private final ObjectMapper objectMapper;
 
-  // ==================== PREDEFINED ANALYSIS METHODS ====================
-
   public List<PredefinedAnalysisResponse> getPredefinedAnalyses(AnalysisCategory category) {
     try {
       if (category != null) {
@@ -147,8 +145,6 @@ public class AnalysisService {
       throw new DatabaseException("Failed to get analysis categories", ex);
     }
   }
-
-  // ==================== EXECUTION METHODS ====================
 
   @Transactional
   public AnalysisExecutionResponse runAnalysis(AnalysisExecutionRequest request) {
@@ -248,8 +244,6 @@ public class AnalysisService {
     }
   }
 
-  // ==================== EXECUTION GET METHODS ====================
-
   public Page<AnalysisExecutionResponse> getExecutions(UUID datasetId, Pageable pageable) {
     try {
       return executionService.getExecutions(datasetId, pageable);
@@ -284,8 +278,6 @@ public class AnalysisService {
     }
   }
 
-  // ==================== RESULT METHODS ====================
-
   public AnalysisResultResponse getResultById(UUID resultId) {
     try {
       return resultService.getResultById(resultId);
@@ -307,8 +299,6 @@ public class AnalysisService {
       throw new DatabaseException("Failed to download result", ex);
     }
   }
-
-  // ==================== EXECUTION CONTROL METHODS ====================
 
   @Transactional
   public void cancelExecution(UUID executionId) {
@@ -363,8 +353,6 @@ public class AnalysisService {
     }
   }
 
-  // ==================== MODEL SAVE METHODS ====================
-
   @Transactional
   public Map<String, Object> saveAnalysisModel(Map<String, Object> request) {
     try {
@@ -396,8 +384,6 @@ public class AnalysisService {
       throw new DatabaseException("Failed to save analysis model", ex);
     }
   }
-
-  // ==================== STATISTICS METHODS ====================
 
   public Map<String, Object> getExecutionStatistics(UUID executionId) {
     try {
@@ -452,8 +438,6 @@ public class AnalysisService {
     }
   }
 
-  // ==================== VALIDATION METHODS ====================
-
   public boolean existsAnalysisById(UUID analysisId) {
     try {
       return predefinedAnalysisService.getAnalysisEntityById(analysisId) != null;
@@ -478,8 +462,6 @@ public class AnalysisService {
       return false;
     }
   }
-
-  // ==================== UTILITY METHODS ====================
 
   private Map<String, Object> parseParams(String paramsJson) {
     if (paramsJson == null || paramsJson.isEmpty()) {
