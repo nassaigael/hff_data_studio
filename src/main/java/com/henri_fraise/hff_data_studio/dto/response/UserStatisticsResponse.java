@@ -23,7 +23,6 @@ public class UserStatisticsResponse {
 
   private Long totalCategories;
 
-  // Role statistics
   private Long adminCount;
 
   private Long analystCount;
