@@ -31,8 +31,6 @@ public class CategoryService {
   private final PermissionService permissionService;
   private final AuditLogService auditLogService;
 
-  // ==================== GET / FIND METHODS ====================
-
   public UserCategory getCategoryEntityById(UUID categoryId) {
     return categoryRepository
         .findById(categoryId)
@@ -88,8 +86,6 @@ public class CategoryService {
     }
   }
 
-  // ==================== CREATE METHODS ====================
-
   @Transactional
   public UserCategoryResponse createCategory(CategoryCreationRequest request) {
     if (categoryRepository.existsByLabel(request.getLabel())) {
@@ -137,8 +133,6 @@ public class CategoryService {
     }
   }
 
-  // ==================== UPDATE METHODS ====================
-
   @Transactional
   public UserCategoryResponse updateCategory(UUID categoryId, CategoryCreationRequest request) {
     UserCategory category = getCategoryEntityById(categoryId);
@@ -182,8 +176,6 @@ public class CategoryService {
     }
   }
 
-  // ==================== DELETE METHODS ====================
-
   @Transactional
   public void deleteCategory(UUID categoryId) {
     UserCategory category = getCategoryEntityById(categoryId);
@@ -216,8 +208,6 @@ public class CategoryService {
     UserCategory category = getCategoryEntityByLabel(label);
     deleteCategory(category.getId());
   }
-
-  // ==================== PERMISSION METHODS ====================
 
   @Transactional
   public void updateCategoryPermissions(UUID categoryId, List<UUID> permissionIds) {
@@ -309,8 +299,6 @@ public class CategoryService {
     }
   }
 
-  // ==================== COUNT METHODS ====================
-
   public long countCategories() {
     return categoryRepository.count();
   }
@@ -330,8 +318,6 @@ public class CategoryService {
   public boolean existsById(UUID categoryId) {
     return categoryRepository.existsById(categoryId);
   }
-
-  // ==================== STATISTICS METHODS ====================
 
   public List<Object[]> getCategoryStatistics() {
     try {
@@ -360,8 +346,6 @@ public class CategoryService {
         .orElseThrow(() -> new ResourceNotFoundException("Data Analyst category not found"));
   }
 
-  // ==================== VALIDATION METHODS ====================
-
   public boolean isCategoryInUse(UUID categoryId) {
     return categoryRepository.countUsersByCategoryId(categoryId) > 0;
   }
@@ -375,8 +359,6 @@ public class CategoryService {
     UserCategory category = getCategoryEntityById(categoryId);
     return category.getPermissions().stream().map(Permission::getCode).collect(Collectors.toList());
   }
-
-  // ==================== INITIALIZATION METHODS ====================
 
   @Transactional
   public void initializeDefaultCategories() {
