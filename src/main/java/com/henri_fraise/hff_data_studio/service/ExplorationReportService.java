@@ -24,8 +24,6 @@ public class ExplorationReportService {
   private final DatasetService datasetService;
   private final AuditLogService auditLogService;
 
-  // ==================== CRUD Operations ====================
-
   public ExplorationReportResponse getReportByDatasetId(UUID datasetId) {
     ExplorationReport report = getReportEntityByDatasetId(datasetId);
     return reportMapper.toResponse(report);
