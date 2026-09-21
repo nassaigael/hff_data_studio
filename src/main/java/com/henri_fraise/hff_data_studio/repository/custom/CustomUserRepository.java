@@ -32,7 +32,6 @@ public interface CustomUserRepository {
 
   long countUsersWithLastLoginBefore(LocalDateTime date);
 
-
   List<Object[]> countGroupByCategory();
 
   List<Object[]> countGroupByCategoryWithDetails();

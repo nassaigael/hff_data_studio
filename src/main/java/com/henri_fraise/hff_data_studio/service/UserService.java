@@ -599,11 +599,10 @@ public class UserService {
     log.info("User role changed: {} -> {} for user: {}", user.getEmail(), newRole, userId);
 
     auditLogService.logAction(
-            "USER_ROLE_CHANGED",
-            "User",
-            userId,
-            "User " + user.getEmail() + " role changed to " + newRole.getDisplayName()
-    );
+        "USER_ROLE_CHANGED",
+        "User",
+        userId,
+        "User " + user.getEmail() + " role changed to " + newRole.getDisplayName());
 
     return userMapper.toResponse(updated);
   }

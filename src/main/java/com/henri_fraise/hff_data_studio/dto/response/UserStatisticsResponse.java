@@ -1,13 +1,12 @@
 package com.henri_fraise.hff_data_studio.dto.response;
 
 import com.henri_fraise.hff_data_studio.enums.UserRole;
+import java.time.LocalDateTime;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.Map;
 
 @Data
 @Builder

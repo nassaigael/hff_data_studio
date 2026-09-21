@@ -1,12 +1,11 @@
 package com.henri_fraise.hff_data_studio.repository;
 
 import com.henri_fraise.hff_data_studio.entity.User;
+import com.henri_fraise.hff_data_studio.enums.UserRole;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import com.henri_fraise.hff_data_studio.enums.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,26 +36,26 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   long countByRoleAndIsActive(UserRole role, boolean isActive);
 
-
-  @Query("SELECT u FROM User u WHERE " +
-          "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+  @Query(
+      "SELECT u FROM User u WHERE "
+          + "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
+          + "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
+          + "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   Page<User> searchUsers(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-  @Query("SELECT u FROM User u WHERE " +
-          "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-          "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+  @Query(
+      "SELECT u FROM User u WHERE "
+          + "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
+          + "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
+          + "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   List<User> searchUsers(@Param("searchTerm") String searchTerm);
 
   @Query("SELECT u.role, COUNT(u) FROM User u GROUP BY u.role")
   List<Object[]> countGroupByRole();
 
   @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt BETWEEN :startDate AND :endDate")
-  long countByCreatedAtBetween(@Param("startDate") LocalDateTime startDate,
-                               @Param("endDate") LocalDateTime endDate);
-
+  long countByCreatedAtBetween(
+      @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
   Page<User> findByCategoryId(UUID categoryId, Pageable pageable);
 

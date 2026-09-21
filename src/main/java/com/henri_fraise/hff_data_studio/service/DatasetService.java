@@ -183,8 +183,11 @@ public class DatasetService {
               .build();
 
       Dataset saved = datasetRepository.save(dataset);
-      log.info("""
-		       Dataset  created successfully: {} ({})""", saved.getDatasetName(), saved.getId());
+      log.info(
+          """
+          Dataset  created successfully: {} ({})""",
+          saved.getDatasetName(),
+          saved.getId());
 
       auditLogService.logAction(
           "DATASET_CREATED",

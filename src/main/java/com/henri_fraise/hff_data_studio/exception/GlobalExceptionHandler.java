@@ -27,7 +27,6 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 @Slf4j
 public class GlobalExceptionHandler {
 
-
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<ErrorResponse> handleResourceNotFound(
       ResourceNotFoundException ex, HttpServletRequest request) {
@@ -255,7 +254,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
   }
 
-
   @ExceptionHandler(AuthenticationException.class)
   public ResponseEntity<ErrorResponse> handleAuthenticationException(
       AuthenticationException ex, HttpServletRequest request) {
@@ -298,7 +296,6 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
   }
-
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ValidationErrorResponse> handleMethodArgumentNotValid(
@@ -393,7 +390,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
-
   @ExceptionHandler(MaxUploadSizeExceededException.class)
   public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(
       MaxUploadSizeExceededException ex, HttpServletRequest request) {
@@ -416,7 +412,6 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
   }
-
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
@@ -457,7 +452,6 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
   }
-
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
