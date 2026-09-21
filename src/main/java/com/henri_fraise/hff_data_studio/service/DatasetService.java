@@ -183,7 +183,8 @@ public class DatasetService {
               .build();
 
       Dataset saved = datasetRepository.save(dataset);
-      log.info("Dataset created successfully: {} ({})", saved.getDatasetName(), saved.getId());
+      log.info("""
+		       Dataset  created successfully: {} ({})""", saved.getDatasetName(), saved.getId());
 
       auditLogService.logAction(
           "DATASET_CREATED",
@@ -248,8 +249,6 @@ public class DatasetService {
   public Dataset createDatasetEntity(Dataset dataset) {
     return createDataset(dataset);
   }
-
-  // ==================== UPDATE METHODS ====================
 
   @Transactional
   public DatasetResponse updateDatasetStats(UUID datasetId, Integer rowCount, Integer columnCount) {
@@ -362,10 +361,10 @@ public class DatasetService {
   }
 
   @Transactional
-  public Dataset updateDatasetCleanedStatus(UUID datasetId, boolean isCleaned) {
+  public void updateDatasetCleanedStatus(UUID datasetId, boolean isCleaned) {
     Dataset dataset = getDatasetEntityById(datasetId);
     dataset.setIsCleaned(isCleaned);
-    return datasetRepository.save(dataset);
+    datasetRepository.save(dataset);
   }
 
   @Transactional
@@ -379,7 +378,7 @@ public class DatasetService {
 
     try {
       datasetRepository.delete(dataset);
-      log.info("Dataset deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
+      log.info("Dataset  deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
 
       auditLogService.logAction(
           "DATASET_DELETED",
@@ -440,8 +439,6 @@ public class DatasetService {
     }
   }
 
-  // ==================== SEARCH METHODS ====================
-
   public Page<DatasetResponse> searchProjectDatasets(
       UUID projectId, String searchTerm, Pageable pageable) {
     try {
@@ -471,8 +468,6 @@ public class DatasetService {
   public Page<Dataset> searchDatasets(String searchTerm, Pageable pageable) {
     return datasetRepository.findByDatasetNameContainingIgnoreCase(searchTerm, pageable);
   }
-
-  // ==================== COUNT METHODS ====================
 
   public long countDatasets() {
     return datasetRepository.count();
@@ -505,8 +500,6 @@ public class DatasetService {
   public long countDatasetsCreatedBetween(LocalDateTime startDate, LocalDateTime endDate) {
     return datasetRepository.countByCreatedAtBetween(startDate, endDate);
   }
-
-  // ==================== STATISTICS METHODS ====================
 
   public DatasetStatisticsResponse getDatasetStatistics() {
     try {
@@ -574,8 +567,6 @@ public class DatasetService {
     return avg != null ? avg : 0.0;
   }
 
-  // ==================== VALIDATION METHODS ====================
-
   public boolean existsByDatasetNameAndFile(String datasetName, UUID fileId) {
     return datasetRepository.existsByDatasetNameAndSourceFileId(datasetName, fileId);
   }
@@ -587,8 +578,6 @@ public class DatasetService {
   public boolean existsByProjectId(UUID projectId) {
     return datasetRepository.existsBySourceFileProjectId(projectId);
   }
-
-  // ==================== UTILITY METHODS ====================
 
   public List<Dataset> getUncleanedDatasetsOlderThan(int days) {
     LocalDateTime threshold = LocalDateTime.now().minusDays(days);
@@ -636,8 +625,6 @@ public class DatasetService {
     result.put("version", version);
     return result;
   }
-
-  // ==================== BATCH OPERATIONS ====================
 
   @Transactional
   public List<Dataset> saveAll(List<Dataset> datasets) {
