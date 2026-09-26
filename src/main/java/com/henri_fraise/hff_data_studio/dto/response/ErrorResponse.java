@@ -4,7 +4,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -13,6 +17,7 @@ import lombok.*;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {
+
   private String code;
   private String message;
   private String details;
@@ -22,6 +27,4 @@ public class ErrorResponse {
   private Integer status;
   private List<String> errors;
   private Map<String, String> validationErrors;
-
-  @Builder.Default private LocalDateTime timestampNow = LocalDateTime.now();
 }
