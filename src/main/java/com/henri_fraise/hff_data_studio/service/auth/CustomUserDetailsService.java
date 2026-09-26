@@ -2,15 +2,14 @@ package com.henri_fraise.hff_data_studio.service.auth;
 
 import com.henri_fraise.hff_data_studio.entity.User;
 import com.henri_fraise.hff_data_studio.repository.UserRepository;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.henri_fraise.hff_data_studio.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,22 +18,17 @@ public class CustomUserDetailsService implements UserDetailsService {
   private final UserRepository userRepository;
 
   @Override
+  @Transactional(readOnly = true)
   public @NonNull UserDetails loadUserByUsername(@NonNull String email)
-      throws UsernameNotFoundException {
-    User user =
-        userRepository
-            .findByEmail(email)
-            .orElseThrow(
-                () -> new UsernameNotFoundException("User not found with email: " + email));
+          throws UsernameNotFoundException {
+    User user = userRepository.findByEmailWithPermissions(email)
+            .orElseThrow(() -> new UsernameNotFoundException(
+                    "User not found with email: " + email));
 
-    List<SimpleGrantedAuthority> authorities =
-        user.getCategory().getPermissions().stream()
-            .map(permission -> new SimpleGrantedAuthority(permission.getCode()))
-            .collect(Collectors.toList());
+    if (user.getCategory() != null && user.getCategory().getPermissions() != null) {
+      user.getCategory().getPermissions().size();
+    }
 
-    authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getCategory().getLabel()));
-
-    return new org.springframework.security.core.userdetails.User(
-        user.getEmail(), user.getPasswordHash(), user.getIsActive(), true, true, true, authorities);
+    return UserPrincipal.create(user);
   }
 }
