@@ -3,6 +3,7 @@ package com.henri_fraise.hff_data_studio.security;
 import com.henri_fraise.hff_data_studio.entity.Permission;
 import com.henri_fraise.hff_data_studio.entity.User;
 import com.henri_fraise.hff_data_studio.enums.UserRole;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -31,29 +32,34 @@ public class UserPrincipal implements UserDetails {
   private List<String> permissions;
 
   public static UserPrincipal create(User user) {
-    List<String> permissions =
-        user.getCategory() != null && user.getCategory().getPermissions() != null
+    List<String> permissions = user.getCategory() != null
+            && user.getCategory().getPermissions() != null
             ? user.getCategory().getPermissions().stream()
-                .map(Permission::getCode)
-                .collect(Collectors.toList())
-            : List.of();
+            .map(Permission::getCode)
+            .collect(Collectors.toList())
+            : new ArrayList<>();
 
     return UserPrincipal.builder()
-        .userId(user.getId())
-        .email(user.getEmail())
-        .password(user.getPasswordHash())
-        .firstName(user.getFirstName())
-        .lastName(user.getLastName())
-        .isActive(user.getIsActive())
-        .role(user.getRole())
-        .permissions(permissions)
-        .build();
+            .userId(user.getId())
+            .email(user.getEmail())
+            .password(user.getPasswordHash())
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
+            .isActive(user.getIsActive())
+            .role(user.getRole())
+            .permissions(permissions)
+            .build();
   }
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    List<SimpleGrantedAuthority> authorities =
-        permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+    if (permissions != null) {
+      permissions.stream()
+              .map(SimpleGrantedAuthority::new)
+              .forEach(authorities::add);
+    }
 
     if (role != null) {
       authorities.add(new SimpleGrantedAuthority(role.name()));
