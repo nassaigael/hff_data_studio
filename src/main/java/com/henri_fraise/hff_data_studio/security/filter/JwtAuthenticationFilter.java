@@ -9,6 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,12 +33,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private static final String BEARER_PREFIX = "Bearer ";
   private static final String AUTHORIZATION_HEADER = "Authorization";
 
+  private static final List<String> PUBLIC_PATHS = List.of(
+          "/api/v1/auth/login",
+          "/api/v1/auth/refresh",
+          "/api/v1/auth/logout",
+          "/api/v1/auth/forgot-password",
+          "/api/v1/auth/reset-password",
+          "/api/v1/health",
+          "/actuator/health",
+          "/swagger-ui",
+          "/v3/api-docs"
+  );
+
   @Override
   protected void doFilterInternal(
-      @NonNull HttpServletRequest request,
-      @NonNull HttpServletResponse response,
-      @NonNull FilterChain filterChain)
-      throws ServletException, IOException {
+          @NonNull HttpServletRequest request,
+          @NonNull HttpServletResponse response,
+          @NonNull FilterChain filterChain)
+          throws ServletException, IOException {
 
     if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
       filterChain.doFilter(request, response);
@@ -55,7 +68,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       final String jwt = authHeader.substring(BEARER_PREFIX.length());
 
       if (tokenBlacklistService.isBlacklisted(jwt)) {
-        log.warn("Token is blacklisted: {}", jwt);
+        log.warn("Token is blacklisted");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.getWriter().write("Token has been invalidated");
         return;
@@ -68,11 +81,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (jwtService.isTokenValid(jwt)) {
           UsernamePasswordAuthenticationToken authToken =
-              new UsernamePasswordAuthenticationToken(
-                  userDetails, null, userDetails.getAuthorities());
+                  new UsernamePasswordAuthenticationToken(
+                          userDetails, null, userDetails.getAuthorities());
           authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
           SecurityContextHolder.getContext().setAuthentication(authToken);
-
           log.debug("Authenticated user: {}", userEmail);
         }
       }
@@ -99,10 +111,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI();
-    return path.startsWith("/api/v1/auth/")
-        || path.startsWith("/api/v1/health")
-        || path.startsWith("/actuator/health")
-        || path.startsWith("/swagger-ui/")
-        || path.startsWith("/v3/api-docs/");
+    return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
   }
 }

@@ -1,5 +1,7 @@
 package com.henri_fraise.hff_data_studio.mapper;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.henri_fraise.hff_data_studio.dto.request.CleaningRuleRequest;
 import com.henri_fraise.hff_data_studio.dto.response.CleaningRuleResponse;
 import com.henri_fraise.hff_data_studio.entity.CleaningRule;
@@ -9,8 +11,6 @@ import com.henri_fraise.hff_data_studio.enums.RuleType;
 import java.util.Collections;
 import java.util.Map;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class CleaningRuleMapper {
@@ -29,35 +29,47 @@ public class CleaningRuleMapper {
     Dataset dataset = getDataset(column);
 
     return CleaningRuleResponse.builder()
-        .ruleId(rule.getId())
-        .ruleType(ruleType)
-        .ruleTypeLabel(getRuleTypeLabel(ruleType))
-        .parametersJson(parseParametersJson(rule.getParametersJson()))
-        .executionOrder(rule.getExecutionOrder())
-        .isActive(rule.getIsActive())
-        .columnId(column != null ? column.getId() : null)
-        .columnName(column != null ? column.getOriginalName() : null)
-        .datasetId(dataset != null ? dataset.getId() : null)
-        .datasetName(dataset != null ? dataset.getDatasetName() : null)
-        .build();
+            .ruleId(rule.getId())
+            .ruleType(ruleType)
+            .ruleTypeLabel(getRuleTypeLabel(ruleType))
+            .parametersJson(parseParametersJson(rule.getParametersJson()))
+            .executionOrder(rule.getExecutionOrder())
+            .isActive(rule.getIsActive())
+            .columnId(column != null ? column.getId() : null)
+            .columnName(column != null ? column.getOriginalName() : null)
+            .datasetId(dataset != null ? dataset.getId() : null)
+            .datasetName(dataset != null ? dataset.getDatasetName() : null)
+            .build();
   }
 
   public CleaningRule toEntity(CleaningRuleRequest request, DatasetColumn column) {
     if (request == null || column == null) return null;
-    return CleaningRule.builder()
-        .ruleType(request.getRuleType())
-        .parametersJson(objectMapper.writeValueAsString(request.getParametersJson()))
-        .executionOrder(request.getExecutionOrder() != null ? request.getExecutionOrder() : 0)
-        .isActive(request.getIsActive() != null ? request.getIsActive() : true)
-        .column(column)
-        .build();
+    try {
+      return CleaningRule.builder()
+              .ruleType(request.getRuleType())
+              .parametersJson(
+                      request.getParametersJson() != null
+                              ? objectMapper.writeValueAsString(request.getParametersJson())
+                              : null)
+              .executionOrder(request.getExecutionOrder() != null ? request.getExecutionOrder() : 0)
+              .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+              .column(column)
+              .build();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to serialize rule parameters", e);
+    }
   }
 
   public void updateEntity(CleaningRule rule, CleaningRuleRequest request) {
     if (request == null || rule == null) return;
     if (request.getRuleType() != null) rule.setRuleType(request.getRuleType());
-    if (request.getParametersJson() != null)
-      rule.setParametersJson(objectMapper.writeValueAsString(request.getParametersJson()));
+    if (request.getParametersJson() != null) {
+      try {
+        rule.setParametersJson(objectMapper.writeValueAsString(request.getParametersJson()));
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to serialize rule parameters", e);
+      }
+    }
     if (request.getExecutionOrder() != null) rule.setExecutionOrder(request.getExecutionOrder());
     if (request.getIsActive() != null) rule.setIsActive(request.getIsActive());
   }

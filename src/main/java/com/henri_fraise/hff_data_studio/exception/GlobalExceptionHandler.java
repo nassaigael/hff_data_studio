@@ -324,9 +324,9 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
-  @ExceptionHandler(javax.validation.ConstraintViolationException.class)
+  @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
   public ResponseEntity<ValidationErrorResponse> handleConstraintViolation(
-      javax.validation.ConstraintViolationException ex, HttpServletRequest request) {
+      jakarta.validation.ConstraintViolationException ex, HttpServletRequest request) {
 
     log.warn("Constraint violation: {}", ex.getMessage());
 

@@ -2,8 +2,8 @@ package com.henri_fraise.hff_data_studio.validation.Constraint;
 
 import com.henri_fraise.hff_data_studio.repository.ProjectRepository;
 import java.util.UUID;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
