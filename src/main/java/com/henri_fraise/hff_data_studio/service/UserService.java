@@ -50,6 +50,7 @@ public class UserService {
         .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
   }
 
+  @Transactional(readOnly = true)
   public UserResponse getUserById(UUID userId) {
     User user = getUserEntityById(userId);
     return userMapper.toResponse(user);
@@ -589,8 +590,6 @@ public class UserService {
       throw new DatabaseException("Failed to reset password", ex);
     }
   }
-
-  // ==================== ROLE METHODS ====================
 
   public UserResponse changeUserRole(UUID userId, UserRole newRole) {
     User user = getUserEntityById(userId);
