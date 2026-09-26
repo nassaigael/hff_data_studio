@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,69 +19,51 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   Optional<User> findByEmail(String email);
 
+  @EntityGraph(attributePaths = {"category", "category.permissions"})
+  @Query("SELECT u FROM User u WHERE u.email = :email")
+  Optional<User> findByEmailWithPermissions(@Param("email") String email);
+
   Page<User> findAllByIsActiveTrue(Pageable pageable);
-
   List<User> findByIsActiveTrue();
-
   List<User> findByIsActiveFalse();
-
   List<User> findByCategoryLabel(String categoryLabel);
-
   Page<User> findByRole(UserRole role, Pageable pageable);
-
   List<User> findByRole(UserRole role);
-
   List<User> findByRoleAndIsActive(UserRole role, boolean isActive);
-
   long countByRole(UserRole role);
-
   long countByRoleAndIsActive(UserRole role, boolean isActive);
 
-  @Query(
-      "SELECT u FROM User u WHERE "
-          + "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
-          + "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
-          + "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+  @Query("SELECT u FROM User u WHERE " +
+          "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+          "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+          "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   Page<User> searchUsers(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-  @Query(
-      "SELECT u FROM User u WHERE "
-          + "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
-          + "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR "
-          + "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+  @Query("SELECT u FROM User u WHERE " +
+          "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+          "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+          "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   List<User> searchUsers(@Param("searchTerm") String searchTerm);
 
   @Query("SELECT u.role, COUNT(u) FROM User u GROUP BY u.role")
   List<Object[]> countGroupByRole();
 
   @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt BETWEEN :startDate AND :endDate")
-  long countByCreatedAtBetween(
-      @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+  long countByCreatedAtBetween(@Param("startDate") LocalDateTime startDate,
+                               @Param("endDate") LocalDateTime endDate);
 
   Page<User> findByCategoryId(UUID categoryId, Pageable pageable);
-
   List<User> findByCategoryId(UUID categoryId);
-
   List<User> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
-
   List<User> findByCreatedAtBefore(LocalDateTime date);
-
   List<User> findByCreatedAtAfter(LocalDateTime date);
-
   long countByIsActiveTrue();
-
   long countByIsActiveFalse();
-
   long countByCategoryId(UUID categoryId);
-
   long countByCategoryLabel(String categoryLabel);
-
   long countByCreatedAtAfter(LocalDateTime date);
-
   long countByCreatedAtBefore(LocalDateTime date);
-
   boolean existsByEmail(String email);
-
   boolean existsByEmailAndIsActiveTrue(String email);
 
   @Query("SELECT u FROM User u ORDER BY u.createdAt DESC")
