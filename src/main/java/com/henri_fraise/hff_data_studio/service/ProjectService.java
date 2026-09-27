@@ -7,7 +7,11 @@ import com.henri_fraise.hff_data_studio.dto.response.ProjectStatisticsResponse;
 import com.henri_fraise.hff_data_studio.entity.Project;
 import com.henri_fraise.hff_data_studio.entity.User;
 import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
-import com.henri_fraise.hff_data_studio.exception.*;
+import com.henri_fraise.hff_data_studio.exception.DatabaseException;
+import com.henri_fraise.hff_data_studio.exception.ForbiddenException;
+import com.henri_fraise.hff_data_studio.exception.ResourceAlreadyExistsException;
+import com.henri_fraise.hff_data_studio.exception.ResourceNotFoundException;
+import com.henri_fraise.hff_data_studio.exception.ValidationException;
 import com.henri_fraise.hff_data_studio.mapper.ProjectMapper;
 import com.henri_fraise.hff_data_studio.repository.ProjectRepository;
 import com.henri_fraise.hff_data_studio.repository.custom.CustomProjectRepository;
@@ -63,9 +67,9 @@ public class ProjectService {
 
   public Project getProjectEntityById(UUID projectId) {
     return projectRepository
-        .findById(projectId)
-        .orElseThrow(
-            () -> new ResourceNotFoundException("Project not found with id: " + projectId));
+            .findByIdWithCreator(projectId)
+            .orElseThrow(
+                    () -> new ResourceNotFoundException("Project not found with id: " + projectId));
   }
 
   public Project getProjectEntityByIdAndUser(UUID projectId, UUID userId) {
@@ -102,7 +106,7 @@ public class ProjectService {
   }
 
   public Page<ProjectResponse> getUserProjects(
-      UUID userId, Pageable pageable, ProjectStatus status) {
+          UUID userId, Pageable pageable, ProjectStatus status) {
     try {
       userService.getUserEntityById(userId);
       Page<Project> projects;
@@ -121,7 +125,7 @@ public class ProjectService {
   }
 
   public Page<ProjectResponse> getUserProjectsByStatus(
-      UUID userId, ProjectStatus status, Pageable pageable) {
+          UUID userId, ProjectStatus status, Pageable pageable) {
     try {
       userService.getUserEntityById(userId);
       Page<Project> projects = projectRepository.findByCreatorIdAndStatus(userId, status, pageable);
@@ -150,7 +154,7 @@ public class ProjectService {
 
     if (projectRepository.existsByProjectNameAndCreatorId(request.getProjectName(), userId)) {
       throw new ResourceAlreadyExistsException(
-          "Project already exists with name: " + request.getProjectName());
+              "Project already exists with name: " + request.getProjectName());
     }
 
     try {
@@ -158,16 +162,16 @@ public class ProjectService {
       Project saved = projectRepository.save(project);
 
       log.info(
-          "Project created successfully: {} ({}) by user {}",
-          saved.getProjectName(),
-          saved.getId(),
-          userId);
+              "Project created successfully: {} ({}) by user {}",
+              saved.getProjectName(),
+              saved.getId(),
+              userId);
 
       auditLogService.logAction(
-          "PROJECT_CREATED",
-          "Project",
-          saved.getId(),
-          "Project " + saved.getProjectName() + " created by " + user.getEmail());
+              "PROJECT_CREATED",
+              "Project",
+              saved.getId(),
+              "Project " + saved.getProjectName() + " created by " + user.getEmail());
 
       return projectMapper.toResponse(saved);
     } catch (Exception ex) {
@@ -185,10 +189,10 @@ public class ProjectService {
     }
 
     if (request.getProjectName() != null
-        && !request.getProjectName().equals(project.getProjectName())) {
+            && !request.getProjectName().equals(project.getProjectName())) {
       if (projectRepository.existsByProjectNameAndCreatorId(request.getProjectName(), userId)) {
         throw new ResourceAlreadyExistsException(
-            "Project already exists with name: " + request.getProjectName());
+                "Project already exists with name: " + request.getProjectName());
       }
     }
 
@@ -199,10 +203,10 @@ public class ProjectService {
       log.info("Project updated successfully: {} ({})", updated.getProjectName(), updated.getId());
 
       auditLogService.logAction(
-          "PROJECT_UPDATED",
-          "Project",
-          projectId,
-          "Project " + updated.getProjectName() + " updated");
+              "PROJECT_UPDATED",
+              "Project",
+              projectId,
+              "Project " + updated.getProjectName() + " updated");
 
       return projectMapper.toResponse(updated);
     } catch (Exception ex) {
@@ -224,13 +228,13 @@ public class ProjectService {
       Project updated = projectRepository.save(project);
 
       log.info(
-          "Project status updated: {} -> {} ({})", projectId, status, updated.getProjectName());
+              "Project status updated: {} -> {} ({})", projectId, status, updated.getProjectName());
 
       auditLogService.logAction(
-          "PROJECT_STATUS_UPDATED",
-          "Project",
-          projectId,
-          "Project " + updated.getProjectName() + " status changed to " + status);
+              "PROJECT_STATUS_UPDATED",
+              "Project",
+              projectId,
+              "Project " + updated.getProjectName() + " status changed to " + status);
 
       return projectMapper.toResponse(updated);
     } catch (Exception ex) {
@@ -258,10 +262,10 @@ public class ProjectService {
       log.info("Project archived successfully: {} ({})", project.getProjectName(), projectId);
 
       auditLogService.logAction(
-          "PROJECT_ARCHIVED",
-          "Project",
-          projectId,
-          "Project " + project.getProjectName() + " archived by " + userId);
+              "PROJECT_ARCHIVED",
+              "Project",
+              projectId,
+              "Project " + project.getProjectName() + " archived by " + userId);
     } catch (Exception ex) {
       log.error("Error archiving project: {}", ex.getMessage(), ex);
       throw new DatabaseException("Failed to archive project", ex);
@@ -287,10 +291,10 @@ public class ProjectService {
       log.info("Project restored successfully: {} ({})", project.getProjectName(), projectId);
 
       auditLogService.logAction(
-          "PROJECT_RESTORED",
-          "Project",
-          projectId,
-          "Project " + project.getProjectName() + " restored by " + userId);
+              "PROJECT_RESTORED",
+              "Project",
+              projectId,
+              "Project " + project.getProjectName() + " restored by " + userId);
 
       return projectMapper.toResponse(restored);
     } catch (Exception ex) {
@@ -309,7 +313,7 @@ public class ProjectService {
 
     if (project.getSourceFiles() != null && !project.getSourceFiles().isEmpty()) {
       throw new ValidationException(
-          "Cannot delete project with existing files. Please delete files first.");
+              "Cannot delete project with existing files. Please delete files first.");
     }
 
     try {
@@ -317,10 +321,10 @@ public class ProjectService {
       log.info("Project deleted successfully: {} ({})", project.getProjectName(), projectId);
 
       auditLogService.logAction(
-          "PROJECT_DELETED",
-          "Project",
-          projectId,
-          "Project " + project.getProjectName() + " deleted by " + userId);
+              "PROJECT_DELETED",
+              "Project",
+              projectId,
+              "Project " + project.getProjectName() + " deleted by " + userId);
     } catch (Exception ex) {
       log.error("Error deleting project: {}", ex.getMessage(), ex);
       throw new DatabaseException("Failed to delete project", ex);
@@ -328,7 +332,7 @@ public class ProjectService {
   }
 
   public Page<ProjectResponse> searchUserProjects(
-      UUID userId, String searchTerm, Pageable pageable) {
+          UUID userId, String searchTerm, Pageable pageable) {
     try {
       userService.getUserEntityById(userId);
       Page<Project> projects = projectRepository.searchUserProjects(userId, searchTerm, pageable);
