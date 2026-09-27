@@ -3,7 +3,11 @@ package com.henri_fraise.hff_data_studio.dto.response;
 import com.henri_fraise.hff_data_studio.enums.ProjectStatus;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -11,6 +15,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProjectResponse {
+
   private UUID projectId;
   private String projectName;
   private String description;
