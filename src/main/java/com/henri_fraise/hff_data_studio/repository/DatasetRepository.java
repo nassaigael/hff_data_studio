@@ -162,7 +162,7 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
 
   @Query(
           "SELECT d FROM Dataset d WHERE d.sourceFile.project.id = :projectId "
-                  + "AND (LOWER(d.datasetName) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+                  + "AND LOWER(d.datasetName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
   Page<Dataset> searchProjectDatasets(
           @Param("projectId") UUID projectId,
           @Param("searchTerm") String searchTerm,
@@ -188,7 +188,8 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
 
   @Query(
           "SELECT d FROM Dataset d WHERE d.sourceFile.project.id = :projectId ORDER BY d.createdAt DESC")
-  List<Dataset> findRecentDatasetsByProjectId(@Param("projectId") UUID projectId, Pageable pageable);
+  List<Dataset> findRecentDatasetsByProjectId(
+          @Param("projectId") UUID projectId, Pageable pageable);
 
   @Query("SELECT d FROM Dataset d WHERE d.isCleaned = false AND d.createdAt < :threshold")
   List<Dataset> findUncleanedDatasetsOlderThan(@Param("threshold") LocalDateTime threshold);
@@ -221,8 +222,8 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
   List<Object[]> countGroupByDate();
 
   @Query(
-          "SELECT AVG(r.qualityScore) FROM ExplorationReport r WHERE r.dataset.id IN (SELECT d.id FROM"
-                  + " Dataset d WHERE d.sourceFile.project.id = :projectId)")
+          "SELECT AVG(r.qualityScore) FROM ExplorationReport r WHERE r.dataset.id IN "
+                  + "(SELECT d.id FROM Dataset d WHERE d.sourceFile.project.id = :projectId)")
   Double averageQualityScoreByProjectId(@Param("projectId") UUID projectId);
 
   @Query("SELECT AVG(r.qualityScore) FROM ExplorationReport r WHERE r.dataset.isCleaned = true")
@@ -265,11 +266,11 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
 
   @Query("SELECT DISTINCT d.datasetName FROM Dataset d")
   List<String> findDistinctDatasetNames();
+
   @Query(
           value =
-		          """
-
-				          SELECT
+                  """
+				  SELECT
 					  COUNT(*) AS total_datasets,
 					  COALESCE(SUM(d.row_count), 0) AS total_rows,
 					  COALESCE(SUM(d.column_count), 0) AS total_columns,
@@ -286,17 +287,22 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
 					  COALESCE((
 						  SELECT COUNT(*)
 						  FROM analysis_execution ae
-						  WHERE COALESCE(CAST(:projectId AS uuid), ae.project_id) = ae.project_id
+						  INNER JOIN dataset d_ae ON d_ae.dataset_id = ae.dataset_id
+						  INNER JOIN source_file sf_ae ON sf_ae.file_id = d_ae.file_id
+						  WHERE sf_ae.project_id = COALESCE(CAST(:projectId AS uuid), sf_ae.project_id)
 					  ), 0) AS total_analyses_run,
 					  COALESCE((
 						  SELECT COUNT(*)
 						  FROM export ex
-						  WHERE COALESCE(CAST(:projectId AS uuid), ex.project_id) = ex.project_id
+						  INNER JOIN analysis_execution ae_ex ON ae_ex.execution_id = ex.execution_id
+						  INNER JOIN dataset d_ex ON d_ex.dataset_id = ae_ex.dataset_id
+						  INNER JOIN source_file sf_ex ON sf_ex.file_id = d_ex.file_id
+						  WHERE sf_ex.project_id = COALESCE(CAST(:projectId AS uuid), sf_ex.project_id)
 					  ), 0) AS total_exports
-				          FROM dataset d
-				          INNER JOIN source_file sf ON sf.file_id = d.file_id
-				          LEFT JOIN exploration_report er ON er.dataset_id = d.dataset_id
-				          WHERE sf.project_id = COALESCE(CAST(:projectId AS uuid), sf.project_id)
+				  FROM dataset d
+				  INNER JOIN source_file sf ON sf.file_id = d.file_id
+				  LEFT JOIN exploration_report er ON er.dataset_id = d.dataset_id
+				  WHERE sf.project_id = COALESCE(CAST(:projectId AS uuid), sf.project_id)
 				  """,
           nativeQuery = true)
   DatasetStatsProjection findGlobalStats(@Param("projectId") String projectId);
