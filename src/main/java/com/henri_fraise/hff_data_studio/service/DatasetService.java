@@ -7,6 +7,7 @@ import com.henri_fraise.hff_data_studio.dto.response.DatasetStatisticsResponse;
 import com.henri_fraise.hff_data_studio.entity.Dataset;
 import com.henri_fraise.hff_data_studio.entity.DatasetColumn;
 import com.henri_fraise.hff_data_studio.entity.SourceFile;
+import com.henri_fraise.hff_data_studio.enums.FileType;
 import com.henri_fraise.hff_data_studio.exception.DatabaseException;
 import com.henri_fraise.hff_data_studio.exception.ResourceNotFoundException;
 import com.henri_fraise.hff_data_studio.mapper.DatasetColumnMapper;
@@ -14,6 +15,11 @@ import com.henri_fraise.hff_data_studio.mapper.DatasetMapper;
 import com.henri_fraise.hff_data_studio.repository.DatasetColumnRepository;
 import com.henri_fraise.hff_data_studio.repository.DatasetRepository;
 import com.henri_fraise.hff_data_studio.repository.custom.CustomDatasetRepository;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Slf4j
 public class DatasetService {
@@ -107,7 +114,7 @@ public class DatasetService {
   }
 
   public Page<DatasetResponse> getAllDatasets(Pageable pageable) {
-    Page<Dataset> datasets = datasetRepository.findAll(pageable);
+    Page<Dataset> datasets = datasetRepository.findAllWithRelations(pageable);
     return datasets.map(datasetMapper::toResponse);
   }
 
@@ -237,17 +244,24 @@ public class DatasetService {
   public Dataset createDatasetFromFile(SourceFile sourceFile) {
     try {
       String datasetName = sourceFile.getFileName().replaceAll("\\.[^.]+$", "");
+      int[] dims = countRowsAndColumns(sourceFile.getStoragePath(), sourceFile.getFileType());
+
       Dataset dataset =
               Dataset.builder()
                       .datasetName(datasetName)
-                      .rowCount(0)
-                      .columnCount(0)
+                      .rowCount(dims[0])
+                      .columnCount(dims[1])
                       .isCleaned(false)
                       .sourceFile(sourceFile)
                       .build();
 
       Dataset saved = datasetRepository.save(dataset);
-      log.info("Dataset created from file: {} ({})", saved.getDatasetName(), saved.getId());
+      log.info(
+              "Dataset created from file: {} ({} rows, {} columns) ({})",
+              saved.getDatasetName(),
+              dims[0],
+              dims[1],
+              saved.getId());
       return saved;
     } catch (Exception ex) {
       log.error("Error creating dataset from file: {}", ex.getMessage(), ex);
@@ -714,5 +728,115 @@ public class DatasetService {
     } catch (IllegalArgumentException ex) {
       throw new IllegalArgumentException("Invalid projectId: " + projectId, ex);
     }
+  }
+
+  private int[] countRowsAndColumns(String storagePath, FileType fileType) {
+    if (storagePath == null || fileType == null) {
+      return new int[] {0, 0};
+    }
+
+    if (fileType == FileType.EXCEL || fileType == FileType.XLSX) {
+      return new int[] {0, 0};
+    }
+
+    try {
+      Path path = Paths.get(storagePath);
+      if (!Files.exists(path)) {
+        log.warn("Storage file not found: {}", storagePath);
+        return new int[] {0, 0};
+      }
+
+      List<String> lines =
+              Files.readAllLines(path, StandardCharsets.UTF_8).stream()
+                      .filter(line -> !line.isBlank())
+                      .toList();
+
+      if (lines.isEmpty()) {
+        return new int[] {0, 0};
+      }
+
+      return switch (fileType) {
+        case CSV -> {
+          int headerCols = countCsvColumns(lines.get(0));
+          int dataRows = Math.max(0, lines.size() - 1);
+          yield new int[] {dataRows, headerCols};
+        }
+        case SQL -> {
+          long inserts =
+                  lines.stream()
+                          .filter(line -> line.trim().toUpperCase().startsWith("INSERT"))
+                          .count();
+          int columns = countSqlColumns(lines);
+          yield new int[] {(int) inserts, columns};
+        }
+        case JSON -> {
+          yield new int[] {1, countJsonKeys(lines)};
+        }
+        default -> {
+          yield new int[] {lines.size(), 1};
+        }
+      };
+    } catch (IOException ex) {
+      log.warn("Cannot read file for row/column count: {}", storagePath, ex);
+      return new int[] {0, 0};
+    }
+  }
+
+  private int countCsvColumns(String headerLine) {
+    if (headerLine == null || headerLine.isBlank()) {
+      return 0;
+    }
+    boolean inQuotes = false;
+    int columns = 1;
+    for (int i = 0; i < headerLine.length(); i++) {
+      char c = headerLine.charAt(i);
+      if (c == '"') {
+        inQuotes = !inQuotes;
+      } else if (c == ',' && !inQuotes) {
+        columns++;
+      }
+    }
+    return columns;
+  }
+
+  private int countSqlColumns(List<String> lines) {
+    boolean insideCreate = false;
+    int columns = 0;
+    for (String raw : lines) {
+      String line = raw.trim();
+      String upper = line.toUpperCase();
+      if (upper.startsWith("CREATE TABLE")) {
+        insideCreate = true;
+        int open = line.indexOf('(');
+        if (open >= 0) {
+          String after = line.substring(open + 1).trim();
+          if (!after.isEmpty() && !after.startsWith(")")) {
+            columns++;
+          }
+        }
+        continue;
+      }
+      if (insideCreate) {
+        if (line.startsWith(")")) {
+          break;
+        }
+        if (!upper.startsWith("PRIMARY")
+                && !upper.startsWith("FOREIGN")
+                && !upper.startsWith("CONSTRAINT")
+                && !upper.startsWith("UNIQUE")
+                && !upper.startsWith("CHECK")
+                && !line.isEmpty()) {
+          columns++;
+        }
+      }
+    }
+    return Math.max(columns, 1);
+  }
+
+  private int countJsonKeys(List<String> lines) {
+    return (int)
+            lines.stream()
+                    .filter(line -> line.trim().matches("^\"[^\"]+\"\\s*:.*$"))
+                    .count();
   }
 }
