@@ -31,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class DatasetService {
 
+  private static final String ALL_PROJECTS = "all";
+
   private final DatasetRepository datasetRepository;
   private final DatasetColumnRepository datasetColumnRepository;
   private final CustomDatasetRepository customDatasetRepository;
@@ -40,9 +42,9 @@ public class DatasetService {
 
   public Dataset getDatasetEntityById(UUID datasetId) {
     return datasetRepository
-        .findById(datasetId)
-        .orElseThrow(
-            () -> new ResourceNotFoundException("Dataset not found with id: " + datasetId));
+            .findById(datasetId)
+            .orElseThrow(
+                    () -> new ResourceNotFoundException("Dataset not found with id: " + datasetId));
   }
 
   public Dataset getDatasetEntityByIdAndProject(UUID datasetId, UUID projectId) {
@@ -56,6 +58,20 @@ public class DatasetService {
   public DatasetResponse getDatasetById(UUID datasetId) {
     Dataset dataset = getDatasetEntityById(datasetId);
     return datasetMapper.toResponse(dataset);
+  }
+
+  public Page<DatasetResponse> getDatasetsByProject(String projectId, Pageable pageable) {
+    UUID projectUuid = resolveProjectIdOrNull(projectId);
+    if (projectUuid == null) {
+      return getAllDatasets(pageable);
+    }
+    try {
+      Page<Dataset> datasets = datasetRepository.findBySourceFileProjectId(projectUuid, pageable);
+      return datasets.map(datasetMapper::toResponse);
+    } catch (Exception ex) {
+      log.error("Error retrieving datasets by project: {}", ex.getMessage(), ex);
+      throw new DatabaseException("Failed to retrieve datasets by project", ex);
+    }
   }
 
   public Page<DatasetResponse> getDatasetsByProject(UUID projectId, Pageable pageable) {
@@ -107,15 +123,15 @@ public class DatasetService {
 
   public Dataset getDatasetByFileAndName(UUID fileId, String datasetName) {
     return datasetRepository
-        .findBySourceFileIdAndDatasetName(fileId, datasetName)
-        .orElseThrow(
-            () -> new ResourceNotFoundException("Dataset not found with name: " + datasetName));
+            .findBySourceFileIdAndDatasetName(fileId, datasetName)
+            .orElseThrow(
+                    () -> new ResourceNotFoundException("Dataset not found with name: " + datasetName));
   }
 
   public List<DatasetColumnResponse> getDatasetColumns(UUID datasetId) {
     try {
       List<DatasetColumn> columns =
-          datasetColumnRepository.findByDatasetIdOrderByPositionAsc(datasetId);
+              datasetColumnRepository.findByDatasetIdOrderByPositionAsc(datasetId);
       return columns.stream().map(datasetColumnMapper::toResponse).toList();
     } catch (Exception ex) {
       log.error("Error retrieving dataset columns: {}", ex.getMessage(), ex);
@@ -126,10 +142,10 @@ public class DatasetService {
   public DatasetColumnResponse getColumnById(UUID datasetId, UUID columnId) {
     try {
       DatasetColumn column =
-          datasetColumnRepository
-              .findByIdAndDatasetId(columnId, datasetId)
-              .orElseThrow(
-                  () -> new ResourceNotFoundException("Column not found with id: " + columnId));
+              datasetColumnRepository
+                      .findByIdAndDatasetId(columnId, datasetId)
+                      .orElseThrow(
+                              () -> new ResourceNotFoundException("Column not found with id: " + columnId));
       return datasetColumnMapper.toResponse(column);
     } catch (ResourceNotFoundException ex) {
       throw ex;
@@ -141,13 +157,13 @@ public class DatasetService {
 
   @Transactional
   public DatasetColumnResponse updateColumn(
-      UUID datasetId, UUID columnId, DatasetColumnUpdateRequest request) {
+          UUID datasetId, UUID columnId, DatasetColumnUpdateRequest request) {
     try {
       DatasetColumn column =
-          datasetColumnRepository
-              .findByIdAndDatasetId(columnId, datasetId)
-              .orElseThrow(
-                  () -> new ResourceNotFoundException("Column not found with id: " + columnId));
+              datasetColumnRepository
+                      .findByIdAndDatasetId(columnId, datasetId)
+                      .orElseThrow(
+                              () -> new ResourceNotFoundException("Column not found with id: " + columnId));
 
       datasetColumnMapper.updateEntity(column, request);
       DatasetColumn updated = datasetColumnRepository.save(column);
@@ -155,10 +171,10 @@ public class DatasetService {
       log.info("Column updated: {} ({})", updated.getOriginalName(), updated.getId());
 
       auditLogService.logAction(
-          "COLUMN_UPDATED",
-          "DatasetColumn",
-          columnId,
-          "Column " + updated.getOriginalName() + " updated");
+              "COLUMN_UPDATED",
+              "DatasetColumn",
+              columnId,
+              "Column " + updated.getOriginalName() + " updated");
 
       return datasetColumnMapper.toResponse(updated);
     } catch (ResourceNotFoundException ex) {
@@ -171,29 +187,25 @@ public class DatasetService {
 
   @Transactional
   public Dataset createDataset(
-      SourceFile sourceFile, String datasetName, Integer rowCount, Integer columnCount) {
+          SourceFile sourceFile, String datasetName, Integer rowCount, Integer columnCount) {
     try {
       Dataset dataset =
-          Dataset.builder()
-              .datasetName(datasetName)
-              .rowCount(rowCount != null ? rowCount : 0)
-              .columnCount(columnCount != null ? columnCount : 0)
-              .isCleaned(false)
-              .sourceFile(sourceFile)
-              .build();
+              Dataset.builder()
+                      .datasetName(datasetName)
+                      .rowCount(rowCount != null ? rowCount : 0)
+                      .columnCount(columnCount != null ? columnCount : 0)
+                      .isCleaned(false)
+                      .sourceFile(sourceFile)
+                      .build();
 
       Dataset saved = datasetRepository.save(dataset);
-      log.info(
-          """
-          Dataset  created successfully: {} ({})""",
-          saved.getDatasetName(),
-          saved.getId());
+      log.info("Dataset created successfully: {} ({})", saved.getDatasetName(), saved.getId());
 
       auditLogService.logAction(
-          "DATASET_CREATED",
-          "Dataset",
-          saved.getId(),
-          "Dataset " + saved.getDatasetName() + " created from file: " + sourceFile.getFileName());
+              "DATASET_CREATED",
+              "Dataset",
+              saved.getId(),
+              "Dataset " + saved.getDatasetName() + " created from file: " + sourceFile.getFileName());
 
       return saved;
     } catch (Exception ex) {
@@ -209,10 +221,10 @@ public class DatasetService {
       log.info("Dataset created successfully: {} ({})", saved.getDatasetName(), saved.getId());
 
       auditLogService.logAction(
-          "DATASET_CREATED",
-          "Dataset",
-          saved.getId(),
-          "Dataset " + saved.getDatasetName() + " created");
+              "DATASET_CREATED",
+              "Dataset",
+              saved.getId(),
+              "Dataset " + saved.getDatasetName() + " created");
 
       return saved;
     } catch (Exception ex) {
@@ -226,13 +238,13 @@ public class DatasetService {
     try {
       String datasetName = sourceFile.getFileName().replaceAll("\\.[^.]+$", "");
       Dataset dataset =
-          Dataset.builder()
-              .datasetName(datasetName)
-              .rowCount(0)
-              .columnCount(0)
-              .isCleaned(false)
-              .sourceFile(sourceFile)
-              .build();
+              Dataset.builder()
+                      .datasetName(datasetName)
+                      .rowCount(0)
+                      .columnCount(0)
+                      .isCleaned(false)
+                      .sourceFile(sourceFile)
+                      .build();
 
       Dataset saved = datasetRepository.save(dataset);
       log.info("Dataset created from file: {} ({})", saved.getDatasetName(), saved.getId());
@@ -293,7 +305,7 @@ public class DatasetService {
       log.info("Dataset name updated: {} ({})", updated.getDatasetName(), updated.getId());
 
       auditLogService.logAction(
-          "DATASET_NAME_UPDATED", "Dataset", datasetId, "Dataset name updated to: " + datasetName);
+              "DATASET_NAME_UPDATED", "Dataset", datasetId, "Dataset name updated to: " + datasetName);
 
       return datasetMapper.toResponse(updated);
     } catch (Exception ex) {
@@ -317,10 +329,10 @@ public class DatasetService {
       log.info("Dataset marked as cleaned: {} ({})", updated.getDatasetName(), updated.getId());
 
       auditLogService.logAction(
-          "DATASET_CLEANED",
-          "Dataset",
-          datasetId,
-          "Dataset " + dataset.getDatasetName() + " marked as cleaned");
+              "DATASET_CLEANED",
+              "Dataset",
+              datasetId,
+              "Dataset " + dataset.getDatasetName() + " marked as cleaned");
 
       return datasetMapper.toResponse(updated);
     } catch (Exception ex) {
@@ -344,10 +356,10 @@ public class DatasetService {
       log.info("Dataset marked as uncleaned: {} ({})", updated.getDatasetName(), updated.getId());
 
       auditLogService.logAction(
-          "DATASET_UNCLEANED",
-          "Dataset",
-          datasetId,
-          "Dataset " + dataset.getDatasetName() + " marked as uncleaned");
+              "DATASET_UNCLEANED",
+              "Dataset",
+              datasetId,
+              "Dataset " + dataset.getDatasetName() + " marked as uncleaned");
 
       return datasetMapper.toResponse(updated);
     } catch (Exception ex) {
@@ -381,13 +393,13 @@ public class DatasetService {
 
     try {
       datasetRepository.delete(dataset);
-      log.info("Dataset  deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
+      log.info("Dataset deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
 
       auditLogService.logAction(
-          "DATASET_DELETED",
-          "Dataset",
-          datasetId,
-          "Dataset " + dataset.getDatasetName() + " deleted");
+              "DATASET_DELETED",
+              "Dataset",
+              datasetId,
+              "Dataset " + dataset.getDatasetName() + " deleted");
     } catch (Exception ex) {
       log.error("Error deleting dataset: {}", ex.getMessage(), ex);
       throw new DatabaseException("Failed to delete dataset", ex);
@@ -403,10 +415,10 @@ public class DatasetService {
       log.info("Dataset deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
 
       auditLogService.logAction(
-          "DATASET_DELETED",
-          "Dataset",
-          datasetId,
-          "Dataset " + dataset.getDatasetName() + " deleted by " + userId);
+              "DATASET_DELETED",
+              "Dataset",
+              datasetId,
+              "Dataset " + dataset.getDatasetName() + " deleted by " + userId);
     } catch (Exception ex) {
       log.error("Error deleting dataset: {}", ex.getMessage(), ex);
       throw new DatabaseException("Failed to delete dataset", ex);
@@ -431,7 +443,7 @@ public class DatasetService {
   public void deleteDatasetsByProject(UUID projectId) {
     try {
       List<Dataset> datasets =
-          datasetRepository.findBySourceFileProjectIdOrderByCreatedAtDesc(projectId);
+              datasetRepository.findBySourceFileProjectIdOrderByCreatedAtDesc(projectId);
       if (!datasets.isEmpty()) {
         datasetRepository.deleteAll(datasets);
         log.info("Deleted {} datasets for project: {}", datasets.size(), projectId);
@@ -443,10 +455,26 @@ public class DatasetService {
   }
 
   public Page<DatasetResponse> searchProjectDatasets(
-      UUID projectId, String searchTerm, Pageable pageable) {
+          String projectId, String searchTerm, Pageable pageable) {
+    UUID projectUuid = resolveProjectIdOrNull(projectId);
+    if (projectUuid == null) {
+      return searchAllDatasets(searchTerm, pageable);
+    }
     try {
       Page<Dataset> datasets =
-          datasetRepository.searchProjectDatasets(projectId, searchTerm, pageable);
+              datasetRepository.searchProjectDatasets(projectUuid, searchTerm, pageable);
+      return datasets.map(datasetMapper::toResponse);
+    } catch (Exception ex) {
+      log.error("Error searching project datasets: {}", ex.getMessage(), ex);
+      throw new DatabaseException("Failed to search project datasets", ex);
+    }
+  }
+
+  public Page<DatasetResponse> searchProjectDatasets(
+          UUID projectId, String searchTerm, Pageable pageable) {
+    try {
+      Page<Dataset> datasets =
+              datasetRepository.searchProjectDatasets(projectId, searchTerm, pageable);
       return datasets.map(datasetMapper::toResponse);
     } catch (Exception ex) {
       log.error("Error searching project datasets: {}", ex.getMessage(), ex);
@@ -592,12 +620,23 @@ public class DatasetService {
   }
 
   public List<DatasetResponse> getRecentDatasets(int limit) {
-    List<Dataset> datasets = datasetRepository.findRecentDatasets(limit);
+    List<Dataset> datasets = datasetRepository.findRecentDatasets(Pageable.ofSize(limit));
+    return datasets.stream().map(datasetMapper::toResponse).toList();
+  }
+
+  public List<DatasetResponse> getRecentDatasetsByProject(String projectId, int limit) {
+    UUID projectUuid = resolveProjectIdOrNull(projectId);
+    if (projectUuid == null) {
+      return getRecentDatasets(limit);
+    }
+    List<Dataset> datasets =
+            datasetRepository.findRecentDatasetsByProjectId(projectUuid, Pageable.ofSize(limit));
     return datasets.stream().map(datasetMapper::toResponse).toList();
   }
 
   public List<DatasetResponse> getRecentDatasetsByProject(UUID projectId, int limit) {
-    List<Dataset> datasets = datasetRepository.findRecentDatasetsByProjectId(projectId, limit);
+    List<Dataset> datasets =
+            datasetRepository.findRecentDatasetsByProjectId(projectId, Pageable.ofSize(limit));
     return datasets.stream().map(datasetMapper::toResponse).toList();
   }
 
@@ -617,7 +656,7 @@ public class DatasetService {
   }
 
   public Map<String, Object> getDatasetData(
-      UUID datasetId, Pageable pageable, String sort, String filter, String version) {
+          UUID datasetId, Pageable pageable, String sort, String filter, String version) {
     Map<String, Object> result = new HashMap<>();
     Dataset dataset = getDatasetEntityById(datasetId);
     result.put("datasetId", datasetId);
@@ -663,6 +702,17 @@ public class DatasetService {
     } catch (Exception ex) {
       log.error("Error cleaning up old datasets: {}", ex.getMessage(), ex);
       throw new DatabaseException("Failed to cleanup old datasets", ex);
+    }
+  }
+
+  private UUID resolveProjectIdOrNull(String projectId) {
+    if (projectId == null || projectId.isBlank() || ALL_PROJECTS.equalsIgnoreCase(projectId)) {
+      return null;
+    }
+    try {
+      return UUID.fromString(projectId);
+    } catch (IllegalArgumentException ex) {
+      throw new IllegalArgumentException("Invalid projectId: " + projectId, ex);
     }
   }
 }
