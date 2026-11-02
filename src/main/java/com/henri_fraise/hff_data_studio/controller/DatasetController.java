@@ -38,42 +38,43 @@ public class DatasetController {
   @GetMapping("/{datasetId}/data")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<Map<String, Object>> getDatasetData(
-      @PathVariable UUID datasetId,
-      @PageableDefault(size = 50) Pageable pageable,
-      @RequestParam(required = false) String sort,
-      @RequestParam(required = false) String filter,
-      @RequestParam(defaultValue = "CLEANED") String version) {
+          @PathVariable UUID datasetId,
+          @PageableDefault(size = 50) Pageable pageable,
+          @RequestParam(required = false) String sort,
+          @RequestParam(required = false) String filter,
+          @RequestParam(defaultValue = "CLEANED") String version) {
     return ResponseEntity.ok(
-        datasetService.getDatasetData(datasetId, pageable, sort, filter, version));
+            datasetService.getDatasetData(datasetId, pageable, sort, filter, version));
   }
 
   @GetMapping("/{datasetId}/columns")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<List<DatasetColumnResponse>> getDatasetColumns(
-      @PathVariable UUID datasetId) {
+          @PathVariable UUID datasetId) {
     return ResponseEntity.ok(datasetService.getDatasetColumns(datasetId));
   }
 
   @GetMapping("/{datasetId}/columns/{columnId}")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<DatasetColumnResponse> getColumnById(
-      @PathVariable UUID datasetId, @PathVariable UUID columnId) {
+          @PathVariable UUID datasetId, @PathVariable UUID columnId) {
     return ResponseEntity.ok(datasetService.getColumnById(datasetId, columnId));
   }
 
   @PutMapping("/{datasetId}/columns/{columnId}")
   @PreAuthorize("hasAuthority('CLEANING_RULE_UPDATE')")
   public ResponseEntity<DatasetColumnResponse> updateColumn(
-      @PathVariable UUID datasetId,
-      @PathVariable UUID columnId,
-      @Valid @RequestBody DatasetColumnUpdateRequest request) {
+          @PathVariable UUID datasetId,
+          @PathVariable UUID columnId,
+          @Valid @RequestBody DatasetColumnUpdateRequest request) {
     return ResponseEntity.ok(datasetService.updateColumn(datasetId, columnId, request));
   }
 
   @GetMapping("/project/{projectId}")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<PageResponse<DatasetResponse>> getDatasetsByProject(
-      @PathVariable UUID projectId, @PageableDefault(size = 20) Pageable pageable) {
+		  @PathVariable String projectId,
+          @PageableDefault(size = 20) Pageable pageable) {
     Page<DatasetResponse> datasets = datasetService.getDatasetsByProject(projectId, pageable);
     return ResponseEntity.ok(pageMapper.toPageResponse(datasets, dataset -> dataset));
   }
@@ -81,7 +82,7 @@ public class DatasetController {
   @GetMapping("/file/{fileId}")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<PageResponse<DatasetResponse>> getDatasetsByFile(
-      @PathVariable UUID fileId, @PageableDefault(size = 20) Pageable pageable) {
+          @PathVariable UUID fileId, @PageableDefault(size = 20) Pageable pageable) {
     Page<DatasetResponse> datasets = datasetService.getDatasetsByFile(fileId, pageable);
     return ResponseEntity.ok(pageMapper.toPageResponse(datasets, dataset -> dataset));
   }
@@ -89,7 +90,7 @@ public class DatasetController {
   @GetMapping("/search")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<PageResponse<DatasetResponse>> searchDatasets(
-      @RequestParam String searchTerm, @PageableDefault(size = 20) Pageable pageable) {
+          @RequestParam String searchTerm, @PageableDefault(size = 20) Pageable pageable) {
     Page<DatasetResponse> datasets = datasetService.searchAllDatasets(searchTerm, pageable);
     return ResponseEntity.ok(pageMapper.toPageResponse(datasets, dataset -> dataset));
   }
@@ -97,11 +98,11 @@ public class DatasetController {
   @GetMapping("/project/{projectId}/search")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<PageResponse<DatasetResponse>> searchProjectDatasets(
-      @PathVariable UUID projectId,
-      @RequestParam String searchTerm,
-      @PageableDefault(size = 20) Pageable pageable) {
+          @PathVariable("projectId") String projectId,
+          @RequestParam String searchTerm,
+          @PageableDefault(size = 20) Pageable pageable) {
     Page<DatasetResponse> datasets =
-        datasetService.searchProjectDatasets(projectId, searchTerm, pageable);
+            datasetService.searchProjectDatasets(projectId, searchTerm, pageable);
     return ResponseEntity.ok(pageMapper.toPageResponse(datasets, dataset -> dataset));
   }
 
@@ -120,7 +121,7 @@ public class DatasetController {
   @GetMapping("/cleaned")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<PageResponse<DatasetResponse>> getCleanedDatasets(
-      @PageableDefault(size = 20) Pageable pageable) {
+          @PageableDefault(size = 20) Pageable pageable) {
     Page<DatasetResponse> datasets = datasetService.getCleanedDatasets(pageable);
     return ResponseEntity.ok(pageMapper.toPageResponse(datasets, dataset -> dataset));
   }
@@ -128,7 +129,7 @@ public class DatasetController {
   @GetMapping("/uncleaned")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<PageResponse<DatasetResponse>> getUncleanedDatasets(
-      @PageableDefault(size = 20) Pageable pageable) {
+          @PageableDefault(size = 20) Pageable pageable) {
     Page<DatasetResponse> datasets = datasetService.getUncleanedDatasets(pageable);
     return ResponseEntity.ok(pageMapper.toPageResponse(datasets, dataset -> dataset));
   }
@@ -156,30 +157,31 @@ public class DatasetController {
   @PatchMapping("/{datasetId}/name")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<DatasetResponse> updateDatasetName(
-      @PathVariable UUID datasetId, @RequestParam String datasetName) {
+          @PathVariable UUID datasetId, @RequestParam String datasetName) {
     return ResponseEntity.ok(datasetService.updateDatasetName(datasetId, datasetName));
   }
 
   @PatchMapping("/{datasetId}/stats")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<DatasetResponse> updateDatasetStats(
-      @PathVariable UUID datasetId,
-      @RequestParam(required = false) Integer rowCount,
-      @RequestParam(required = false) Integer columnCount) {
+          @PathVariable UUID datasetId,
+          @RequestParam(required = false) Integer rowCount,
+          @RequestParam(required = false) Integer columnCount) {
     return ResponseEntity.ok(datasetService.updateDatasetStats(datasetId, rowCount, columnCount));
   }
 
   @GetMapping("/recent")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<List<DatasetResponse>> getRecentDatasets(
-      @RequestParam(defaultValue = "10") int limit) {
+          @RequestParam(defaultValue = "10") int limit) {
     return ResponseEntity.ok(datasetService.getRecentDatasets(limit));
   }
 
   @GetMapping("/project/{projectId}/recent")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<List<DatasetResponse>> getRecentDatasetsByProject(
-      @PathVariable UUID projectId, @RequestParam(defaultValue = "10") int limit) {
+          @PathVariable("projectId") String projectId,
+          @RequestParam(defaultValue = "10") int limit) {
     return ResponseEntity.ok(datasetService.getRecentDatasetsByProject(projectId, limit));
   }
 }
