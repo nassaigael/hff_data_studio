@@ -2,21 +2,21 @@ package com.henri_fraise.hff_data_studio.repository.projection;
 
 public interface DatasetStatsProjection {
 
-	Long getTotalDatasets();
+    Long getTotalDatasets();
 
-	Long getTotalRows();
+    Long getTotalRows();
 
-	Long getTotalColumns();
+    Long getTotalColumns();
 
-	Long getCleanedDatasets();
+    Long getCleanedDatasets();
 
-	Long getUncleanedDatasets();
+    Long getUncleanedDatasets();
 
-	Double getAvgQualityScore();
+    Double getAvgQualityScore();
 
-	Long getNewDatasetsLast30Days();
+    Long getNewDatasetsLastMonth();
 
-	Long getTotalAnalysesRun();
+    Long getTotalAnalysesRun();
 
-	Long getTotalExports();
+    Long getTotalExports();
 }
