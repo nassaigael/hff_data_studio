@@ -1036,4 +1036,22 @@ public class DatasetService {
 			default -> "";
 		};
 	}
+
+	public record DatasetFileInfo(String storagePath, FileType fileType) {}
+
+	@Transactional(readOnly = true)
+	public DatasetFileInfo getFileInfo(UUID datasetId) {
+		Dataset dataset =
+				datasetRepository
+						.findById(datasetId)
+						.orElseThrow(
+								() -> new ResourceNotFoundException("Dataset not found with id: " + datasetId));
+
+		SourceFile sourceFile = dataset.getSourceFile();
+		if (sourceFile == null) {
+			throw new ResourceNotFoundException("Source file missing for dataset: " + datasetId);
+		}
+
+		return new DatasetFileInfo(sourceFile.getStoragePath(), sourceFile.getFileType());
+	}
 }
