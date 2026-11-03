@@ -130,7 +130,7 @@ public class FileService {
   }
 
   private boolean isValidExtension(String extension) {
-    return List.of("csv", "xlsx", "xls", "sql", "txt").contains(extension);
+    return List.of("csv", "xlsx", "xls", "json", "sql", "txt").contains(extension);
   }
 
   private FileType detectFileType(String fileType, String extension) {
@@ -145,6 +145,8 @@ public class FileService {
     return switch (extension.toLowerCase()) {
       case "xlsx", "xls" -> FileType.EXCEL;
       case "sql" -> FileType.SQL;
+      case "json" -> FileType.JSON;
+      case "csv" -> FileType.CSV;
       default -> FileType.CSV;
     };
   }
@@ -318,6 +320,7 @@ public class FileService {
     return switch (fileType) {
       case CSV -> "text/csv";
       case EXCEL -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      case JSON -> "application/json";
       case SQL -> "text/plain";
       default -> "application/octet-stream";
     };
