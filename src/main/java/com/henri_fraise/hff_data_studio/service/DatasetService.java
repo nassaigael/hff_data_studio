@@ -1,5 +1,7 @@
 package com.henri_fraise.hff_data_studio.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.henri_fraise.hff_data_studio.dto.request.DatasetColumnUpdateRequest;
 import com.henri_fraise.hff_data_studio.dto.response.DatasetColumnResponse;
 import com.henri_fraise.hff_data_studio.dto.response.DatasetResponse;
@@ -22,8 +24,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DatasetService {
 
 	private static final String ALL_PROJECTS = "all";
+	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
 	private final DatasetRepository datasetRepository;
 	private final DatasetColumnRepository datasetColumnRepository;
@@ -51,6 +56,7 @@ public class DatasetService {
 	private final DatasetMapper datasetMapper;
 	private final DatasetColumnMapper datasetColumnMapper;
 	private final AuditLogService auditLogService;
+	private final DatasetTypeInferenceService typeInferenceService;
 
 	public Dataset getDatasetEntityById(UUID datasetId) {
 		return datasetRepository
@@ -267,6 +273,10 @@ public class DatasetService {
 					dims[0],
 					dims[1],
 					saved.getId());
+
+			typeInferenceService.inferAndSaveColumns(
+					saved, sourceFile.getStoragePath(), sourceFile.getFileType());
+
 			return saved;
 		} catch (Exception ex) {
 			log.error("Error creating dataset from file: {}", ex.getMessage(), ex);
@@ -744,6 +754,10 @@ public class DatasetService {
 			return countExcelRowsAndColumns(storagePath);
 		}
 
+		if (fileType == FileType.JSON) {
+			return countJsonDimensions(storagePath);
+		}
+
 		try {
 			Path path = Paths.get(storagePath);
 			if (!Files.exists(path)) {
@@ -773,9 +787,6 @@ public class DatasetService {
 									.count();
 					int columns = countSqlColumns(lines);
 					yield new int[] {(int) inserts, columns};
-				}
-				case JSON -> {
-					yield new int[] {1, countJsonKeys(lines)};
 				}
 				default -> {
 					yield new int[] {lines.size(), 1};
@@ -838,11 +849,47 @@ public class DatasetService {
 		return Math.max(columns, 1);
 	}
 
-	private int countJsonKeys(List<String> lines) {
-		return (int)
-				lines.stream()
-						.filter(line -> line.trim().matches("^\"[^\"]+\"\\s*:.*$"))
-						.count();
+	private int[] countJsonDimensions(String storagePath) {
+		try {
+			Path path = Paths.get(storagePath);
+			if (!Files.exists(path)) {
+				log.warn("Storage file not found: {}", storagePath);
+				return new int[] {0, 0};
+			}
+
+			String content = Files.readString(path, StandardCharsets.UTF_8).trim();
+			if (content.isEmpty()) {
+				return new int[] {0, 0};
+			}
+
+			JsonNode root = JSON_MAPPER.readTree(content);
+
+			if (root.isArray()) {
+				if (root.isEmpty()) {
+					return new int[] {0, 0};
+				}
+
+				int rows = root.size();
+				Set<String> keys = new LinkedHashSet<>();
+
+				for (JsonNode node : root) {
+					if (node.isObject()) {
+						node.fieldNames().forEachRemaining(keys::add);
+					}
+				}
+
+				return new int[] {rows, keys.size()};
+			}
+
+			if (root.isObject()) {
+				return new int[] {1, root.size()};
+			}
+
+			return new int[] {0, 0};
+		} catch (Exception ex) {
+			log.warn("Cannot parse JSON for row/column count: {}", storagePath, ex);
+			return new int[] {0, 0};
+		}
 	}
 
 	private int[] countExcelRowsAndColumns(String storagePath) {
@@ -860,8 +907,6 @@ public class DatasetService {
 					return new int[] {0, 0};
 				}
 
-				log.info("Excel file '{}' contains {} sheet(s)", storagePath, sheetCount);
-
 				int bestRows = 0;
 				int bestCols = 0;
 				String bestSheetName = null;
@@ -872,14 +917,11 @@ public class DatasetService {
 					int lastRow = sheet.getLastRowNum();
 
 					if (lastRow < 1) {
-						log.debug("Excel sheet '{}' (index {}) ignored: lastRow={}", sheetName, s, lastRow);
 						continue;
 					}
 
 					int cols = countExcelColumns(sheet, lastRow);
 					int rows = countExcelDataRows(sheet, lastRow);
-
-					log.info("Excel sheet '{}' (index {}): {} rows, {} columns", sheetName, s, rows, cols);
 
 					if (rows > bestRows) {
 						bestRows = rows;
@@ -923,7 +965,9 @@ public class DatasetService {
 
 		for (int r = 1; r <= lastRow; r++) {
 			Row row = sheet.getRow(r);
-			if (row == null || isExcelRowEmpty(row)) continue;
+			if (row == null || isExcelRowEmpty(row)) {
+				continue;
+			}
 			int lastCell = row.getLastCellNum();
 			if (lastCell > 0) {
 				maxCols = Math.max(maxCols, lastCell);
@@ -950,9 +994,13 @@ public class DatasetService {
 
 		for (int c = 0; c < row.getLastCellNum(); c++) {
 			Cell cell = row.getCell(c);
-			if (cell == null) continue;
+			if (cell == null) {
+				continue;
+			}
 			String value = getCellValueAsString(cell);
-			if (value.isBlank()) continue;
+			if (value.isBlank()) {
+				continue;
+			}
 			nonEmptyCells++;
 			if (firstText == null) {
 				firstText = value;
