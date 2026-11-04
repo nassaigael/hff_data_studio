@@ -4,19 +4,28 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.henri_fraise.hff_data_studio.dto.response.DatasetRowsResponse;
 import com.henri_fraise.hff_data_studio.enums.FileType;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.poi.ss.usermodel.*;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -24,30 +33,49 @@ public class DatasetRowReaderService {
 
 	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-	public DatasetRowsResponse readRows(
-			String storagePath, FileType fileType, int page, int size) {
-
+	public DatasetRowsResponse readRows(String storagePath, FileType fileType, int page, int size) {
 		if (storagePath == null || fileType == null) {
 			return emptyResponse(page, size);
 		}
 
 		try {
-			return switch (fileType) {
-				case CSV -> readCsv(storagePath, page, size);
-				case JSON -> readJson(storagePath, page, size);
-				case EXCEL, XLSX -> readExcel(storagePath, page, size);
-				default -> emptyResponse(page, size);
-			};
+			LoadedRows loaded =
+					switch (fileType) {
+						case CSV -> loadCsv(storagePath);
+						case JSON -> loadJson(storagePath);
+						case EXCEL, XLSX -> loadExcel(storagePath);
+						default -> new LoadedRows(new ArrayList<>(), new ArrayList<>());
+					};
+			return paginate(loaded.columns(), loaded.rows(), page, size);
 		} catch (Exception ex) {
 			log.warn("Cannot read rows from {}: {}", storagePath, ex.getMessage());
 			return emptyResponse(page, size);
 		}
 	}
 
-	private DatasetRowsResponse readCsv(String storagePath, int page, int size) throws IOException {
+	public List<Map<String, Object>> readAllRows(String storagePath, FileType fileType) {
+		if (storagePath == null || fileType == null) {
+			return new ArrayList<>();
+		}
+		try {
+			return switch (fileType) {
+				case CSV -> loadCsv(storagePath).rows();
+				case JSON -> loadJson(storagePath).rows();
+				case EXCEL, XLSX -> loadExcel(storagePath).rows();
+				default -> new ArrayList<>();
+			};
+		} catch (Exception ex) {
+			log.error("Cannot read all rows from {}: {}", storagePath, ex.getMessage());
+			return new ArrayList<>();
+		}
+	}
+
+	private record LoadedRows(List<String> columns, List<Map<String, Object>> rows) {}
+
+	private LoadedRows loadCsv(String storagePath) throws IOException {
 		Path path = Paths.get(storagePath);
 		if (!Files.exists(path)) {
-			return emptyResponse(page, size);
+			return new LoadedRows(new ArrayList<>(), new ArrayList<>());
 		}
 
 		try (CSVParser parser =
@@ -57,109 +85,75 @@ public class DatasetRowReaderService {
 						     CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build())) {
 
 			List<String> columns = new ArrayList<>(parser.getHeaderNames());
-			List<Map<String, Object>> allRows = new ArrayList<>();
+			List<Map<String, Object>> rows = new ArrayList<>();
 
 			for (CSVRecord record : parser) {
 				Map<String, Object> row = new LinkedHashMap<>();
-				for (String col : columns) {
-					row.put(col, record.isMapped(col) ? record.get(col) : null);
+				for (String column : columns) {
+					row.put(column, record.isMapped(column) ? record.get(column) : null);
 				}
-				allRows.add(row);
+				rows.add(row);
 			}
-
-			return paginate(columns, allRows, page, size);
+			return new LoadedRows(columns, rows);
 		}
 	}
 
-	private DatasetRowsResponse readJson(String storagePath, int page, int size) throws IOException {
+	private LoadedRows loadJson(String storagePath) throws IOException {
 		Path path = Paths.get(storagePath);
 		if (!Files.exists(path)) {
-			return emptyResponse(page, size);
+			return new LoadedRows(new ArrayList<>(), new ArrayList<>());
 		}
 
 		String content = Files.readString(path, StandardCharsets.UTF_8).trim();
 		if (content.isEmpty()) {
-			return emptyResponse(page, size);
+			return new LoadedRows(new ArrayList<>(), new ArrayList<>());
 		}
 
 		JsonNode root = JSON_MAPPER.readTree(content);
-
-		if (root.isArray()) {
-			if (root.isEmpty()) {
-				return emptyResponse(page, size);
-			}
-
-			Set<String> keys = new LinkedHashSet<>();
-			for (JsonNode node : root) {
-				if (node.isObject()) {
-					node.fieldNames().forEachRemaining(keys::add);
-				}
-			}
-
-			List<String> columns = new ArrayList<>(keys);
-			List<Map<String, Object>> allRows = new ArrayList<>();
-
-			for (JsonNode node : root) {
-				Map<String, Object> row = new LinkedHashMap<>();
-				for (String col : columns) {
-					JsonNode value = node.get(col);
-					row.put(col, value == null || value.isNull() ? null : value.asText());
-				}
-				allRows.add(row);
-			}
-
-			return paginate(columns, allRows, page, size);
+		if (!root.isArray() || root.size() == 0) {
+			return new LoadedRows(new ArrayList<>(), new ArrayList<>());
 		}
 
-		if (root.isObject()) {
-			List<String> columns = new ArrayList<>();
+		Set<String> keySet = new LinkedHashSet<>();
+		for (JsonNode node : root) {
+			if (node.isObject()) {
+				node.fieldNames().forEachRemaining(keySet::add);
+			}
+		}
+		List<String> columns = new ArrayList<>(keySet);
+
+		List<Map<String, Object>> rows = new ArrayList<>();
+		for (JsonNode node : root) {
 			Map<String, Object> row = new LinkedHashMap<>();
-			root.fields()
-					.forEachRemaining(
-							entry -> {
-								columns.add(entry.getKey());
-								row.put(entry.getKey(), entry.getValue().asText());
-							});
-			return paginate(columns, List.of(row), page, size);
+			for (String column : columns) {
+				JsonNode value = node.get(column);
+				row.put(column, value == null || value.isNull() ? null : value.asText());
+			}
+			rows.add(row);
 		}
-
-		return emptyResponse(page, size);
+		return new LoadedRows(columns, rows);
 	}
 
-	private DatasetRowsResponse readExcel(String storagePath, int page, int size) throws IOException {
+	private LoadedRows loadExcel(String storagePath) throws IOException {
 		Path path = Paths.get(storagePath);
 		if (!Files.exists(path)) {
-			return emptyResponse(page, size);
+			return new LoadedRows(new ArrayList<>(), new ArrayList<>());
 		}
 
 		try (Workbook workbook = WorkbookFactory.create(path.toFile())) {
 			if (workbook.getNumberOfSheets() == 0) {
-				return emptyResponse(page, size);
+				return new LoadedRows(new ArrayList<>(), new ArrayList<>());
 			}
 
-			Sheet bestSheet = null;
-			int bestRowCount = 0;
-			for (int s = 0; s < workbook.getNumberOfSheets(); s++) {
-				Sheet sheet = workbook.getSheetAt(s);
-				int rowCount = sheet.getPhysicalNumberOfRows();
-				if (rowCount > bestRowCount) {
-					bestRowCount = rowCount;
-					bestSheet = sheet;
-				}
-			}
-
-			if (bestSheet == null) {
-				return emptyResponse(page, size);
-			}
-
-			Row headerRow = bestSheet.getRow(0);
+			Sheet sheet = workbook.getSheetAt(0);
+			Row headerRow = sheet.getRow(0);
 			if (headerRow == null) {
-				return emptyResponse(page, size);
+				return new LoadedRows(new ArrayList<>(), new ArrayList<>());
 			}
 
-			int colCount = headerRow.getLastCellNum();
-			List<String> columns = new ArrayList<>();
-			for (int c = 0; c < colCount; c++) {
+			int columnCount = headerRow.getLastCellNum();
+			List<String> columns = new ArrayList<>(columnCount);
+			for (int c = 0; c < columnCount; c++) {
 				Cell cell = headerRow.getCell(c);
 				String name = cell != null ? getCellValue(cell) : "";
 				if (name.isBlank()) {
@@ -168,27 +162,21 @@ public class DatasetRowReaderService {
 				columns.add(name);
 			}
 
-			List<Map<String, Object>> allRows = new ArrayList<>();
-			int lastRow = bestSheet.getLastRowNum();
-
+			List<Map<String, Object>> rows = new ArrayList<>();
+			int lastRow = sheet.getLastRowNum();
 			for (int r = 1; r <= lastRow; r++) {
-				Row row = bestSheet.getRow(r);
-				if (row == null) continue;
-
-				boolean isEmpty = true;
-				Map<String, Object> mapRow = new LinkedHashMap<>();
-				for (int c = 0; c < columns.size(); c++) {
+				Row row = sheet.getRow(r);
+				if (row == null) {
+					continue;
+				}
+				Map<String, Object> rowData = new LinkedHashMap<>();
+				for (int c = 0; c < columnCount; c++) {
 					Cell cell = row.getCell(c);
-					String value = cell != null ? getCellValue(cell) : null;
-					if (value != null && !value.isBlank()) isEmpty = false;
-					mapRow.put(columns.get(c), value);
+					rowData.put(columns.get(c), cell != null ? getCellValue(cell) : null);
 				}
-				if (!isEmpty) {
-					allRows.add(mapRow);
-				}
+				rows.add(rowData);
 			}
-
-			return paginate(columns, allRows, page, size);
+			return new LoadedRows(columns, rows);
 		}
 	}
 
@@ -201,12 +189,12 @@ public class DatasetRowReaderService {
 		int fromIndex = Math.min(safePage * safeSize, totalRows);
 		int toIndex = Math.min(fromIndex + safeSize, totalRows);
 
-		List<Map<String, Object>> pageRows = allRows.subList(fromIndex, toIndex);
+		List<Map<String, Object>> pageRows = new ArrayList<>(allRows.subList(fromIndex, toIndex));
 		int totalPages = (int) Math.ceil((double) totalRows / safeSize);
 
 		return DatasetRowsResponse.builder()
 				.columns(columns)
-				.rows(new ArrayList<>(pageRows))
+				.rows(pageRows)
 				.totalRows(totalRows)
 				.pageNumber(safePage)
 				.pageSize(safeSize)
@@ -218,8 +206,8 @@ public class DatasetRowReaderService {
 
 	private DatasetRowsResponse emptyResponse(int page, int size) {
 		return DatasetRowsResponse.builder()
-				.columns(List.of())
-				.rows(List.of())
+				.columns(new ArrayList<>())
+				.rows(new ArrayList<>())
 				.totalRows(0)
 				.pageNumber(page)
 				.pageSize(size)
@@ -233,7 +221,7 @@ public class DatasetRowReaderService {
 		return switch (cell.getCellType()) {
 			case STRING -> cell.getStringCellValue();
 			case NUMERIC -> {
-				if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
+				if (DateUtil.isCellDateFormatted(cell)) {
 					yield cell.getLocalDateTimeCellValue().toLocalDate().toString();
 				}
 				yield String.valueOf(cell.getNumericCellValue());
