@@ -20,10 +20,13 @@ import com.henri_fraise.hff_data_studio.mapper.CleaningRuleMapper;
 import com.henri_fraise.hff_data_studio.security.SecurityUtils;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +49,8 @@ public class CleaningService {
   private final CleaningHistoryMapper historyMapper;
   private final SecurityUtils securityUtils;
   private final AuditLogService auditLogService;
+  private final DatasetRowReaderService readerService;
+  private final DatasetRowWriterService writerService;
   private final ObjectMapper objectMapper;
 
   private final Map<UUID, CleaningProgress> progressMap = new ConcurrentHashMap<>();
@@ -65,10 +70,10 @@ public class CleaningService {
       log.info("Cleaning rule created: {} for column: {}", rule.getId(), columnId);
 
       auditLogService.logAction(
-          "CLEANING_RULE_CREATED",
-          "CleaningRule",
-          rule.getId(),
-          "Cleaning rule created for column: " + columnId);
+              "CLEANING_RULE_CREATED",
+              "CleaningRule",
+              rule.getId(),
+              "Cleaning rule created for column: " + columnId);
 
       return ruleMapper.toResponse(rule);
     } catch (Exception ex) {
@@ -83,7 +88,7 @@ public class CleaningService {
       log.info("Cleaning rule updated: {}", ruleId);
 
       auditLogService.logAction(
-          "CLEANING_RULE_UPDATED", "CleaningRule", ruleId, "Cleaning rule updated");
+              "CLEANING_RULE_UPDATED", "CleaningRule", ruleId, "Cleaning rule updated");
 
       return ruleMapper.toResponse(rule);
     } catch (Exception ex) {
@@ -98,7 +103,7 @@ public class CleaningService {
       log.info("Cleaning rule deleted: {}", ruleId);
 
       auditLogService.logAction(
-          "CLEANING_RULE_DELETED", "CleaningRule", ruleId, "Cleaning rule deleted");
+              "CLEANING_RULE_DELETED", "CleaningRule", ruleId, "Cleaning rule deleted");
     } catch (Exception ex) {
       log.error("Error deleting cleaning rule: {}", ex.getMessage(), ex);
       throw new DatabaseException("Failed to delete cleaning rule", ex);
@@ -129,6 +134,7 @@ public class CleaningService {
   public Map<String, Object> executeCleaning(UUID datasetId) {
     Dataset dataset = datasetService.getDatasetEntityById(datasetId);
     User user = userService.getUserEntityById(securityUtils.getCurrentUserId());
+    DatasetService.DatasetFileInfo fileInfo = datasetService.getFileInfo(datasetId);
 
     Map<String, Object> result = new HashMap<>();
     result.put("datasetId", datasetId);
@@ -154,6 +160,13 @@ public class CleaningService {
         return result;
       }
 
+      List<Map<String, Object>> allRows =
+              readerService.readAllRows(fileInfo.storagePath(), fileInfo.fileType());
+
+      List<DatasetColumn> dbColumns = datasetService.getDatasetColumnEntities(datasetId);
+      List<String> columnNames =
+              dbColumns.stream().map(DatasetColumn::getOriginalName).collect(Collectors.toList());
+
       int successCount = 0;
       int failureCount = 0;
       int totalAffectedRows = 0;
@@ -162,18 +175,18 @@ public class CleaningService {
       for (CleaningRule rule : rules) {
         try {
           long ruleStartTime = System.currentTimeMillis();
-          int affectedRows = applyRule(dataset, rule);
+          int affectedRows = applyRuleToMemory(allRows, columnNames, rule);
           long ruleDuration = System.currentTimeMillis() - ruleStartTime;
 
           CleaningHistory history =
-              historyService.createHistory(
-                  dataset,
-                  rule,
-                  user,
-                  CleaningHistoryStatus.SUCCESS,
-                  "Rule applied successfully",
-                  (int) ruleDuration,
-                  affectedRows);
+                  historyService.createHistory(
+                          dataset,
+                          rule,
+                          user,
+                          CleaningHistoryStatus.SUCCESS,
+                          "Rule applied successfully",
+                          (int) ruleDuration,
+                          affectedRows);
 
           successCount++;
           totalAffectedRows += affectedRows;
@@ -194,13 +207,13 @@ public class CleaningService {
           failureCount++;
 
           historyService.createHistory(
-              dataset,
-              rule,
-              user,
-              CleaningHistoryStatus.FAILURE,
-              "Error: " + e.getMessage(),
-              null,
-              0);
+                  dataset,
+                  rule,
+                  user,
+                  CleaningHistoryStatus.FAILURE,
+                  "Error: " + e.getMessage(),
+                  null,
+                  0);
 
           Map<String, Object> ruleResult = new HashMap<>();
           ruleResult.put("ruleId", rule.getId());
@@ -211,10 +224,13 @@ public class CleaningService {
         }
       }
 
-      long totalDuration = System.currentTimeMillis() - startTime;
+      writerService.writeRows(
+              fileInfo.storagePath(), fileInfo.fileType(), columnNames, allRows);
 
+      updateColumnsMetadata(allRows, dbColumns);
       datasetService.markAsCleaned(datasetId);
 
+      long totalDuration = System.currentTimeMillis() - startTime;
       String status = successCount == rules.size() ? "COMPLETED" : "PARTIAL_SUCCESS";
 
       result.put("status", status);
@@ -233,16 +249,16 @@ public class CleaningService {
       progress.setDurationMs(totalDuration);
 
       log.info(
-          "Cleaning pipeline completed for dataset: {} - {} rules applied, {} affected rows",
-          datasetId,
-          successCount,
-          totalAffectedRows);
+              "Cleaning pipeline completed for dataset: {} - {} rules applied, {} affected rows",
+              datasetId,
+              successCount,
+              totalAffectedRows);
 
       auditLogService.logAction(
-          "CLEANING_EXECUTED",
-          "Dataset",
-          datasetId,
-          "Cleaning executed with " + successCount + " success, " + failureCount + " failures");
+              "CLEANING_EXECUTED",
+              "Dataset",
+              datasetId,
+              "Cleaning executed with " + successCount + " success, " + failureCount + " failures");
 
       return result;
 
@@ -256,6 +272,218 @@ public class CleaningService {
     }
   }
 
+  private int applyRuleToMemory(
+          List<Map<String, Object>> rows, List<String> columns, CleaningRule rule) {
+    RuleType ruleType = rule.getRuleType();
+    String columnName = rule.getColumn().getOriginalName();
+    Map<String, Object> params = parseParams(rule.getParametersJson());
+
+    return switch (ruleType) {
+      case TRIM -> applyTrim(rows, columnName);
+      case NULL_IMPUTATION -> applyNullImputation(rows, columnName, params);
+      case TYPE_CONVERSION -> applyTypeConversion(rows, columnName, rule.getColumn(), params);
+      case DUPLICATE_REMOVAL -> applyDuplicateRemoval(rows, columns, params);
+      case REGEX_CLEANING -> applyRegexCleaning(rows, columnName, params);
+      case VALUE_CONSTRAINT -> applyValueConstraint(rows, columnName, params);
+    };
+  }
+
+  private int applyTypeConversion(
+          List<Map<String, Object>> rows,
+          String columnName,
+          DatasetColumn column,
+          Map<String, Object> params) {
+    String targetType = String.valueOf(params.getOrDefault("targetType", "STRING")).toUpperCase();
+    ColumnType resolved;
+    try {
+      resolved = ColumnType.valueOf(targetType);
+    } catch (IllegalArgumentException ex) {
+      resolved = ColumnType.STRING;
+    }
+
+    int affected = 0;
+    for (Map<String, Object> row : rows) {
+      Object value = row.get(columnName);
+      if (value == null || value.toString().isBlank()) {
+        continue;
+      }
+      try {
+        switch (resolved) {
+          case INTEGER -> row.put(columnName, Double.valueOf(value.toString()).intValue());
+          case FLOAT -> row.put(columnName, Double.valueOf(value.toString()));
+          case BOOLEAN -> {
+            String lower = value.toString().trim().toLowerCase();
+            if (!lower.equals("true")
+                    && !lower.equals("false")
+                    && !lower.equals("oui")
+                    && !lower.equals("non")) {
+              throw new IllegalArgumentException("not boolean");
+            }
+            row.put(columnName, lower.equals("true") || lower.equals("oui"));
+          }
+          case DATE, STRING -> row.put(columnName, value.toString());
+        }
+      } catch (Exception ex) {
+        row.put(columnName, null);
+        affected++;
+      }
+    }
+
+    column.setTargetType(resolved);
+    columnService.updateColumn(column.getId(), column);
+    return affected;
+  }
+
+  private int applyDuplicateRemoval(
+          List<Map<String, Object>> rows, List<String> columns, Map<String, Object> params) {
+    List<String> keyColumns = resolveKeyColumns(params, columns);
+    HashSet<String> seen = new HashSet<>();
+    Iterator<Map<String, Object>> iterator = rows.iterator();
+    int affected = 0;
+
+    while (iterator.hasNext()) {
+      Map<String, Object> row = iterator.next();
+      String key =
+              keyColumns.stream()
+                      .map(col -> String.valueOf(row.get(col)))
+                      .collect(Collectors.joining("|"));
+      if (!seen.add(key)) {
+        iterator.remove();
+        affected++;
+      }
+    }
+    return affected;
+  }
+
+  private int applyNullImputation(
+          List<Map<String, Object>> rows, String columnName, Map<String, Object> params) {
+    Object defaultValue = params.getOrDefault("defaultValue", "0");
+    String replacement = String.valueOf(defaultValue);
+    int affected = 0;
+
+    for (Map<String, Object> row : rows) {
+      Object value = row.get(columnName);
+      if (value == null || value.toString().isBlank()) {
+        row.put(columnName, replacement);
+        affected++;
+      }
+    }
+    return affected;
+  }
+
+  private int applyRegexCleaning(
+          List<Map<String, Object>> rows, String columnName, Map<String, Object> params) {
+    String pattern = (String) params.get("pattern");
+    if (pattern == null || pattern.isBlank()) {
+      return 0;
+    }
+    String replacement = String.valueOf(params.getOrDefault("replacement", ""));
+    java.util.regex.Pattern compiled = java.util.regex.Pattern.compile(pattern);
+    int affected = 0;
+
+    for (Map<String, Object> row : rows) {
+      Object value = row.get(columnName);
+      if (value != null) {
+        String original = value.toString();
+        String updated = compiled.matcher(original).replaceAll(replacement);
+        if (!updated.equals(original)) {
+          row.put(columnName, updated);
+          affected++;
+        }
+      }
+    }
+    return affected;
+  }
+
+  private int applyTrim(List<Map<String, Object>> rows, String columnName) {
+    int affected = 0;
+    for (Map<String, Object> row : rows) {
+      Object value = row.get(columnName);
+      if (value instanceof String str) {
+        String trimmed = str.trim();
+        if (!trimmed.equals(str)) {
+          row.put(columnName, trimmed);
+          affected++;
+        }
+      }
+    }
+    return affected;
+  }
+
+  private int applyValueConstraint(
+          List<Map<String, Object>> rows, String columnName, Map<String, Object> params) {
+    String constraint = (String) params.get("constraint");
+    Object value = params.get("value");
+    if (constraint == null || value == null) {
+      return 0;
+    }
+    String expected = value.toString();
+    int affected = 0;
+
+    for (Map<String, Object> row : rows) {
+      Object current = row.get(columnName);
+      if (current == null) {
+        continue;
+      }
+      boolean valid = validateConstraint(constraint, current.toString(), expected);
+      if (!valid) {
+        row.put(columnName, null);
+        affected++;
+      }
+    }
+    return affected;
+  }
+
+  private boolean validateConstraint(String constraint, String current, String expected) {
+    try {
+      return switch (constraint.toLowerCase()) {
+        case "gt" -> Double.parseDouble(current) > Double.parseDouble(expected);
+        case "gte" -> Double.parseDouble(current) >= Double.parseDouble(expected);
+        case "lt" -> Double.parseDouble(current) < Double.parseDouble(expected);
+        case "lte" -> Double.parseDouble(current) <= Double.parseDouble(expected);
+        case "equals" -> current.equals(expected);
+        case "not_equals" -> !current.equals(expected);
+        case "contains" -> current.contains(expected);
+        default -> true;
+      };
+    } catch (NumberFormatException ex) {
+      return false;
+    }
+  }
+
+  private List<String> resolveKeyColumns(Map<String, Object> params, List<String> columns) {
+    Object raw = params.get("keyColumns");
+    if (raw instanceof List<?> list) {
+      List<String> keys =
+              list.stream().filter(item -> item instanceof String).map(String.class::cast).toList();
+      if (!keys.isEmpty()) {
+        return keys;
+      }
+    }
+    return columns;
+  }
+
+  private void updateColumnsMetadata(List<Map<String, Object>> rows, List<DatasetColumn> dbColumns) {
+    for (DatasetColumn column : dbColumns) {
+      String name = column.getOriginalName();
+      int nullCount = 0;
+      HashSet<String> distinct = new HashSet<>();
+
+      for (Map<String, Object> row : rows) {
+        Object value = row.get(name);
+        if (value == null || value.toString().isBlank()) {
+          nullCount++;
+        } else {
+          distinct.add(value.toString());
+        }
+      }
+
+      column.setNullCount(nullCount);
+      column.setUniqueCount(distinct.size());
+      columnService.updateColumn(column.getId(), column);
+    }
+  }
+
   private Map<String, Object> parseParams(String paramsJson) {
     if (paramsJson == null || paramsJson.isEmpty()) {
       return new HashMap<>();
@@ -266,71 +494,6 @@ public class CleaningService {
       log.warn("Failed to parse params JSON: {}", e.getMessage());
       return new HashMap<>();
     }
-  }
-
-  private int applyRule(Dataset dataset, CleaningRule rule) {
-    RuleType ruleType = rule.getRuleType();
-    DatasetColumn column = rule.getColumn();
-    Map<String, Object> params = parseParams(rule.getParametersJson());
-
-    return switch (ruleType) {
-      case TYPE_CONVERSION -> applyTypeConversion(dataset, column, params);
-      case DUPLICATE_REMOVAL -> applyDuplicateRemoval(dataset, params);
-      case NULL_IMPUTATION -> applyNullImputation(dataset, column, params);
-      case REGEX_CLEANING -> applyRegexCleaning(dataset, column, params);
-      case TRIM -> applyTrim(dataset, column);
-      case VALUE_CONSTRAINT -> applyValueConstraint(dataset, column, params);
-    };
-  }
-
-  private int applyTypeConversion(
-      Dataset dataset, DatasetColumn column, Map<String, Object> params) {
-    String targetType = (String) params.getOrDefault("targetType", "STRING");
-    log.debug("Converting column {} to type: {}", column.getOriginalName(), targetType);
-    try {
-      column.setTargetType(ColumnType.valueOf(targetType.toUpperCase()));
-    } catch (IllegalArgumentException e) {
-      log.warn("Invalid target type: {}, using STRING", targetType);
-      column.setTargetType(ColumnType.STRING);
-    }
-    columnService.updateColumn(column.getId(), column);
-    return dataset.getRowCount();
-  }
-
-  private int applyDuplicateRemoval(Dataset dataset, Map<String, Object> params) {
-    List<String> keyColumns = (List<String>) params.getOrDefault("keyColumns", List.of());
-    log.debug("Removing duplicates based on columns: {}", keyColumns);
-    return 0;
-  }
-
-  private int applyNullImputation(
-      Dataset dataset, DatasetColumn column, Map<String, Object> params) {
-    String method = (String) params.getOrDefault("method", "MEAN");
-    Object defaultValue = params.get("defaultValue");
-    log.debug("Imputing nulls in column {} using method: {}", column.getOriginalName(), method);
-    return column.getNullCount();
-  }
-
-  private int applyRegexCleaning(
-      Dataset dataset, DatasetColumn column, Map<String, Object> params) {
-    String pattern = (String) params.get("pattern");
-    String replacement = (String) params.getOrDefault("replacement", "");
-    log.debug("Applying regex to column {}: {}", column.getOriginalName(), pattern);
-    return 0;
-  }
-
-  private int applyTrim(Dataset dataset, DatasetColumn column) {
-    log.debug("Trimming whitespace from column: {}", column.getOriginalName());
-    return 0;
-  }
-
-  private int applyValueConstraint(
-      Dataset dataset, DatasetColumn column, Map<String, Object> params) {
-    String constraint = (String) params.get("constraint");
-    Object value = params.get("value");
-    log.debug(
-        "Applying constraint {}: {} to column: {}", constraint, value, column.getOriginalName());
-    return 0;
   }
 
   public Map<String, Object> getCleaningProgress(UUID datasetId) {
@@ -373,11 +536,11 @@ public class CleaningService {
     long activeRules = ruleService.countActiveRulesByDataset(datasetId);
     long historyCount = historyService.countByDataset(datasetId);
     long successCount =
-        historyService.countByDatasetAndStatus(datasetId, CleaningHistoryStatus.SUCCESS);
+            historyService.countByDatasetAndStatus(datasetId, CleaningHistoryStatus.SUCCESS);
     long failureCount =
-        historyService.countByDatasetAndStatus(datasetId, CleaningHistoryStatus.FAILURE);
+            historyService.countByDatasetAndStatus(datasetId, CleaningHistoryStatus.FAILURE);
     long partialCount =
-        historyService.countByDatasetAndStatus(datasetId, CleaningHistoryStatus.PARTIAL_SUCCESS);
+            historyService.countByDatasetAndStatus(datasetId, CleaningHistoryStatus.PARTIAL_SUCCESS);
 
     stats.put("totalRules", totalRules);
     stats.put("activeRules", activeRules);
@@ -434,10 +597,10 @@ public class CleaningService {
       log.info("Cleaning reset for dataset: {}", datasetId);
 
       auditLogService.logAction(
-          "CLEANING_RESET",
-          "Dataset",
-          datasetId,
-          "Cleaning reset for dataset: " + dataset.getDatasetName());
+              "CLEANING_RESET",
+              "Dataset",
+              datasetId,
+              "Cleaning reset for dataset: " + dataset.getDatasetName());
     } catch (Exception ex) {
       log.error("Error resetting cleaning: {}", ex.getMessage(), ex);
       throw new DatabaseException("Failed to reset cleaning", ex);
@@ -488,7 +651,7 @@ public class CleaningService {
       stats.put("totalSuccess", historyService.countByStatus(CleaningHistoryStatus.SUCCESS));
       stats.put("totalFailures", historyService.countByStatus(CleaningHistoryStatus.FAILURE));
       stats.put(
-          "totalPartial", historyService.countByStatus(CleaningHistoryStatus.PARTIAL_SUCCESS));
+              "totalPartial", historyService.countByStatus(CleaningHistoryStatus.PARTIAL_SUCCESS));
       stats.put("totalPending", historyService.countByStatus(CleaningHistoryStatus.PENDING));
 
       long total = historyService.countAllOperations();
