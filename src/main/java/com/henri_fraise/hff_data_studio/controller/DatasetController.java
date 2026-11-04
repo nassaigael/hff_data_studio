@@ -1,9 +1,12 @@
 package com.henri_fraise.hff_data_studio.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.henri_fraise.hff_data_studio.dto.request.DatasetColumnUpdateRequest;
 import com.henri_fraise.hff_data_studio.dto.response.*;
+import com.henri_fraise.hff_data_studio.exception.DatabaseException;
 import com.henri_fraise.hff_data_studio.mapper.PageMapper;
 import com.henri_fraise.hff_data_studio.security.SecurityUtils;
+import com.henri_fraise.hff_data_studio.service.DataQualityClient;
 import com.henri_fraise.hff_data_studio.service.DatasetRowReaderService;
 import com.henri_fraise.hff_data_studio.service.DatasetService;
 import jakarta.validation.Valid;
@@ -17,9 +20,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/datasets")
@@ -30,6 +35,33 @@ public class DatasetController {
 	private final PageMapper pageMapper;
 	private final SecurityUtils securityUtils;
 	private final DatasetRowReaderService datasetRowReaderService;
+	private final DataQualityClient dataQualityClient;
+	private final ObjectMapper objectMapper;
+
+	@GetMapping("/{datasetId}/profiling")
+	@PreAuthorize("hasAuthority('FILE_VIEW')")
+	public ResponseEntity<List<ColumnProfileResponse>> getProfiling(@PathVariable UUID datasetId) {
+		DatasetService.DatasetFileInfo fileInfo = datasetService.getFileInfo(datasetId);
+		List<DatasetColumnResponse> columns = datasetService.getDatasetColumns(datasetId);
+
+		Map<String, String> typesMap =
+				columns.stream()
+						.collect(
+								Collectors.toMap(
+										DatasetColumnResponse::getOriginalName,
+										c -> c.getDetectedType().name()));
+
+		String columnTypesJson;
+		try {
+			columnTypesJson = objectMapper.writeValueAsString(typesMap);
+		} catch (Exception ex) {
+			throw new DatabaseException("Cannot serialize column types", ex);
+		}
+
+		List<ColumnProfileResponse> profiles =
+				dataQualityClient.profileAndSuggest(Paths.get(fileInfo.storagePath()), columnTypesJson);
+		return ResponseEntity.ok(profiles);
+	}
 
 	@GetMapping("/{datasetId}/rows")
 	@PreAuthorize("hasAuthority('FILE_VIEW')")
