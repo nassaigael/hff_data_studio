@@ -157,6 +157,15 @@ public class DatasetService {
 		}
 	}
 
+	public List<DatasetColumn> getDatasetColumnEntities(UUID datasetId) {
+		try {
+			return datasetColumnRepository.findByDatasetIdOrderByPositionAsc(datasetId);
+		} catch (Exception ex) {
+			log.error("Error retrieving dataset column entities: {}", ex.getMessage(), ex);
+			throw new DatabaseException("Failed to retrieve dataset column entities", ex);
+		}
+	}
+
 	public DatasetColumnResponse getColumnById(UUID datasetId, UUID columnId) {
 		try {
 			DatasetColumn column =
