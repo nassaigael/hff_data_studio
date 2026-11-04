@@ -17,6 +17,8 @@ import com.henri_fraise.hff_data_studio.mapper.DatasetMapper;
 import com.henri_fraise.hff_data_studio.repository.DatasetColumnRepository;
 import com.henri_fraise.hff_data_studio.repository.DatasetRepository;
 import com.henri_fraise.hff_data_studio.repository.custom.CustomDatasetRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -36,10 +38,15 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @Transactional(readOnly = true)
@@ -57,6 +64,13 @@ public class DatasetService {
 	private final DatasetColumnMapper datasetColumnMapper;
 	private final AuditLogService auditLogService;
 	private final DatasetTypeInferenceService typeInferenceService;
+	private final ObjectProvider<DatasetVersionService> datasetVersionServiceProvider;
+
+	@PersistenceContext
+	private EntityManager entityManager;
+
+	@Autowired
+	private PlatformTransactionManager transactionManager;
 
 	public Dataset getDatasetEntityById(UUID datasetId) {
 		return datasetRepository
@@ -286,6 +300,17 @@ public class DatasetService {
 			typeInferenceService.inferAndSaveColumns(
 					saved, sourceFile.getStoragePath(), sourceFile.getFileType());
 
+			try {
+				datasetVersionServiceProvider
+						.getObject()
+						.createInitialVersion(saved, sourceFile.getStoragePath());
+			} catch (Exception versionEx) {
+				log.warn(
+						"Failed to create initial DatasetVersion for {}: {}",
+						saved.getId(),
+						versionEx.getMessage());
+			}
+
 			return saved;
 		} catch (Exception ex) {
 			log.error("Error creating dataset from file: {}", ex.getMessage(), ex);
@@ -427,21 +452,7 @@ public class DatasetService {
 
 	@Transactional
 	public void deleteDataset(UUID datasetId) {
-		Dataset dataset = getDatasetEntityById(datasetId);
-
-		try {
-			datasetRepository.delete(dataset);
-			log.info("Dataset deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
-
-			auditLogService.logAction(
-					"DATASET_DELETED",
-					"Dataset",
-					datasetId,
-					"Dataset " + dataset.getDatasetName() + " deleted");
-		} catch (Exception ex) {
-			log.error("Error deleting dataset: {}", ex.getMessage(), ex);
-			throw new DatabaseException("Failed to delete dataset", ex);
-		}
+		deleteDataset(datasetId, null);
 	}
 
 	@Transactional
@@ -449,14 +460,17 @@ public class DatasetService {
 		Dataset dataset = getDatasetEntityById(datasetId);
 
 		try {
+			deleteDependentRows(datasetId);
+
 			datasetRepository.delete(dataset);
 			log.info("Dataset deleted successfully: {} ({})", dataset.getDatasetName(), datasetId);
 
-			auditLogService.logAction(
-					"DATASET_DELETED",
-					"Dataset",
-					datasetId,
-					"Dataset " + dataset.getDatasetName() + " deleted by " + userId);
+			String details =
+					userId != null
+							? "Dataset " + dataset.getDatasetName() + " deleted by " + userId
+							: "Dataset " + dataset.getDatasetName() + " deleted";
+
+			auditLogService.logAction("DATASET_DELETED", "Dataset", datasetId, details);
 		} catch (Exception ex) {
 			log.error("Error deleting dataset: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to delete dataset", ex);
@@ -468,6 +482,9 @@ public class DatasetService {
 		try {
 			List<Dataset> datasets = datasetRepository.findBySourceFileIdOrderByCreatedAtAsc(fileId);
 			if (!datasets.isEmpty()) {
+				for (Dataset d : datasets) {
+					deleteDependentRows(d.getId());
+				}
 				datasetRepository.deleteAll(datasets);
 				log.info("Deleted {} datasets for file: {}", datasets.size(), fileId);
 			}
@@ -483,12 +500,130 @@ public class DatasetService {
 			List<Dataset> datasets =
 					datasetRepository.findBySourceFileProjectIdOrderByCreatedAtDesc(projectId);
 			if (!datasets.isEmpty()) {
+				for (Dataset d : datasets) {
+					deleteDependentRows(d.getId());
+				}
 				datasetRepository.deleteAll(datasets);
 				log.info("Deleted {} datasets for project: {}", datasets.size(), projectId);
 			}
 		} catch (Exception ex) {
 			log.error("Error deleting datasets by project: {}", ex.getMessage(), ex);
 			throw new DatabaseException("Failed to delete datasets by project", ex);
+		}
+	}
+
+	private void deleteDependentRows(UUID datasetId) {
+		if (columnExists("export", "execution_id")) {
+			executeNativeDelete(
+					"DELETE FROM export WHERE execution_id IN "
+							+ "(SELECT execution_id FROM analysis_execution WHERE dataset_id = :id)",
+					datasetId);
+		}
+
+		if (columnExists("chart", "execution_id")) {
+			executeNativeDelete(
+					"DELETE FROM chart WHERE execution_id IN "
+							+ "(SELECT execution_id FROM analysis_execution WHERE dataset_id = :id)",
+					datasetId);
+		} else if (columnExists("chart", "result_id")) {
+			executeNativeDelete(
+					"DELETE FROM chart WHERE result_id IN "
+							+ "(SELECT result_id FROM analysis_result WHERE execution_id IN "
+							+ "(SELECT execution_id FROM analysis_execution WHERE dataset_id = :id))",
+					datasetId);
+		}
+
+		if (columnExists("analysis_result", "execution_id")) {
+			executeNativeDelete(
+					"DELETE FROM analysis_result WHERE execution_id IN "
+							+ "(SELECT execution_id FROM analysis_execution WHERE dataset_id = :id)",
+					datasetId);
+		}
+
+		if (columnExists("analysis_execution", "dataset_id")) {
+			executeNativeDelete("DELETE FROM analysis_execution WHERE dataset_id = :id", datasetId);
+		}
+
+		if (columnExists("scheduled_analysis", "dataset_id")) {
+			executeNativeDelete("DELETE FROM scheduled_analysis WHERE dataset_id = :id", datasetId);
+		}
+
+		if (columnExists("exploration_report", "dataset_id")) {
+			executeNativeDelete("DELETE FROM exploration_report WHERE dataset_id = :id", datasetId);
+		}
+
+		if (columnExists("cleaning_history", "dataset_id")) {
+			executeNativeDelete("DELETE FROM cleaning_history WHERE dataset_id = :id", datasetId);
+		}
+
+		if (columnExists("data_catalog_entry", "dataset_id")) {
+			executeNativeDelete("DELETE FROM data_catalog_entry WHERE dataset_id = :id", datasetId);
+		}
+
+		if (columnExists("cleaning_rule", "column_id") && columnExists("dataset_column", "dataset_id")) {
+			executeNativeDelete(
+					"DELETE FROM cleaning_rule WHERE column_id IN "
+							+ "(SELECT column_id FROM dataset_column WHERE dataset_id = :id)",
+					datasetId);
+		}
+
+		if (columnExists("dataset_version", "dataset_id")) {
+			executeNativeDelete("DELETE FROM dataset_version WHERE dataset_id = :id", datasetId);
+		}
+
+		if (columnExists("entity_tag", "entity_id")) {
+			executeNativeDelete("DELETE FROM entity_tag WHERE entity_id = :id", datasetId);
+		}
+
+		if (columnExists("comment", "entity_id")) {
+			executeNativeDelete("DELETE FROM comment WHERE entity_id = :id", datasetId);
+		}
+
+		if (columnExists("user_favorite", "entity_id")) {
+			executeNativeDelete("DELETE FROM user_favorite WHERE entity_id = :id", datasetId);
+		}
+
+		log.info("Deleted all dependent rows for dataset: {}", datasetId);
+	}
+
+	private boolean columnExists(String tableName, String columnName) {
+		try {
+			Object result =
+					entityManager
+							.createNativeQuery(
+									"SELECT COUNT(*) FROM information_schema.columns "
+											+ "WHERE table_schema = current_schema() "
+											+ "AND table_name = :table AND column_name = :column")
+							.setParameter("table", tableName)
+							.setParameter("column", columnName)
+							.getSingleResult();
+			return ((Number) result).longValue() > 0;
+		} catch (Exception ex) {
+			return false;
+		}
+	}
+
+	private void executeNativeDelete(String sql, UUID datasetId) {
+		TransactionTemplate tx = new TransactionTemplate(transactionManager);
+		tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+		try {
+			tx.executeWithoutResult(
+					status -> {
+						int count =
+								entityManager
+										.createNativeQuery(sql)
+										.setParameter("id", datasetId)
+										.executeUpdate();
+						if (count > 0) {
+							log.debug("Deleted {} rows: {}", count, sql.substring(0, Math.min(80, sql.length())));
+						}
+					});
+		} catch (Exception ex) {
+			log.debug(
+					"Skip delete ({}): {}",
+					sql.substring(0, Math.min(80, sql.length())),
+					ex.getMessage());
 		}
 	}
 
@@ -721,6 +856,9 @@ public class DatasetService {
 	@Transactional
 	public void deleteAll(List<Dataset> datasets) {
 		try {
+			for (Dataset d : datasets) {
+				deleteDependentRows(d.getId());
+			}
 			datasetRepository.deleteAll(datasets);
 			log.info("Deleted {} datasets", datasets.size());
 		} catch (Exception ex) {
@@ -734,6 +872,9 @@ public class DatasetService {
 		try {
 			List<Dataset> oldDatasets = datasetRepository.findByCreatedAtBefore(thresholdDate);
 			if (!oldDatasets.isEmpty()) {
+				for (Dataset d : oldDatasets) {
+					deleteDependentRows(d.getId());
+				}
 				datasetRepository.deleteAll(oldDatasets);
 				log.info("Cleaned up {} old datasets", oldDatasets.size());
 			}
