@@ -20,8 +20,9 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
 	long countByEntityTypeAndEntityIdAndIsDeletedFalse(String entityType, UUID entityId);
 
-	@Query("SELECT c FROM Comment c WHERE c.entityType = :type AND c.entityId = :id " +
-			"AND c.isDeleted = false ORDER BY c.createdAt DESC")
+	@Query(
+			"SELECT c FROM Comment c WHERE c.entityType = :type AND c.entityId = :id "
+					+ "AND c.isDeleted = false ORDER BY c.createdAt DESC")
 	List<Comment> findAllActive(@Param("type") String entityType, @Param("id") UUID entityId);
 
 	long countByAuthorId(UUID authorId);

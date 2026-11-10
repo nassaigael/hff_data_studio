@@ -33,11 +33,11 @@ public class FileController {
   @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("hasAuthority('FILE_UPLOAD')")
   public ResponseEntity<SourceFileResponse> uploadFile(
-      @RequestParam("file") MultipartFile file,
-      @RequestParam("projectId") UUID projectId,
-      @RequestParam(value = "fileType", required = false) String fileType) {
+          @RequestParam("file") MultipartFile file,
+          @RequestParam("projectId") UUID projectId,
+          @RequestParam(value = "fileType", required = false) String fileType) {
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(fileService.uploadFile(file, projectId, fileType));
+            .body(fileService.uploadFile(file, projectId, fileType));
   }
 
   @GetMapping("/{fileId}")
@@ -55,14 +55,16 @@ public class FileController {
 
   @GetMapping("/project/{projectId}")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
-  public ResponseEntity<List<SourceFileResponse>> getFilesByProject(@PathVariable UUID projectId) {
+  public ResponseEntity<List<SourceFileResponse>> getFilesByProject(
+		  @PathVariable String projectId) {
     return ResponseEntity.ok(fileService.getFilesByProject(projectId));
   }
 
   @GetMapping("/project/{projectId}/page")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<PageResponse<SourceFileResponse>> getFilesByProjectPaged(
-      @PathVariable UUID projectId, @PageableDefault(size = 20) Pageable pageable) {
+		  @PathVariable String projectId,
+          @PageableDefault(size = 20) Pageable pageable) {
     Page<SourceFileResponse> files = fileService.getFilesByProject(projectId, pageable);
     return ResponseEntity.ok(pageMapper.toPageResponse(files, f -> f));
   }
@@ -82,7 +84,7 @@ public class FileController {
   @GetMapping("/{fileId}/preview")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<String> getFilePreview(
-      @PathVariable UUID fileId, @RequestParam(defaultValue = "10") int maxLines) {
+          @PathVariable UUID fileId, @RequestParam(defaultValue = "10") int maxLines) {
     return ResponseEntity.ok(fileService.getFileContentPreview(fileId, maxLines));
   }
 
@@ -95,21 +97,21 @@ public class FileController {
   @GetMapping("/status/{status}")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<List<SourceFileResponse>> getFilesByStatus(
-      @PathVariable FileProcessingStatus status) {
+          @PathVariable FileProcessingStatus status) {
     return ResponseEntity.ok(fileService.getFilesByStatus(status));
   }
 
   @PatchMapping("/{fileId}/status")
   @PreAuthorize("hasAuthority('FILE_UPLOAD')")
   public ResponseEntity<SourceFileResponse> updateFileStatus(
-      @PathVariable UUID fileId, @RequestParam FileProcessingStatus status) {
+          @PathVariable UUID fileId, @RequestParam FileProcessingStatus status) {
     return ResponseEntity.ok(fileMapper.toResponse(fileService.updateFileStatus(fileId, status)));
   }
 
   @GetMapping("/all")
   @PreAuthorize("hasAuthority('FILE_VIEW')")
   public ResponseEntity<PageResponse<SourceFileResponse>> getAllFiles(
-      @PageableDefault(size = 20) Pageable pageable) {
+          @PageableDefault(size = 20) Pageable pageable) {
     Page<SourceFileResponse> files = fileService.getAllFiles(pageable);
     return ResponseEntity.ok(pageMapper.toPageResponse(files, f -> f));
   }

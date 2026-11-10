@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 
 @Getter
 @Setter
@@ -43,4 +44,13 @@ public class Project {
 
   @OneToMany(mappedBy = "project")
   private List<SourceFile> sourceFiles;
+
+  @Formula("(SELECT COUNT(*) FROM source_file sf WHERE sf.project_id = project_id)")
+  private Long fileCount;
+
+  @Formula(
+          "(SELECT COUNT(*) FROM dataset d "
+                  + "JOIN source_file sf ON d.file_id = sf.file_id "
+                  + "WHERE sf.project_id = project_id)")
+  private Long datasetCount;
 }

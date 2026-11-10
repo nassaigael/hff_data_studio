@@ -1,23 +1,24 @@
 package com.henri_fraise.hff_data_studio.dto.request;
 
 import com.henri_fraise.hff_data_studio.enums.RuleType;
-import java.util.Map;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
-@Builder
-@AllArgsConstructor
+@Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class CleaningRuleRequest {
 
-  @NotNull(message = "Rule type is required")
+  @NotNull
   private RuleType ruleType;
 
-  private Map<String, Object> parametersJson;
+  @NotBlank
+  private String parametersJson;
 
   private Integer executionOrder;
 
-  @Builder.Default private Boolean isActive = true;
+  private Boolean isActive;
 }

@@ -21,10 +21,16 @@ public class DatasetVersionController {
 	@PostMapping
 	@PreAuthorize("hasAuthority('FILE_VIEW')")
 	public ResponseEntity<DatasetVersionResponse> create(
-			@PathVariable UUID datasetId,
-			@RequestParam(required = false) String label) {
+			@PathVariable UUID datasetId, @RequestParam(required = false) String label) {
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(versionService.createVersion(datasetId, label));
+	}
+
+	@PostMapping("/{versionId}/restore")
+	@PreAuthorize("hasAuthority('FILE_VIEW')")
+	public ResponseEntity<DatasetVersionResponse> restore(
+			@PathVariable UUID datasetId, @PathVariable UUID versionId) {
+		return ResponseEntity.ok(versionService.restoreVersion(datasetId, versionId));
 	}
 
 	@GetMapping

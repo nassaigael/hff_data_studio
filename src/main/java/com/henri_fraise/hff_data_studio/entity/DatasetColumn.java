@@ -31,6 +31,7 @@ public class DatasetColumn {
   private ColumnType detectedType;
 
   @Column(name = "target_type", nullable = false)
+  @Enumerated(EnumType.STRING)
   private ColumnType targetType;
 
   @Column(name = "position", nullable = false)

@@ -33,7 +33,7 @@ public class DataInitializer implements CommandLineRunner {
 
   private void initializePermissions() {
     if (permissionRepository.count() == 0) {
-      log.info("📝 Initializing default permissions...");
+      log.info("Initializing default permissions...");
 
       List<Permission> permissions =
           List.of(
@@ -41,7 +41,6 @@ public class DataInitializer implements CommandLineRunner {
               createPermission("FILE_VIEW", "Visualisation des fichiers", "Import"),
               createPermission("FILE_DELETE", "Suppression de fichiers", "Import"),
 
-              // Cleaning Module
               createPermission(
                   "CLEANING_RULE_CREATE", "Création de règles de nettoyage", "Cleaning"),
               createPermission(
@@ -51,20 +50,17 @@ public class DataInitializer implements CommandLineRunner {
               createPermission("CLEANING_EXECUTE", "Exécution du nettoyage", "Cleaning"),
               createPermission("CLEANING_VIEW", "Visualisation de l'historique", "Cleaning"),
 
-              // Analysis Module
               createPermission("ANALYSIS_RUN", "Lancement d'analyses", "Analysis"),
               createPermission("ANALYSIS_VIEW", "Visualisation des résultats", "Analysis"),
               createPermission("ANALYSIS_EXPORT", "Export des résultats", "Analysis"),
               createPermission(
                   "ANALYSIS_MODEL_SAVE", "Sauvegarde de modèles d'analyse", "Analysis"),
 
-              // Export Module
               createPermission("EXPORT_CSV", "Export au format CSV", "Export"),
               createPermission("EXPORT_EXCEL", "Export au format Excel", "Export"),
               createPermission("EXPORT_IMAGE", "Export au format image", "Export"),
               createPermission("EXPORT_ZIP", "Export au format ZIP", "Export"),
 
-              // Admin Module
               createPermission("USER_VIEW", "Visualisation des utilisateurs", "Admin"),
               createPermission("USER_MANAGE", "Gestion des utilisateurs", "Admin"),
               createPermission("CATEGORY_VIEW", "Visualisation des catégories", "Admin"),

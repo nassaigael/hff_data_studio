@@ -44,6 +44,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class FileService {
 
+  private static final String ALL_PROJECTS = "all";
+
   private final SourceFileRepository fileRepository;
   private final SourceFileMapper fileMapper;
   private final DatasetMapper datasetMapper;
@@ -77,23 +79,23 @@ public class FileService {
       FileType detectedType = detectFileType(fileType, extension);
 
       SourceFile sourceFile =
-          SourceFile.builder()
-              .fileName(originalFilename)
-              .fileType(detectedType)
-              .storagePath(storagePath.toString())
-              .sizeBytes(file.getSize())
-              .uploadedAt(LocalDateTime.now())
-              .processingStatus(FileProcessingStatus.RECEIVED)
-              .project(project)
-              .user(user)
-              .build();
+              SourceFile.builder()
+                      .fileName(originalFilename)
+                      .fileType(detectedType)
+                      .storagePath(storagePath.toString())
+                      .sizeBytes(file.getSize())
+                      .uploadedAt(LocalDateTime.now())
+                      .processingStatus(FileProcessingStatus.RECEIVED)
+                      .project(project)
+                      .user(user)
+                      .build();
 
       SourceFile saved = fileRepository.save(sourceFile);
       log.info(
-          "File uploaded: {} ({} bytes) for project: {}",
-          saved.getFileName(),
-          saved.getSizeBytes(),
-          projectId);
+              "File uploaded: {} ({} bytes) for project: {}",
+              saved.getFileName(),
+              saved.getSizeBytes(),
+              projectId);
 
       processFileContent(saved);
 
@@ -113,7 +115,7 @@ public class FileService {
     long maxSizeBytes = maxFileSizeMb * 1024 * 1024;
     if (file.getSize() > maxSizeBytes) {
       throw new IllegalArgumentException(
-          "File size exceeds maximum allowed: " + maxFileSizeMb + "MB");
+              "File size exceeds maximum allowed: " + maxFileSizeMb + "MB");
     }
 
     String filename = file.getOriginalFilename();
@@ -128,7 +130,7 @@ public class FileService {
   }
 
   private boolean isValidExtension(String extension) {
-    return List.of("csv", "xlsx", "xls", "sql", "txt").contains(extension);
+    return List.of("csv", "xlsx", "xls", "json", "sql", "txt").contains(extension);
   }
 
   private FileType detectFileType(String fileType, String extension) {
@@ -143,6 +145,8 @@ public class FileService {
     return switch (extension.toLowerCase()) {
       case "xlsx", "xls" -> FileType.EXCEL;
       case "sql" -> FileType.SQL;
+      case "json" -> FileType.JSON;
+      case "csv" -> FileType.CSV;
       default -> FileType.CSV;
     };
   }
@@ -183,13 +187,32 @@ public class FileService {
 
   public SourceFile getFileEntityById(UUID fileId) {
     return fileRepository
-        .findById(fileId)
-        .orElseThrow(() -> new ResourceNotFoundException("File not found: " + fileId));
+            .findById(fileId)
+            .orElseThrow(() -> new ResourceNotFoundException("File not found: " + fileId));
   }
 
   public SourceFileResponse getFileById(UUID fileId) {
     SourceFile file = getFileEntityById(fileId);
     return fileMapper.toResponse(file);
+  }
+
+  public List<SourceFileResponse> getFilesByProject(String projectId) {
+    UUID projectUuid = resolveProjectIdOrNull(projectId);
+    if (projectUuid == null) {
+      List<SourceFile> files = fileRepository.findAll();
+      return files.stream().map(fileMapper::toResponse).toList();
+    }
+    List<SourceFile> files = fileRepository.findByProjectIdOrderByUploadedAtDesc(projectUuid);
+    return files.stream().map(fileMapper::toResponse).toList();
+  }
+
+  public Page<SourceFileResponse> getFilesByProject(String projectId, Pageable pageable) {
+    UUID projectUuid = resolveProjectIdOrNull(projectId);
+    if (projectUuid == null) {
+      return fileRepository.findAll(pageable).map(fileMapper::toResponse);
+    }
+    Page<SourceFile> files = fileRepository.findByProjectId(projectUuid, pageable);
+    return files.map(fileMapper::toResponse);
   }
 
   public List<SourceFileResponse> getFilesByProject(UUID projectId) {
@@ -226,7 +249,7 @@ public class FileService {
       Path filePath = Paths.get(file.getStoragePath());
       Files.deleteIfExists(filePath);
     } catch (IOException e) {
-      log.warn(" Could not delete physical file: {}", e.getMessage());
+      log.warn("Could not delete physical file: {}", e.getMessage());
     }
 
     datasetService.deleteDatasetsByFile(fileId);
@@ -265,12 +288,12 @@ public class FileService {
       byte[] content = resource.getContentAsByteArray();
 
       return ResponseEntity.ok()
-          .contentType(MediaType.parseMediaType(contentType))
-          .header(
-              HttpHeaders.CONTENT_DISPOSITION,
-              "attachment; filename=\"" + file.getFileName() + "\"")
-          .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(content.length))
-          .body(content);
+              .contentType(MediaType.parseMediaType(contentType))
+              .header(
+                      HttpHeaders.CONTENT_DISPOSITION,
+                      "attachment; filename=\"" + file.getFileName() + "\"")
+              .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(content.length))
+              .body(content);
 
     } catch (Exception e) {
       log.error("Error downloading file: {}", e.getMessage());
@@ -297,6 +320,7 @@ public class FileService {
     return switch (fileType) {
       case CSV -> "text/csv";
       case EXCEL -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      case JSON -> "application/json";
       case SQL -> "text/plain";
       default -> "application/octet-stream";
     };
@@ -434,10 +458,10 @@ public class FileService {
     stats.put("projectName", file.getProject() != null ? file.getProject().getProjectName() : null);
     stats.put("userId", file.getUser() != null ? file.getUser().getId() : null);
     stats.put(
-        "userFullName",
-        file.getUser() != null
-            ? file.getUser().getFirstName() + " " + file.getUser().getLastName()
-            : null);
+            "userFullName",
+            file.getUser() != null
+                    ? file.getUser().getFirstName() + " " + file.getUser().getLastName()
+                    : null);
     return stats;
   }
 
@@ -455,5 +479,16 @@ public class FileService {
 
   private UUID getCurrentUserId() {
     return securityUtils.getCurrentUserId();
+  }
+
+  private UUID resolveProjectIdOrNull(String projectId) {
+    if (projectId == null || projectId.isBlank() || ALL_PROJECTS.equalsIgnoreCase(projectId)) {
+      return null;
+    }
+    try {
+      return UUID.fromString(projectId);
+    } catch (IllegalArgumentException ex) {
+      throw new IllegalArgumentException("Invalid projectId: " + projectId, ex);
+    }
   }
 }

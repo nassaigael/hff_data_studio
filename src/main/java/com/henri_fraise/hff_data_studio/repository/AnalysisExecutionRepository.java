@@ -41,18 +41,18 @@ public interface AnalysisExecutionRepository extends JpaRepository<AnalysisExecu
   Double averageDuration();
 
   @Query(
-      "SELECT AVG(e.durationMs) FROM AnalysisExecution e WHERE e.predefinedAnalysis.id ="
-          + " :analysisId AND e.status = 'COMPLETED'")
+          "SELECT AVG(e.durationMs) FROM AnalysisExecution e WHERE e.predefinedAnalysis.id ="
+                  + " :analysisId AND e.status = 'COMPLETED'")
   Double averageDurationByAnalysisId(@Param("analysisId") UUID analysisId);
 
   @Query(
-      "SELECT AVG(e.durationMs) FROM AnalysisExecution e WHERE e.user.id = :userId AND e.status ="
-          + " 'COMPLETED'")
+          "SELECT AVG(e.durationMs) FROM AnalysisExecution e WHERE e.user.id = :userId AND e.status ="
+                  + " 'COMPLETED'")
   Double averageDurationByUserId(@Param("userId") UUID userId);
 
   @Query(
-      "SELECT AVG(e.durationMs) FROM AnalysisExecution e WHERE e.dataset.id = :datasetId AND"
-          + " e.status = 'COMPLETED'")
+          "SELECT AVG(e.durationMs) FROM AnalysisExecution e WHERE e.dataset.id = :datasetId AND"
+                  + " e.status = 'COMPLETED'")
   Double averageDurationByDatasetId(@Param("datasetId") UUID datasetId);
 
   @Query("SELECT e FROM AnalysisExecution e ORDER BY e.executedAt DESC")
@@ -69,30 +69,30 @@ public interface AnalysisExecutionRepository extends JpaRepository<AnalysisExecu
 
   @Query("SELECT e FROM AnalysisExecution e WHERE e.status = :status AND e.executedAt < :date")
   List<AnalysisExecution> findOldExecutionsByStatus(
-      @Param("status") AnalysisExecutionStatus status, @Param("date") LocalDateTime date);
+          @Param("status") AnalysisExecutionStatus status, @Param("date") LocalDateTime date);
 
   @Query(
-      "SELECT e FROM AnalysisExecution e WHERE e.predefinedAnalysis.id = :analysisId ORDER BY"
-          + " e.executedAt DESC")
+          "SELECT e FROM AnalysisExecution e WHERE e.predefinedAnalysis.id = :analysisId ORDER BY"
+                  + " e.executedAt DESC")
   List<AnalysisExecution> findByPredefinedAnalysisId(@Param("analysisId") UUID analysisId);
 
   @Query("SELECT e FROM AnalysisExecution e WHERE e.dataset.id = :datasetId AND e.status = :status")
   List<AnalysisExecution> findByDatasetIdAndStatus(
-      @Param("datasetId") UUID datasetId, @Param("status") AnalysisExecutionStatus status);
+          @Param("datasetId") UUID datasetId, @Param("status") AnalysisExecutionStatus status);
 
   @Query(
-      "SELECT COUNT(e) FROM AnalysisExecution e WHERE e.dataset.id = :datasetId AND e.status ="
-          + " :status")
+          "SELECT COUNT(e) FROM AnalysisExecution e WHERE e.dataset.id = :datasetId AND e.status ="
+                  + " :status")
   long countByDatasetIdAndStatus(
-      @Param("datasetId") UUID datasetId, @Param("status") AnalysisExecutionStatus status);
+          @Param("datasetId") UUID datasetId, @Param("status") AnalysisExecutionStatus status);
 
   @Query("SELECT e FROM AnalysisExecution e WHERE e.user.id = :userId AND e.status = :status")
   List<AnalysisExecution> findByUserIdAndStatus(
-      @Param("userId") UUID userId, @Param("status") AnalysisExecutionStatus status);
+          @Param("userId") UUID userId, @Param("status") AnalysisExecutionStatus status);
 
   @Query(
-      "SELECT e FROM AnalysisExecution e WHERE e.status = 'IN_PROGRESS' AND e.executedAt <"
-          + " :timeout")
+          "SELECT e FROM AnalysisExecution e WHERE e.status = 'IN_PROGRESS' AND e.executedAt <"
+                  + " :timeout")
   List<AnalysisExecution> findStuckExecutions(@Param("timeout") LocalDateTime timeout);
 
   @Query("UPDATE AnalysisExecution e SET e.status = 'ERROR' WHERE e.id = :executionId")
@@ -103,4 +103,23 @@ public interface AnalysisExecutionRepository extends JpaRepository<AnalysisExecu
 
   @Query("SELECT COUNT(e) FROM AnalysisExecution e WHERE e.predefinedAnalysis.id IS NULL")
   long countCustomAnalyses();
+
+  @Query(
+          "SELECT ae FROM AnalysisExecution ae "
+                  + "JOIN FETCH ae.predefinedAnalysis "
+                  + "JOIN FETCH ae.user "
+                  + "WHERE ae.dataset.id = :datasetId "
+                  + "ORDER BY ae.executedAt DESC")
+  List<AnalysisExecution> findRecentByDatasetId(
+          @Param("datasetId") UUID datasetId, Pageable pageable);
+
+  @Query(
+          "SELECT COUNT(DISTINCT ae.user.id) FROM AnalysisExecution ae "
+                  + "WHERE ae.dataset.id = :datasetId")
+  long countDistinctUsersByDatasetId(@Param("datasetId") UUID datasetId);
+
+  @Query(
+          "SELECT MAX(ae.executedAt) FROM AnalysisExecution ae "
+                  + "WHERE ae.dataset.id = :datasetId")
+  LocalDateTime findLastExecutionAt(@Param("datasetId") UUID datasetId);
 }
