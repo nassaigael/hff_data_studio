@@ -54,11 +54,21 @@ public interface ExportRepository extends JpaRepository<Export, UUID> {
 
   @Query("SELECT e FROM Export e WHERE e.execution.id = :executionId AND e.exportFormat = :format")
   List<Export> findByExecutionIdAndFormat(
-      @Param("executionId") UUID executionId, @Param("format") ExportFormat format);
+          @Param("executionId") UUID executionId, @Param("format") ExportFormat format);
 
   @Query("SELECT e FROM Export e ORDER BY e.exportedAt DESC")
   List<Export> findRecentExports(Pageable pageable);
 
   @Query("SELECT COUNT(e) FROM Export e WHERE e.execution.dataset.id = :datasetId")
   long countByDatasetId(@Param("datasetId") UUID datasetId);
+
+  @Query(
+          "SELECT e FROM Export e "
+                  + "JOIN FETCH e.execution ae "
+                  + "JOIN FETCH ae.dataset "
+                  + "JOIN FETCH e.user "
+                  + "WHERE ae.dataset.id = :datasetId "
+                  + "ORDER BY e.exportedAt DESC")
+  List<Export> findRecentByDatasetId(
+          @Param("datasetId") UUID datasetId, Pageable pageable);
 }
