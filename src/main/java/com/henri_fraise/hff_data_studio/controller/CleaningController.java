@@ -17,7 +17,16 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -33,19 +42,11 @@ public class CleaningController {
     return ResponseEntity.ok(cleaningService.getRulesByColumn(columnId));
   }
 
-  @PostMapping("/columns/{columnId}/rules")
-  @PreAuthorize("hasAuthority('CLEANING_RULE_CREATE')")
-  public ResponseEntity<CleaningRuleResponse> createRule(
-      @PathVariable UUID columnId, @Valid @RequestBody CleaningRuleRequest request) {
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(cleaningService.createRule(columnId, request));
-  }
-
-  @PutMapping("/rules/{ruleId}")
-  @PreAuthorize("hasAuthority('CLEANING_RULE_UPDATE')")
-  public ResponseEntity<CleaningRuleResponse> updateRule(
-      @PathVariable UUID ruleId, @Valid @RequestBody CleaningRuleRequest request) {
-    return ResponseEntity.ok(cleaningService.updateRule(ruleId, request));
+  @GetMapping("/datasets/{datasetId}/rules")
+  @PreAuthorize("hasAuthority('CLEANING_RULE_VIEW')")
+  public ResponseEntity<List<CleaningRuleResponse>> getRulesByDataset(
+          @PathVariable UUID datasetId) {
+    return ResponseEntity.ok(cleaningService.getRulesByDataset(datasetId));
   }
 
   @DeleteMapping("/rules/{ruleId}")
@@ -53,6 +54,29 @@ public class CleaningController {
   public ResponseEntity<Void> deleteRule(@PathVariable UUID ruleId) {
     cleaningService.deleteRule(ruleId);
     return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/rules/{ruleId}/toggle")
+  @PreAuthorize("hasAuthority('CLEANING_RULE_UPDATE')")
+  public ResponseEntity<Void> toggleRule(
+          @PathVariable UUID ruleId, @RequestParam boolean active) {
+    cleaningService.toggleRuleActive(ruleId, active);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/columns/{columnId}/rules")
+  @PreAuthorize("hasAuthority('CLEANING_RULE_CREATE')")
+  public ResponseEntity<CleaningRuleResponse> createRule(
+          @PathVariable UUID columnId, @Valid @RequestBody CleaningRuleRequest request) {
+    return ResponseEntity.status(HttpStatus.CREATED)
+            .body(cleaningService.createRule(columnId, request));
+  }
+
+  @PutMapping("/rules/{ruleId}")
+  @PreAuthorize("hasAuthority('CLEANING_RULE_UPDATE')")
+  public ResponseEntity<CleaningRuleResponse> updateRule(
+          @PathVariable UUID ruleId, @Valid @RequestBody CleaningRuleRequest request) {
+    return ResponseEntity.ok(cleaningService.updateRule(ruleId, request));
   }
 
   @PostMapping("/datasets/{datasetId}/cleaning/execute")
@@ -64,7 +88,7 @@ public class CleaningController {
   @GetMapping("/datasets/{datasetId}/cleaning-history")
   @PreAuthorize("hasAuthority('CLEANING_VIEW')")
   public ResponseEntity<PageResponse<CleaningHistoryResponse>> getCleaningHistory(
-      @PathVariable UUID datasetId, @PageableDefault(size = 20) Pageable pageable) {
+          @PathVariable UUID datasetId, @PageableDefault(size = 20) Pageable pageable) {
     Page<CleaningHistoryResponse> history = cleaningService.getCleaningHistory(datasetId, pageable);
     return ResponseEntity.ok(pageMapper.toPageResponse(history, h -> h));
   }
@@ -72,7 +96,7 @@ public class CleaningController {
   @GetMapping("/cleaning-history/{historyId}")
   @PreAuthorize("hasAuthority('CLEANING_VIEW')")
   public ResponseEntity<CleaningHistoryResponse> getCleaningHistoryById(
-      @PathVariable UUID historyId) {
+          @PathVariable UUID historyId) {
     return ResponseEntity.ok(cleaningService.getCleaningHistoryById(historyId));
   }
 
